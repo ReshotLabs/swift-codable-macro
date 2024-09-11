@@ -32,6 +32,7 @@ public struct CodableMacro: ExtensionMacro {
             in: context
         )
         
+        // use the auto implementation provided by Swift Compiler if no actual customization is found
         guard
             !codingFieldInfoList.isEmpty,
             codingFieldInfoList.contains(where: {
