@@ -27,15 +27,16 @@ public struct CodableMacro: ExtensionMacro {
             throw .diagnostic(node: declaration, message: Error.attachTypeError)
         }
         
-        let codingFieldInfoList = try extractCodingFieldInfoList(
+        let (codingFieldInfoList, hasIgnored) = try extractCodingFieldInfoList(
             from: declaration.memberBlock.members,
             in: context
         )
         
         // use the auto implementation provided by Swift Compiler if no actual customization is found
         guard
-            !codingFieldInfoList.isEmpty,
-            codingFieldInfoList.contains(where: {
+            hasIgnored
+            || !codingFieldInfoList.isEmpty
+            && codingFieldInfoList.contains(where: {
                 $0.path.count > 1
                 || $0.field.defaultValue != nil
                 || $0.path.first != $0.field.name.trimmed.text

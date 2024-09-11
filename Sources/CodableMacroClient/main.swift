@@ -54,7 +54,7 @@ struct TypeA: Equatable {
 //    @CodingField("meta")
 //    var fieldError2: Int = 1
     
-    // computed property
+    // computed property (uncomment to check the error message)
 //    @CodingField
 //    var fieldError3: Int { 1 }
     
@@ -82,25 +82,11 @@ let decodedInstance = try JSONDecoder().decode(TypeA.self, from: data)
 print(decodedInstance == instance)
 
 
-
-
+// contains a coding ignore, still have to provide implementation instead of using that
+// provided by the Swift Compiler
 @Codable
-struct TypeB {
-    var field1: Int
-    var field2: Int?
-    var field3: Int = 1
-    @CodingField("path1", "path2", "field4")
-    var field4: Int
-    @CodingField("path1", "field5")
-    var field5: Int = 1
-    @CodingField("path1", "path2", "field6", default: 2)
-    var field6: Int = 1
-    @CodingField("path1", "path2", "field7")
-    var field7: Int?
-    @CodingField("path2", "field8")
-    let field8: Int = 1
+struct Test {
+    var a = 1
     @CodingIgnore
-    var fieldIgnore1: Int?
-    @CodingIgnore
-    var fieldIgnore2: Int = 1
+    var b = 1
 }

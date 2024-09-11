@@ -34,15 +34,20 @@ extension CodableMacro {
     static func extractCodingFieldInfoList(
         from members: MemberBlockItemListSyntax,
         in context: some MacroExpansionContext
-    ) throws(DiagnosticsError) -> [CodingFieldMacro.CodingFieldInfo] {
+    ) throws(DiagnosticsError)
+    -> (infoList: [CodingFieldMacro.CodingFieldInfo], hasIgnored: Bool) {
         
-        try members
+        var hasIgnored = false
+        
+        let infoList = try members
             .compactMap { $0.decl.as(VariableDeclSyntax.self) }
             .filter { member in
-                !member.attributes.contains {
+                let ignored = member.attributes.contains {
                     $0.as(AttributeSyntax.self)?.attributeName
                         .as(IdentifierTypeSyntax.self)?.name.trimmed.text == "CodingIgnore"
                 }
+                if ignored { hasIgnored = true }
+                return !ignored
             }
             .map { (member) throws(DiagnosticsError) in
                 let codingFieldAttributes = member.attributes
@@ -60,6 +65,8 @@ extension CodableMacro {
                 }
             }
             .compactMap { $0 }
+        
+        return (infoList, hasIgnored)
         
     }
     

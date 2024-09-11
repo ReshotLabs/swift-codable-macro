@@ -14,7 +14,7 @@ import Foundation
 struct CodingTest {
     
     @Codable
-    struct TypeB: Equatable {
+    struct SomeType: Equatable {
         var field1: Int
         var field2: Int?
         var field3: Int = 1
@@ -70,12 +70,12 @@ struct CodingTest {
                     "path": ["not": ["exist": "something"]]
                 ]
             ),
-        ] as [(TypeB, JsonComponent)]
+        ] as [(SomeType, JsonComponent)]
     )
-    func deocde1(_ expectedInstance: TypeB, _ json: JsonComponent) async throws {
+    func deocde1(_ expectedInstance: SomeType, _ json: JsonComponent) async throws {
         
         let encoded = try JSONEncoder().encode(json)
-        let decoded = try JSONDecoder().decode(TypeB.self, from: encoded)
+        let decoded = try JSONDecoder().decode(SomeType.self, from: encoded)
         #expect(decoded == expectedInstance)
         
     }
@@ -122,9 +122,9 @@ struct CodingTest {
                     ]
                 ]
             ),
-        ] as [(TypeB, JsonComponent)]
+        ] as [(SomeType, JsonComponent)]
     )
-    func encode1(_ instance: TypeB, _ expectedJson: JsonComponent) async throws {
+    func encode1(_ instance: SomeType, _ expectedJson: JsonComponent) async throws {
         let encoded = try JSONEncoder().encode(instance)
         let decodedAsJsonComponent = try JSONDecoder().decode(JsonComponent.self, from: encoded)
         #expect(decodedAsJsonComponent == expectedJson)
