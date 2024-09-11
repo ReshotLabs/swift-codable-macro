@@ -1,6 +1,6 @@
 # swift-codable-macro
 
-Provide Swift Macros for automatically generate customizable implementation for conforming `Coddle` protocol. 
+Provide Swift Macros for automatically generate customizable implementation for conforming `Codable` protocol. 
 
 ## Introduction 
 
@@ -64,4 +64,21 @@ Make a stored property to be ignored when doing encoding / decoding. It requires
 
 ## Installation 
 
-In `Package.swift`: 
+In `Package.swift`, add the following line into your dependencies: 
+
+```swift
+.package(url: "https://github.com/Star-Lord-PHB/swift-codable-macro.git", from: "1.0.0"),
+```
+
+Add `CodableMacro` as a dependency of your target:
+
+```swift
+.target(
+    name: "Target", 
+    dependencies: [
+        .product(name: "CodableMacro", package: "swift-codable-macro"),
+    ]
+)
+```
+
+Add `import CodableMacro` in your source code. 
