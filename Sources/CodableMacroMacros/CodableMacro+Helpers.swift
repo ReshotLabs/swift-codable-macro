@@ -23,9 +23,8 @@ extension CodableMacro {
 
     
     enum CodingOperation {
-        case container(keysDef: TokenSyntax, parent: (container: TokenSyntax, key: String)?)
-        case optionalContainer(keysDef: TokenSyntax, parent: (container: TokenSyntax, key: String))
-        case endOptionalContainer
+        case container(keysDef: TokenSyntax, parent: (container: TokenSyntax, key: String, isOptional: Bool)?)
+        case optionalContainer(keysDef: TokenSyntax, parent: (container: TokenSyntax, key: String, isOptional: Bool))
         case code(container: TokenSyntax, key: String, field: CodingFieldMacro.FieldInfo)
     }
     
@@ -82,6 +81,8 @@ extension CodableMacro {
         var operations = [CodingOperation]()
         var enumStack = [TokenSyntax]()
         var pathStack = [String]()
+        var optionalContainerDepth = 0
+        var inOptionalContainer: Bool { optionalContainerDepth > 0 }
         
         func codingStructureDfs(_ structure: borrowing CodingStructure) throws(DiagnosticsError) {
             
@@ -113,18 +114,19 @@ extension CodableMacro {
                     enumStack.append(newEnum.name)
                     if required {
                         operations.append(
-                            .container(keysDef: newEnum.name, parent: (container: parentContainer, key: pathElement))
+                            .container(keysDef: newEnum.name, parent: (container: parentContainer, key: pathElement, isOptional: inOptionalContainer))
                         )
                     } else {
                         operations.append(
-                            .optionalContainer(keysDef: newEnum.name, parent: (container: parentContainer, key: pathElement))
+                            .optionalContainer(keysDef: newEnum.name, parent: (container: parentContainer, key: pathElement, isOptional: inOptionalContainer))
                         )
+                        optionalContainerDepth += 1
                     }
                     for child in children.values {
                         try codingStructureDfs(child)
                     }
                     if !required {
-                        operations.append(.endOptionalContainer)
+                        optionalContainerDepth -= 1
                     }
                     pathStack.removeLast()
                     enumStack.removeLast()
@@ -179,13 +181,14 @@ extension CodableMacro {
                 
                 switch operation {
                         
-                    case let .container(keysDef, .some((container, key))):
+                    case let .container(keysDef, .some((container, key, isOptional))):
+                        let safeUnwrapMark = (isOptional ? "?" : "") as TokenSyntax
                         codeBlockItems.append("""
-                        let \(keysDef)container = try \(container)container.nestedContainer(
-                            keyedBy: \(keysDef).self, 
-                            forKey: .\(raw: key)
-                        )
-                        """
+                            let \(keysDef)container = try \(container)container\(safeUnwrapMark).nestedContainer(
+                                keyedBy: \(keysDef).self, 
+                                forKey: .\(raw: key)
+                            )
+                            """
                         )
                         
                     case let .container(keysDef, .none):
@@ -193,20 +196,15 @@ extension CodableMacro {
                             "let \(keysDef)container = try decoder.container(keyedBy: \(keysDef).self)"
                         )
                         
-                    case let .optionalContainer(keysDef, (container, key)):
-                        let ifExpr = try IfExprSyntax("if \(container)container.contains(.\(raw: key))") {
-                            """
-                            let \(keysDef)container = try \(container)container.nestedContainer(
+                    case let .optionalContainer(keysDef, (container, key, isOptional)):
+                        let safeUnwrapMark = (isOptional ? "?" : "") as TokenSyntax
+                        let decl = """
+                            let \(keysDef)container = try? \(container)container\(safeUnwrapMark).nestedContainer(
                                 keyedBy: \(keysDef).self, 
                                 forKey: .\(raw: key)
                             )
-                            """
-                            try generateDecodeInitializerBody(from: &operations)
-                        }
-                        codeBlockItems.append(.init(item: .expr(.init(ifExpr))))
-                        
-                    case .endOptionalContainer:
-                        return codeBlockItems
+                            """ as DeclSyntax
+                        codeBlockItems.append(.init(item: .decl(decl)))
                         
                     case let .code(container, key, field):
                         let newItem = if field.canInit {
@@ -257,8 +255,20 @@ extension CodableMacro {
             """ as DeclSyntax,
             
             """
+            private static func \(decodeFunctionName)<R: Decodable, C: CodingKey>(container: KeyedDecodingContainer<C>?, key: C) throws -> R? {
+                try container?.decode(R.self, forKey: key)
+            }
+            """ as DeclSyntax,
+            
+            """
             private static func \(decodeIfPresentFunctionName)<R: Decodable, C: CodingKey>(container: KeyedDecodingContainer<C>, key: C) throws -> R? {
                 try container.decodeIfPresent(R.self, forKey: key)
+            }
+            """ as DeclSyntax,
+            
+            """
+            private static func \(decodeIfPresentFunctionName)<R: Decodable, C: CodingKey>(container: KeyedDecodingContainer<C>?, key: C) throws -> R? {
+                try container?.decodeIfPresent(R.self, forKey: key)
             }
             """ as DeclSyntax,
             
@@ -278,22 +288,20 @@ extension CodableMacro {
             operations.map { operation in
                 
                 switch operation {
-                    case let .container(keysDef, .some((container, key))):
+                    case let .container(keysDef, .some((container, key, _))):
                         """
                         var \(keysDef)container = \(container)container.nestedContainer(
                             keyedBy: \(keysDef).self, 
                             forKey: .\(raw: key)
                         )
                         """
-                    case let .optionalContainer(keysDef, (container, key)):
+                    case let .optionalContainer(keysDef, (container, key, _)):
                         """
                         var \(keysDef)container = \(container)container.nestedContainer(
                             keyedBy: \(keysDef).self, 
                             forKey: .\(raw: key)
                         )
                         """
-                    case .endOptionalContainer:
-                        ""
                     case let .container(keysDef, .none):
                         """
                         var \(keysDef)container = encoder.container(keyedBy: \(keysDef).self)

@@ -46,6 +46,10 @@ struct TypeA: Equatable {
         willSet { print(newValue) }
     }
     
+    // default value with optional path
+    @CodingField("optional_path", "field11", default: 1)
+    var field11: Int
+    
     // conflict path (exact) (uncomment to check the error message)
 //    @CodingField("meta", "field2")
 //    var fieldError1: Int = 1
@@ -71,6 +75,7 @@ struct TypeA: Equatable {
         self.field3 = .init()
         self.field4 = 1
         self.field5 = 1
+        self.field11 = 1
     }
     
 }
