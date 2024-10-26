@@ -62,6 +62,9 @@ struct TypeA: Equatable {
     var fieldIgnored1: Bool = false
     
     
+    var ignoredComputed: Int { 1 }
+    
+    
     init() {
         self.field1 = "field1"
         self.field2 = 1

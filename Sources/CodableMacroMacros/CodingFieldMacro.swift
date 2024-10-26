@@ -125,7 +125,8 @@ public struct CodingFieldMacro: PeerMacro {
         }
         
         guard isStoredProperty(declaration.bindings.first!) else {
-            throw .diagnostic(node: declaration, message: Error.attachTypeError)
+//            throw .diagnostic(node: declaration, message: Error.attachTypeError)
+            return nil 
         }
         
         var hasInitializer: Bool { declaration.bindings.first?.initializer != nil }
