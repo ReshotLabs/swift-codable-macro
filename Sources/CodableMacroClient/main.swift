@@ -50,6 +50,14 @@ struct TypeA: Equatable {
     @CodingField("optional_path", "field11", default: 1)
     var field11: Int
     
+    @CodingField("field12")
+    var field12Renamed: Int = 1
+    
+    var field12: Int {
+        get { field12Renamed }
+        set { field12Renamed = newValue }
+    }
+    
     // conflict path (exact) (uncomment to check the error message)
 //    @CodingField("meta", "field2")
 //    var fieldError1: Int = 1

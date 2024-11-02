@@ -24,17 +24,14 @@ final class CodableMacroTests: XCTestCase {
             @Codable
             struct Person {
             
-                @CodingField("conflict")
-                let name: String
-            
-                @CodingField("conflict")
-                let age: Int
-            
-                let birth: Date
-            
-                @CodingIgnore 
-                var hasWork: Bool = false 
+                @CodingField("name")
+                let name1: String
 
+                var name: String {
+                    get { name1 }
+                    set { name1 = newValue }
+                }
+            
             }
             """,
             expandedSource: """

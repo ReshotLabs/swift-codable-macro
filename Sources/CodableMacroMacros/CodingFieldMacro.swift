@@ -175,8 +175,8 @@ public struct CodingFieldMacro: PeerMacro {
             return false
         }
         return !accessorDeclList.lazy
-            .map { $0.accessorSpecifier.trimmed }
-            .contains { $0 == "set" || $0 == "get"}
+            .map { $0.accessorSpecifier.trimmed.tokenKind }
+            .contains { $0 == .keyword(.get) || $0 == .keyword(.set) }
     }
     
     
