@@ -114,12 +114,17 @@ struct Test {
 class TypeB {
     
     @CodingField("field")
-    var a: Int
-    var b: Int
+    var a: Int = 0
+    var b: Int = 0
     
-    init(a: Int = 0, b: Int = 0) {
+}
+
+
+@Codable
+class TypeC {
+    @CodingField("field")
+    var a: Int = 0
+    init(a: Int) {
         self.a = a
-        self.b = b
     }
-    
 }

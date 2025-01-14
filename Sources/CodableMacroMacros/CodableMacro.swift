@@ -27,9 +27,15 @@ public struct CodableMacro: ExtensionMacro {
             throw .diagnostic(node: declaration, message: Error.attachTypeError)
         }
         
-        return [
-            try .init("extension \(type.trimmed): Codable", membersBuilder: {})
-        ]
+        return if !declaration.is(ClassDeclSyntax.self) {
+            [
+                try .init("extension \(type.trimmed): Codable") {
+                    try makeDecls(node: node, declaration: declaration, context: context)
+                }
+            ]
+        } else {
+            [try .init("extension \(type.trimmed): Codable", membersBuilder: {})]
+        }
         
     }
 
@@ -76,6 +82,34 @@ extension CodableMacro: MemberMacro {
             throw .diagnostic(node: declaration, message: Error.attachTypeError)
         }
         
+        if declaration.is(ClassDeclSyntax.self) {
+            let hasInitializer = declaration.memberBlock.members.contains {
+                $0.decl.is(InitializerDeclSyntax.self)
+            }
+            var decls = try makeDecls(node: node, declaration: declaration, context: context)
+            if !hasInitializer {
+                try decls.append(
+                    .init(InitializerDeclSyntax("init()", bodyBuilder: {}))
+                )
+            }
+            return decls
+        } else {
+            return []
+        }
+        
+    }
+    
+}
+
+
+extension CodableMacro {
+    
+    static func makeDecls(
+        node: AttributeSyntax,
+        declaration: some DeclGroupSyntax,
+        context: some MacroExpansionContext
+    ) throws -> [DeclSyntax] {
+        
         let isClass = declaration.is(ClassDeclSyntax.self)
         
         let (codingFieldInfoList, hasIgnored) = try extractCodingFieldInfoList(
@@ -103,7 +137,7 @@ extension CodableMacro: MemberMacro {
             context: context,
             macroNode: node
         )
-
+        
         var decls = [DeclSyntax]()
         
         decls += generateEnumDeclarations(from: enumDecls)
@@ -113,8 +147,5 @@ extension CodableMacro: MemberMacro {
         return decls
         
     }
-    
-    
-    
     
 }
