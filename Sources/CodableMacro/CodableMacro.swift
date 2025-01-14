@@ -63,6 +63,7 @@
 /// [`encode(to:)`]: https://developer.apple.com/documentation/swift/encodable/encode(to:)-7ibwv
 /// [`init(from:)`]: https://developer.apple.com/documentation/swift/decodable/init(from:)-8ezpn
 @attached(extension, conformances: Codable, names: arbitrary)
+@attached(member, names: arbitrary)
 public macro Codable() = #externalMacro(module: "CodableMacroMacros", type: "CodableMacro")
 
 

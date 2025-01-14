@@ -27,38 +27,8 @@ public struct CodableMacro: ExtensionMacro {
             throw .diagnostic(node: declaration, message: Error.attachTypeError)
         }
         
-        let (codingFieldInfoList, hasIgnored) = try extractCodingFieldInfoList(
-            from: declaration.memberBlock.members,
-            in: context
-        )
-        
-        // use the auto implementation provided by Swift Compiler if no actual customization is found
-        guard
-            hasIgnored
-            || !codingFieldInfoList.isEmpty
-            && codingFieldInfoList.contains(where: {
-                $0.path.count > 1
-                || $0.field.defaultValue != nil
-                || $0.path.first != $0.field.name.trimmed.text
-            })
-        else {
-            return [try .init("extension \(type.trimmed): Codable", membersBuilder: {})]
-        }
-        
-        let structure = try CodingStructure.parse(codingFieldInfoList)
-        
-        let (enumDecls, operations) = try buildOperations(
-            from: structure,
-            context: context,
-            macroNode: node
-        )
-        
         return [
-            try .init("extension \(type.trimmed): Codable") {
-                generateEnumDeclarations(from: enumDecls)
-                try generateDecodeInitializer(from: operations, context: context)
-                try generateEncodeMethod(from: operations)
-            }
+            try .init("extension \(type.trimmed): Codable", membersBuilder: {})
         ]
         
     }
@@ -89,5 +59,62 @@ public struct CodableMacro: ExtensionMacro {
         var severity: SwiftDiagnostics.DiagnosticSeverity { .error }
         
     }
+    
+}
+
+
+
+extension CodableMacro: MemberMacro {
+    
+    public static func expansion(
+        of node: AttributeSyntax,
+        providingMembersOf declaration: some DeclGroupSyntax,
+        in context: some MacroExpansionContext
+    ) throws -> [DeclSyntax] {
+        
+        guard declaration.is(ClassDeclSyntax.self) || declaration.is(StructDeclSyntax.self) else {
+            throw .diagnostic(node: declaration, message: Error.attachTypeError)
+        }
+        
+        let isClass = declaration.is(ClassDeclSyntax.self)
+        
+        let (codingFieldInfoList, hasIgnored) = try extractCodingFieldInfoList(
+            from: declaration.memberBlock.members,
+            in: context
+        )
+        
+        // use the auto implementation provided by Swift Compiler if no actual customization is found
+        guard
+            hasIgnored
+                || !codingFieldInfoList.isEmpty
+                && codingFieldInfoList.contains(where: {
+                    $0.path.count > 1
+                    || $0.field.defaultValue != nil
+                    || $0.path.first != $0.field.name.trimmed.text
+                })
+        else {
+            return []
+        }
+        
+        let structure = try CodingStructure.parse(codingFieldInfoList)
+        
+        let (enumDecls, operations) = try buildOperations(
+            from: structure,
+            context: context,
+            macroNode: node
+        )
+
+        var decls = [DeclSyntax]()
+        
+        decls += generateEnumDeclarations(from: enumDecls)
+        decls += try generateDecodeInitializer(from: operations, isClass: isClass, context: context)
+        decls.append(.init(try generateEncodeMethod(from: operations)))
+        
+        return decls
+        
+    }
+    
+    
+    
     
 }

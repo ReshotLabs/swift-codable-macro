@@ -165,8 +165,9 @@ extension CodableMacro {
     
     static func generateDecodeInitializer(
         from operations: [CodingOperation],
+        isClass: Bool,
         context: some MacroExpansionContext
-    ) throws -> [any DeclSyntaxProtocol] {
+    ) throws -> [DeclSyntax] {
         
         let decodeFunctionName = context.makeUniqueName("decode")
         let decodeIfPresentFunctionName = context.makeUniqueName("decodeIfPresent")
@@ -272,9 +273,11 @@ extension CodableMacro {
             }
             """ as DeclSyntax,
             
-            try InitializerDeclSyntax("public init(from decoder: Decoder) throws") {
-                try generateDecodeInitializerBody(from: &operations)
-            }
+            .init(
+                try InitializerDeclSyntax("public \(raw: isClass ? "required" : "") init(from decoder: Decoder) throws") {
+                    try generateDecodeInitializerBody(from: &operations)
+                }
+            )
             
         ]
         

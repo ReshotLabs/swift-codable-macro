@@ -106,3 +106,20 @@ struct Test {
     @CodingIgnore
     var b = 1
 }
+
+
+
+
+@Codable
+class TypeB {
+    
+    @CodingField("field")
+    var a: Int
+    var b: Int
+    
+    init(a: Int = 0, b: Int = 0) {
+        self.a = a
+        self.b = b
+    }
+    
+}
