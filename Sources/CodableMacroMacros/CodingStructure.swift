@@ -15,11 +15,12 @@ import SwiftDiagnostics
 infix operator ==== : ComparisonPrecedence
 
 
+/// Represent the Encoding / Decoding structure as a tree
 indirect enum CodingStructure: Hashable, Equatable {
     
-    case root(children: [String?: CodingStructure])
-    case node(pathElement: String, children: [String?: CodingStructure], required: Bool)
-    case leaf(pathElement: String, field: CodingFieldMacro.FieldInfo)
+    case root(children: [String: CodingStructure])
+    case node(pathElement: String, children: [String: CodingStructure], required: Bool)
+    case leaf(pathElement: String, field: CodableMacro.CodingFieldInfo)
     
     var pathElement: String? {
         switch self {
@@ -39,9 +40,9 @@ indirect enum CodingStructure: Hashable, Equatable {
         switch (lhs, rhs) {
             case let (.root(childrenL), .root(childrenR)):
                 guard childrenL.count == childrenR.count else { return false }
-                return childrenL.values.allSatisfy { childL in
+                return childrenL.allSatisfy { (pathElement, childL) in
                     guard
-                        let childR = childrenR[childL.pathElement]
+                        let childR = childrenR[pathElement]
                     else { return false }
                     return childL ==== childR
                 }
@@ -51,14 +52,14 @@ indirect enum CodingStructure: Hashable, Equatable {
                     childrenL.count == childrenR.count,
                     requiredL == requiredR
                 else { return false }
-                return childrenL.values.allSatisfy { childL in
+                return childrenL.allSatisfy { (pathElement, childL) in
                     guard
-                        let childR = childrenR[childL.pathElement]
+                        let childR = childrenR[pathElement]
                     else { return false }
                     return childL ==== childR
                 }
             case let (.leaf(pathElementL, fieldL), .leaf(pathElementR, fieldR)):
-                return pathElementL == pathElementR && fieldL.name.description == fieldR.name.description
+                return pathElementL == pathElementR && fieldL.propertyInfo.nameStr == fieldR.propertyInfo.nameStr
             default:
                 return false
         }
@@ -99,7 +100,7 @@ extension CodingStructure: CustomStringConvertible {
         let structure = if case .root(_) = self {
             self
         } else {
-            CodingStructure.root(children: [pathElement: self])
+            CodingStructure.root(children: [pathElement!: self])
         }
         dfsAllPaths(of: structure, paths: &allPaths)
         return allPaths
@@ -113,12 +114,12 @@ extension CodingStructure: CustomStringConvertible {
 
 extension CodingStructure {
     
-    static func parse(_ codingFieldInfoList: [CodingFieldMacro.CodingFieldInfo]) throws(DiagnosticsError) -> CodingStructure {
+    static func parse(_ codingFieldInfoList: [CodableMacro.CodingFieldInfo]) throws(DiagnosticsError) -> CodingStructure {
         
         var root = CodingStructure.root(children: [:])
         
         for codingFieldInfo in codingFieldInfoList {
-            try matchAndUpdate(&root, with: codingFieldInfo.path, field: codingFieldInfo.field)
+            try matchAndUpdate(&root, with: codingFieldInfo.path, field: codingFieldInfo)
         }
         
         return root
@@ -129,7 +130,7 @@ extension CodingStructure {
     private static func matchAndUpdate<Path: Collection<String>>(
         _ structure: inout CodingStructure,
         with path: Path,
-        field: CodingFieldMacro.FieldInfo
+        field: CodableMacro.CodingFieldInfo
     ) throws (DiagnosticsError) {
         
         let isLeaf = (path.count == 1)
@@ -138,10 +139,13 @@ extension CodingStructure {
         switch structure {
                 
             case let .leaf(_, conflictField):
-                throw .diagnostics(makePathConflictDiagnostics(property1: field.name, property2: conflictField.name))
+                // should never see a leaf when matching the path of a new property
+                // seeing a leaf means that a path conflict exist
+                throw .diagnostics(makePathConflictDiagnostics(property1: field.propertyInfo.name, property2: conflictField.propertyInfo.name))
                 
             case var .root(children):
                 guard children[pathElementToMatch] != nil else {
+                    // no match found
                     if isLeaf {
                         children[pathElementToMatch] = .leaf(pathElement: pathElementToMatch, field: field)
                         structure = .root(children: children)
@@ -154,19 +158,22 @@ extension CodingStructure {
                     break
                 }
                 guard !isLeaf else {
+                    // found a match, but it is the last component of the path of the new property
+                    // in this case, it should be a path conflict of some unknown internal error
                     guard
                         let conflictStructure = children[pathElementToMatch],
-                        let field2 = firstLeaf(in: conflictStructure)?.field.name
+                        let field2 = firstLeaf(in: conflictStructure)?.field.propertyInfo.name
                     else {
-                        throw .diagnostic(node: field.name, message: Error.unknown)
+                        throw .diagnostic(node: field.propertyInfo.name, message: Error.unknown)
                     }
-                    throw .diagnostics(makePathConflictDiagnostics(property1: field.name, property2: field2))
+                    throw .diagnostics(makePathConflictDiagnostics(property1: field.propertyInfo.name, property2: field2))
                 }
                 try matchAndUpdate(&children[pathElementToMatch]!, with: path.dropFirst(), field: field)
                 structure = .root(children: children)
                 
             case .node(let pathElement, var children, let required):
                 guard children[pathElementToMatch] != nil else {
+                    // no match found
                     if isLeaf {
                         children[pathElementToMatch] = .leaf(pathElement: pathElementToMatch, field: field)
                         structure = .node(pathElement: pathElement, children: children, required: required || field.isRequired)
@@ -179,13 +186,15 @@ extension CodingStructure {
                     break
                 }
                 guard !isLeaf else {
+                    // found a match, but it is the last component of the path of the new property
+                    // in this case, it should be a path conflict of some unknown internal error
                     guard
                         let conflictStructure = children[pathElementToMatch],
-                        let field2 = firstLeaf(in: conflictStructure)?.field.name
+                        let field2 = firstLeaf(in: conflictStructure)?.field.propertyInfo.name
                     else {
-                        throw .diagnostic(node: field.name, message: Error.unknown)
+                        throw .diagnostic(node: field.propertyInfo.name, message: Error.unknown)
                     }
-                    throw .diagnostics(makePathConflictDiagnostics(property1: field.name, property2: field2))
+                    throw .diagnostics(makePathConflictDiagnostics(property1: field.propertyInfo.name, property2: field2))
                 }
                 try matchAndUpdate(&children[pathElementToMatch]!, with: path.dropFirst(), field: field)
                 structure = .node(pathElement: pathElement, children: children, required: required || field.isRequired)
@@ -197,7 +206,7 @@ extension CodingStructure {
     
     static func firstLeaf(
         in structure: CodingStructure
-    ) -> (pathElement: String, field: CodingFieldMacro.FieldInfo)? {
+    ) -> (pathElement: String, field: CodableMacro.CodingFieldInfo)? {
         switch structure {
             case let .root(children):
                 for child in children.values {
@@ -226,7 +235,7 @@ extension CodingStructure {
                 message: Error.pathConflict,
                 notes: [
                     .init(
-                        node: Syntax(property1),
+                        node: .init(property1),
                         position: property1.position,
                         message: .string("""
                             Any two properties in the same type must not have the same coding path \
@@ -235,7 +244,7 @@ extension CodingStructure {
                         )
                     ),
                     .init(
-                        node: Syntax(property2),
+                        node: .init(property2),
                         position: property2.position,
                         message: .string(
                             "conflicted with the path of property \"\(property2.trimmed.text)\""

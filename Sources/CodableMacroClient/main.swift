@@ -50,15 +50,18 @@ struct TypeA: Equatable {
     @CodingField("optional_path", "field11", default: 1)
     var field11: Int
     
-    @CodingField("field12")
-    var field12Renamed: Int = 1
+    @CodingField("optional_path", "optional_path2", "field12", default: 1)
+    var field12: Int
     
-    var field12: Int {
-        get { field12Renamed }
-        set { field12Renamed = newValue }
+    @CodingField("field13")
+    var field13Renamed: Int = 1
+    
+    var field13: Int {
+        get { field13Renamed }
+        set { field13Renamed = newValue }
     }
     
-    // conflict path (exact) (uncomment to check the error message)
+//     conflict path (exact) (uncomment to check the error message)
 //    @CodingField("meta", "field2")
 //    var fieldError1: Int = 1
     
@@ -84,6 +87,7 @@ struct TypeA: Equatable {
         self.field4 = 1
         self.field5 = 1
         self.field11 = 1
+        self.field12 = 1
     }
     
 }
@@ -104,7 +108,7 @@ print(decodedInstance == instance)
 struct Test {
     var a = 1
     @CodingIgnore
-    var b = 1
+    var b: Int?
 }
 
 
@@ -128,3 +132,29 @@ class TypeC {
         self.a = a
     }
 }
+
+
+
+@Codable
+final class TypeD {
+    @CodingField("1", "2", "a", default: 0)
+    var a: Int = 0
+    @CodingField("1", "2", "b", default: 0)
+    var b: Int = 0
+    @CodingField("1", "c", default: 0)
+    var c: Int = 0
+    var d: Int = 0
+}
+
+
+
+@Codable
+class TypeE {
+    var a: Int
+}
+
+
+//@Codable
+//class TypeF {
+////    var a: Int
+//}

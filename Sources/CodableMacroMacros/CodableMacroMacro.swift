@@ -13,3 +13,17 @@ struct CodableMacroPlugin: CompilerPlugin {
         CodingIgnoreMacro.self
     ]
 }
+
+
+
+/// Represent all the properties decorator macros supported 
+enum DecoratorMacros: String, Equatable, Hashable {
+    
+    case codingField = "CodingField"
+    case codingIgnore = "CodingIgnore"
+    
+    var typeSyntax: TypeSyntax {
+        .init(IdentifierTypeSyntax(name: "\(raw: rawValue)"))
+    }
+    
+}

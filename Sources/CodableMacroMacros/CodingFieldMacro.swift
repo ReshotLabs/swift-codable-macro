@@ -16,45 +16,18 @@ import Foundation
 
 public struct CodingFieldMacro: PeerMacro {
     
-    struct CodingFieldInfo {
-        
-        let field: FieldInfo
-        let path: [String]
-        
-        init(
-            fieldName: TokenSyntax,
-            path: [String],
-            defaultValue: ExprSyntax? = nil,
-            isOptional: Bool = false,
-            canInit: Bool = false
-        ) {
-            self.field = .init(
-                name: fieldName,
-                defaultValue: defaultValue,
-                isOptional: isOptional,
-                canInit: canInit
-            )
-            self.path = path
-        }
-        
-    }
-    
-    
-    struct FieldInfo {
-        let name: TokenSyntax
-        private(set) var defaultValue: ExprSyntax? = nil
-        private(set) var isOptional: Bool = false
-        private(set) var canInit: Bool = false
-        var isRequired: Bool { (defaultValue == nil) && !isOptional }
-    }
-    
-    
     public static func expansion(
         of node: SwiftSyntax.AttributeSyntax,
         providingPeersOf declaration: some SwiftSyntax.DeclSyntaxProtocol,
         in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> [SwiftSyntax.DeclSyntax] {
-        []
+        guard let declaration = declaration.as(VariableDeclSyntax.self) else {
+            throw .diagnostic(node: declaration, message: Error.attachTypeError)
+        }
+        guard try PropertyInfo.extract(from: declaration).type != .computed else {
+            throw .diagnostic(node: declaration, message: Error.attachTypeError)
+        }
+        return []
     }
     
     
@@ -64,81 +37,24 @@ public struct CodingFieldMacro: PeerMacro {
     
     
     static func processCodingField(
-        _ declaration: some SwiftSyntax.DeclSyntaxProtocol,
+        _ property: PropertyInfo,
         macroNode: SwiftSyntax.AttributeSyntax
-    ) throws(DiagnosticsError) -> CodingFieldInfo? {
+    ) throws(DiagnosticsError) -> (path: [String], defaultValue: ExprSyntax?) {
         
-        guard let declaration = declaration.as(VariableDeclSyntax.self) else {
-            throw .diagnostic(node: declaration, message: Error.attachTypeError)
+        guard property.type != .computed else {
+            throw .diagnostic(node: property.name, message: Error.attachTypeError)
         }
         
-        guard let fieldName = declaration.bindings.first?.pattern.as(IdentifierPatternSyntax.self)?.identifier else {
-            throw .diagnostic(node: declaration, message: Error.noIdentifierFound)
-        }
-        
-        // if there is not arguments, simply delegate to the function for processing
-        // properties with no `CodingField` macro
         guard
             let macroRawArguments = macroNode.arguments?.as(LabeledExprListSyntax.self),
             macroRawArguments.isEmpty == false
         else {
-            return try processDefaultField(declaration)
-        }
-        
-        guard isStoredProperty(declaration.bindings.first!) else {
-            throw .diagnostic(node: declaration, message: Error.attachTypeError)
+            return ([property.name.trimmed.text], nil)
         }
         
         let (pathElements, defaultValue) = try extractPathAndDefault(from: macroRawArguments)
         
-        var initializerExpr: ExprSyntax? { declaration.bindings.first?.initializer?.value }
-        var isOptional: Bool {
-            declaration.bindings.first?.typeAnnotation?.type.is(OptionalTypeSyntax.self) == true
-        }
-        var isLetConstant: Bool { declaration.bindingSpecifier.trimmedDescription == "let" }
-        
-        return .init(
-            fieldName: fieldName,
-            path: pathElements ?? [fieldName.trimmed.text],
-            defaultValue: defaultValue ?? initializerExpr,
-            isOptional: isOptional,
-            canInit: !(isLetConstant && initializerExpr != nil)
-        )
-        
-    }
-    
-    
-    static func processDefaultField(
-        _ declaration: some SwiftSyntax.DeclSyntaxProtocol
-    ) throws(DiagnosticsError) -> CodingFieldInfo? {
-        
-        guard let declaration = declaration.as(VariableDeclSyntax.self) else { return nil }
-        
-        guard let fieldName = declaration.bindings.first?.pattern.as(IdentifierPatternSyntax.self)?.identifier else {
-            throw .diagnostic(node: declaration, message: Error.noIdentifierFound)
-        }
-        
-        let path = [fieldName.text]
-        let defaultValue = declaration.bindings.first?.initializer?.value
-        var isOptional: Bool {
-            declaration.bindings.first?.typeAnnotation?.type.is(OptionalTypeSyntax.self) == true
-        }
-        
-        guard isStoredProperty(declaration.bindings.first!) else {
-//            throw .diagnostic(node: declaration, message: Error.attachTypeError)
-            return nil 
-        }
-        
-        var hasInitializer: Bool { declaration.bindings.first?.initializer != nil }
-        var isLetConstant: Bool { declaration.bindingSpecifier.trimmedDescription == "let" }
-        
-        return .init(
-            fieldName: fieldName,
-            path: path,
-            defaultValue: defaultValue,
-            isOptional: isOptional,
-            canInit: !(isLetConstant && hasInitializer)
-        )
+        return (pathElements ?? [property.name.trimmed.text], defaultValue)
         
     }
     
@@ -165,20 +81,6 @@ public struct CodingFieldMacro: PeerMacro {
         return (pathElements, defaultValue)
         
     }
-    
-    
-    static func isStoredProperty(_ patternBindingSyntax: PatternBindingSyntax) -> Bool {
-        guard let accessorBlock = patternBindingSyntax.accessorBlock else {
-            return true
-        }
-        guard let accessorDeclList = accessorBlock.accessors.as(AccessorDeclListSyntax.self) else {
-            return false
-        }
-        return !accessorDeclList.lazy
-            .map { $0.accessorSpecifier.trimmed.tokenKind }
-            .contains { $0 == .keyword(.get) || $0 == .keyword(.set) }
-    }
-    
     
     
     enum Error: String, LocalizedError, DiagnosticMessage {
