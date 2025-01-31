@@ -103,6 +103,9 @@ public macro CodingField<T>(_ path: String..., default: T) = #externalMacro(modu
 /// - Attention: This macro can ONLY be applied to stored properties and will raise compilation
 /// error if applied to the wrong target
 ///
+/// - Attention: This macro is not smart enough to identify optional properties that are
+/// not defined with `?` mark. So PLEASE use `?` only for optional properties
+///
 /// - Attention: Any two stored properties in a type MUST NOT have conflict coding path. Path `A`
 /// and path `B` are conflicted if `A` is exactly the same as `B` or `A` is a prefix of `B` or vice versa
 ///

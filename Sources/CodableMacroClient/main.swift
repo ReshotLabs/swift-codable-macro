@@ -154,6 +154,13 @@ class TypeE {
 }
 
 
+@Codable
+struct TypeF {
+    @CodingField("test", "test", "test")
+    let a: String?
+}
+
+
 //@Codable
 //class TypeF {
 ////    var a: Int

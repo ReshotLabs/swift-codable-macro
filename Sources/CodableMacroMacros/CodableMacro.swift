@@ -45,7 +45,7 @@ public struct CodableMacro: ExtensionMacro {
         case noIdentifierFound = "no_identifier"
         case multipleCodingField = "multiple_coding_field"
         case unexpectedEmptyContainerStack = "unexpected_empty_container_stack"
-        case unexpectedNilDefaultValue = "unexpected_nil_default_value"
+        case missingDefaultOrOptional = "missing_default_or_optional"
         
         
         var message: String {
@@ -54,7 +54,7 @@ public struct CodableMacro: ExtensionMacro {
                 case .noIdentifierFound: "The Codable macro can only be applied to class or struct declaration"
                 case .multipleCodingField: "A stored property should have at most one CodingField macro"
                 case .unexpectedEmptyContainerStack: "Internal Error: unexpected empty container stack"
-                case .unexpectedNilDefaultValue: "Internal Error: unexpected nil default value, which should have been filtered out"
+                case .missingDefaultOrOptional: "Internal Error: missing macro-level default or optional mark, which should have been filtered out"
             }
         }
         

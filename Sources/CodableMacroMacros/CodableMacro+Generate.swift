@@ -78,6 +78,8 @@ extension CodableMacro {
                                     count -= 1
                                 case let .value(info, _) where info.defaultValue != nil :
                                     valueStepsWithDefault.append(info)
+                                case let .value(info, _) where info.propertyInfo.initializer == nil && info.propertyInfo.hasOptionalTypeDecl:
+                                    valueStepsWithDefault.append(info)
                                 default: break
                             }
                         }
@@ -95,10 +97,13 @@ extension CodableMacro {
                             )
                         } else: {
                             try valueStepsWithDefault.map {
-                                guard let defaultValue = $0.defaultValue else {
-                                    throw .diagnostic(node: $0.propertyInfo.name, message: Error.unexpectedNilDefaultValue)
+                                if let defaultValue = $0.defaultValue {
+                                    "self.\($0.propertyInfo.name) = \(defaultValue)"
+                                } else if $0.propertyInfo.initializer == nil, $0.propertyInfo.hasOptionalTypeDecl {
+                                    "self.\($0.propertyInfo.name) = nil"
+                                } else {
+                                    throw .diagnostic(node: $0.propertyInfo.name, message: Error.missingDefaultOrOptional)
                                 }
-                                return "self.\($0.propertyInfo.name) = \(defaultValue)"
                             }
                         }
                         codeBlockItems.append(.init(item: .expr(.init(expr))))
@@ -128,8 +133,8 @@ extension CodableMacro {
                                 key: .\(raw: parentContainer.key)
                             ) ?? \(defaultValue)
                             """
-                        } else if !propertyInfo.isRequired {
-                            // no macro-level default, but has initializer or is optional
+                        } else if propertyInfo.initializer != nil {
+                            // no macro-level default, but has initializer
                             """
                             if \(parentContainer.name).contains(.\(raw: parentContainer.key)) {
                                 self.\(propertyInfo.name) = try Self.\(decodeFunctionName)(
@@ -137,6 +142,14 @@ extension CodableMacro {
                                     key: .\(raw: parentContainer.key)
                                 ) 
                             }
+                            """
+                        } else if propertyInfo.hasOptionalTypeDecl {
+                            // no macro-level default or initializer, but is optional
+                            """
+                            self.\(propertyInfo.name) = try Self.\(decodeIfPresentFunctionName)(
+                                container: \(parentContainer.name),
+                                key: .\(raw: parentContainer.key)
+                            )
                             """
                         } else {
                             // a required property (no default, no initializer, not optional)
