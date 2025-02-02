@@ -109,7 +109,7 @@ extension CodableMacro {
         let (codingFieldInfoList, canAutoCodable) = try extractCodingFieldInfoList(from: declaration.memberBlock.members)
         
         /// Whether an empty initializer should be created, only for class
-        var autoInit: Bool {
+        var shouldAutoInit: Bool {
             isClass
             && !codingFieldInfoList.contains(where: { $0.propertyInfo.isRequired })   // all stored properties are initialized
             && !declaration.memberBlock.members.contains(where: { $0.decl.is(InitializerDeclSyntax.self) })     // has no initializer
@@ -121,16 +121,19 @@ extension CodableMacro {
         guard isNonFinalClass || !canAutoCodable else { return [] }
         
         guard !codingFieldInfoList.isEmpty else {
-            // If the info list is still empty here, the type is a class that is not final
-            // with no stored property, should not proceed further
-            // Create an empty decode initializer since the auto-implementation will fail in this case
-            return if autoInit {
+            // If the info list is still empty here, simply create an empty decode initializer
+            // and an empty encode function
+            return if shouldAutoInit {
                 [
                     "init() {}",
-                    "public required init(from decoder: Decoder) throws {}"
+                    "public required init(from decoder: Decoder) throws {}",
+                    "public func encode(to encoder: Encoder) throws {}",
                 ]
             } else {
-                ["public required init(from decoder: Decoder) throws {}"]
+                [
+                    "public \(raw: isClass ? "required " : "")init(from decoder: Decoder) throws {}",
+                    "public func encode(to encoder: Encoder) throws {}"
+                ]
             }
         }
         
@@ -150,7 +153,7 @@ extension CodableMacro {
         decls += try generateDecodeInitializer(from: operations, isClass: isClass, context: context)
         decls.append(try generateEncodeMethod(from: operations))
         
-        if autoInit {
+        if shouldAutoInit {
             decls.append("init() {}")
         }
         

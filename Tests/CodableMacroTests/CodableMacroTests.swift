@@ -22,16 +22,13 @@ final class CodableMacroTests: XCTestCase {
         assertMacroExpansion(
             """
             @Codable
-            struct Person {
-            
-                @CodingField("name")
-                let name1: String
-
-                var name: String {
-                    get { name1 }
-                    set { name1 = newValue }
-                }
-            
+            struct TypeH: Equatable {
+                @CodingIgnore
+                @DecodeTransform(source: Int.self, with: advanceByOne(input:))
+                @CodingField("a", "b", default: 2)
+                var a: UInt = 1
+                @CodingIgnore
+                var b: Int = 1
             }
             """,
             expandedSource: """

@@ -123,52 +123,50 @@ extension CodableMacro {
                         guard let typeExpression = propertyInfo.typeExpression else {
                             throw .diagnostic(node: propertyInfo.name, message: Error.cannotInferType)
                         }
-                        let newItem = if let defaultValue = codingFieldInfo.defaultValue {
-                            // has macro-level default value
+                        
+                        let decodeExpr = if codingFieldInfo.isRequired {
                             """
-                            do {
-                                let value = try? \(parentContainer.name).decodeIfPresent(
-                                    \(typeExpression),
-                                    forKey: .\(raw: parentContainer.key)
-                                )
-                                self.\(propertyInfo.name) = value ?? \(defaultValue)
-                            }
-                            """
-                        } else if let initializer = propertyInfo.initializer {
-                            // no macro-level default, but has initializer
-                            """
-                            do {
-                                let value = try? \(parentContainer.name).decodeIfPresent(
-                                    \(typeExpression),
-                                    forKey: .\(raw: parentContainer.key)
-                                )
-                                self.\(propertyInfo.name) = value ?? \(initializer)
-                            }
-                            """
-                        } else if propertyInfo.hasOptionalTypeDecl {
-                            // no macro-level default or initializer, but is optional
-                            """
-                            do {
-                                let value = try? \(parentContainer.name).decode(
-                                    \(typeExpression),
-                                    forKey: .\(raw: parentContainer.key)
-                                )
-                                self.\(propertyInfo.name) = value ?? nil
-                            }
+                            let rawValue = try \(parentContainer.name).decode(
+                                \(codingFieldInfo.decodeTransform?.sourceTypeExpr ?? typeExpression),
+                                forKey: .\(raw: parentContainer.key)
+                            )
                             """
                         } else {
-                            // a required property (no default, no initializer, not optional)
                             """
-                            do {
-                                let value = try \(parentContainer.name).decode(
-                                    \(typeExpression),
-                                    forKey: .\(raw: parentContainer.key)
-                                )
-                                self.\(propertyInfo.name) = value
-                            }
+                            let rawValue = try? \(parentContainer.name).decodeIfPresent(
+                                \(codingFieldInfo.decodeTransform?.sourceTypeExpr ?? typeExpression),
+                                forKey: .\(raw: parentContainer.key)
+                            )
                             """
                         } as CodeBlockItemSyntax
-                        codeBlockItems.append(newItem)
+                        
+                        let transformExpr = switch (codingFieldInfo.decodeTransform, codingFieldInfo.isRequired) {
+                            case let (.some(transformSpec), true):
+                                "let value = try \(transformSpec.transformExpr)(rawValue)"
+                            case let (.some(transformSpec), false):
+                                "let value = rawValue.flatMap({ try? \(transformSpec.transformExpr)($0) })"
+                            default:
+                                "let value = rawValue"
+                        } as CodeBlockItemListSyntax
+                        
+                        let assignmentExpr = if let defaultValue = codingFieldInfo.defaultValue {
+                            "self.\(propertyInfo.name) = value ?? \(defaultValue)"
+                        } else if let initializer = propertyInfo.initializer {
+                            "self.\(propertyInfo.name) = value ?? \(initializer)"
+                        } else if propertyInfo.hasOptionalTypeDecl {
+                            "self.\(propertyInfo.name) = value ?? nil"
+                        } else {
+                            "self.\(propertyInfo.name) = value"
+                        } as CodeBlockItemSyntax
+                        
+                        codeBlockItems.append("""
+                            do {
+                                \(decodeExpr)
+                                \(transformExpr)
+                                \(assignmentExpr)
+                            }
+                            """
+                        )
                         
                 }
                 

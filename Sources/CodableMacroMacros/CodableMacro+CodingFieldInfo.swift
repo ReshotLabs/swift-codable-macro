@@ -16,11 +16,15 @@ import SwiftDiagnostics
 extension CodableMacro {
     
     struct CodingFieldInfo: Sendable, Equatable {
+        
         var propertyInfo: PropertyInfo
         var path: [String] = []
         var defaultValue: ExprSyntax? = nil
         var isIgnored: Bool = false
+        var decodeTransform: DecodeTransformMacro.Spec? = nil
+        
         var isRequired: Bool { propertyInfo.isRequired && defaultValue == nil }
+        
     }
     
     
@@ -97,7 +101,17 @@ extension CodableMacro {
             
         }()
         
-        return .init(propertyInfo: property, path: path, defaultValue: defaultValue)
+        let decodeTransformSpec = try DecodeTransformMacro.processProperty(
+            property,
+            macroNodes: attributes[.decodeTransform, default: []]
+        )
+        
+        return .init(
+            propertyInfo: property,
+            path: path,
+            defaultValue: defaultValue,
+            decodeTransform: decodeTransformSpec
+        )
         
     }
     

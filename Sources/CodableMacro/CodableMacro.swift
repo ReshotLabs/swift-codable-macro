@@ -120,3 +120,20 @@ public macro CodingField(_ path: String...) = #externalMacro(module: "CodableMac
 /// - Attention: The stored property MUST be optional or have a initializer
 @attached(peer)
 public macro CodingIgnore() = #externalMacro(module: "CodableMacroMacros", type: "CodingIgnoreMacro")
+
+
+
+@attached(peer)
+public macro DecodeTransform<Source: Decodable, Target>(
+    source sourceType: Source.Type,
+    target targetType: Target.Type = Target.self,
+    with transform: @escaping (Source) throws -> Target
+) = #externalMacro(module: "CodableMacroMacros", type: "DecodeTransformMacro")
+
+
+@attached(peer)
+public macro EncodeTransform<Source, Target: Encodable>(
+    source sourceType: Source.Type = Source.self,
+    target targetType: Target.Type = Target.self,
+    with transform: @escaping (Source) throws -> Target
+) = #externalMacro(module: "CodableMacroMacros", type: "EncodeTransformMacro")
