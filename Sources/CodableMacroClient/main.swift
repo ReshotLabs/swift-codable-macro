@@ -162,6 +162,18 @@ struct TypeF {
 
 
 //@Codable
-//class TypeF {
+//class TypeG {
 ////    var a: Int
 //}
+
+
+@Codable
+struct TypeH: Equatable {
+    @CodingField("a", "b", default: 2)
+    var a: Int = 1
+    @CodingIgnore
+    var b: Int = 1
+}
+
+
+print(try JSONDecoder().decode(TypeH.self, from: .init(#"{"a": "1"}"#.utf8)) == TypeH(a: 2))

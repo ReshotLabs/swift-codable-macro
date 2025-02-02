@@ -41,10 +41,6 @@ extension CodableMacro {
         context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
         
-        // helper functions for decoding that does not reuqire providing the type
-        let decodeFunctionName = context.makeUniqueName("decode")
-        let decodeIfPresentFunctionName = context.makeUniqueName("decodeIfPresent")
-        
         func generateDecodeInitializerBody<C: BidirectionalCollection & RangeReplaceableCollection>(
             from steps: inout C
         ) throws -> [CodeBlockItemSyntax] where C.Element == CodingStep {
@@ -85,16 +81,15 @@ extension CodableMacro {
                         }
                         // for non-required container, only decode them when they actually exist
                         // the else branch is for initializing fields with macro-level default values
-                        let expr = try IfExprSyntax("if \(parentContainer.name).contains(.\(raw: parentContainer.key))") {
+                        let expr = try IfExprSyntax(
                             """
-                            let \(container.name) = try \(parentContainer.name).nestedContainer(
-                                keyedBy: \(container.keysDef).self,
+                            if let \(container.name) = try? \(parentContainer.name).nestedContainer(
+                                keyedBy: \(container.keysDef).self, 
                                 forKey: .\(raw: parentContainer.key)
                             )
                             """
-                            try generateDecodeInitializerBody(
-                                from: &steps
-                            )
+                        ) {
+                            try generateDecodeInitializerBody(from: &steps)
                         } else: {
                             try valueStepsWithDefault.map {
                                 if let defaultValue = $0.defaultValue {
@@ -125,39 +120,52 @@ extension CodableMacro {
                             // a let constant with an initializer cannot be decoded, ignore it
                             break
                         }
+                        guard let typeExpression = propertyInfo.typeExpression else {
+                            throw .diagnostic(node: propertyInfo.name, message: Error.cannotInferType)
+                        }
                         let newItem = if let defaultValue = codingFieldInfo.defaultValue {
                             // has macro-level default value
                             """
-                            self.\(propertyInfo.name) = try Self.\(decodeIfPresentFunctionName)(
-                                container: \(parentContainer.name), 
-                                key: .\(raw: parentContainer.key)
-                            ) ?? \(defaultValue)
+                            do {
+                                let value = try? \(parentContainer.name).decodeIfPresent(
+                                    \(typeExpression),
+                                    forKey: .\(raw: parentContainer.key)
+                                )
+                                self.\(propertyInfo.name) = value ?? \(defaultValue)
+                            }
                             """
-                        } else if propertyInfo.initializer != nil {
+                        } else if let initializer = propertyInfo.initializer {
                             // no macro-level default, but has initializer
                             """
-                            if \(parentContainer.name).contains(.\(raw: parentContainer.key)) {
-                                self.\(propertyInfo.name) = try Self.\(decodeFunctionName)(
-                                    container: \(parentContainer.name), 
-                                    key: .\(raw: parentContainer.key)
-                                ) 
+                            do {
+                                let value = try? \(parentContainer.name).decodeIfPresent(
+                                    \(typeExpression),
+                                    forKey: .\(raw: parentContainer.key)
+                                )
+                                self.\(propertyInfo.name) = value ?? \(initializer)
                             }
                             """
                         } else if propertyInfo.hasOptionalTypeDecl {
                             // no macro-level default or initializer, but is optional
                             """
-                            self.\(propertyInfo.name) = try Self.\(decodeIfPresentFunctionName)(
-                                container: \(parentContainer.name),
-                                key: .\(raw: parentContainer.key)
-                            )
+                            do {
+                                let value = try? \(parentContainer.name).decode(
+                                    \(typeExpression),
+                                    forKey: .\(raw: parentContainer.key)
+                                )
+                                self.\(propertyInfo.name) = value ?? nil
+                            }
                             """
                         } else {
                             // a required property (no default, no initializer, not optional)
                             """
-                            self.\(propertyInfo.name) = try Self.\(decodeFunctionName)(
-                                container: \(parentContainer.name), 
-                                key: .\(raw: parentContainer.key)
-                            )
+                            do {
+                                let value = try \(parentContainer.name).decode(
+                                    \(typeExpression),
+                                    forKey: .\(raw: parentContainer.key)
+                                )
+                                self.\(propertyInfo.name) = value
+                            }
                             """
                         } as CodeBlockItemSyntax
                         codeBlockItems.append(newItem)
@@ -174,37 +182,11 @@ extension CodableMacro {
         steps.reverse()        // process from the end, which should be more efficient for array
         
         return [
-            
-            """
-            private static func \(decodeFunctionName)<R: Decodable, C: CodingKey>(container: KeyedDecodingContainer<C>, key: C) throws -> R {
-                try container.decode(R.self, forKey: key)
-            }
-            """ as DeclSyntax,
-            
-            """
-            private static func \(decodeFunctionName)<R: Decodable, C: CodingKey>(container: KeyedDecodingContainer<C>?, key: C) throws -> R? {
-                try container?.decode(R.self, forKey: key)
-            }
-            """ as DeclSyntax,
-            
-            """
-            private static func \(decodeIfPresentFunctionName)<R: Decodable, C: CodingKey>(container: KeyedDecodingContainer<C>, key: C) throws -> R? {
-                try container.decodeIfPresent(R.self, forKey: key)
-            }
-            """ as DeclSyntax,
-            
-            """
-            private static func \(decodeIfPresentFunctionName)<R: Decodable, C: CodingKey>(container: KeyedDecodingContainer<C>?, key: C) throws -> R? {
-                try container?.decodeIfPresent(R.self, forKey: key)
-            }
-            """ as DeclSyntax,
-            
             .init(
                 try InitializerDeclSyntax("public \(raw: isClass ? "required " : "")init(from decoder: Decoder) throws") {
                     try generateDecodeInitializerBody(from: &steps)
                 }
             )
-            
         ]
         
     }

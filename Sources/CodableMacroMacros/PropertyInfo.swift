@@ -19,11 +19,21 @@ struct PropertyInfo: Sendable, Equatable {
     var name: TokenSyntax
     var type: PropertyType
     var initializer: ExprSyntax?
-    var hasOptionalTypeDecl: Bool
+    var dataType: TypeSyntax?
     var attributes: [AttributeSyntax]
     
+    var hasOptionalTypeDecl: Bool { dataType?.is(OptionalTypeSyntax.self) == true }
     var nameStr: String { name.text }
     var isRequired: Bool { initializer == nil && !hasOptionalTypeDecl }
+    var typeExpression: ExprSyntax? {
+        if let dataType {
+            "\(dataType).self"
+        } else if let initializer {
+            "CodableMacro.codableMacroStaticType(of: \(initializer))"
+        } else {
+            nil
+        }
+    }
     
 }
 
@@ -53,7 +63,7 @@ extension PropertyInfo {
         
         let initializer = declaration.bindings.first?.initializer?.value
         
-        let hasOptionalTypeDecl = declaration.bindings.first?.typeAnnotation?.type.is(OptionalTypeSyntax.self) == true
+        let typeAnnotation = declaration.bindings.first?.typeAnnotation?.type.trimmed
         
         let type: PropertyType
         
@@ -78,7 +88,7 @@ extension PropertyInfo {
             name: name,
             type: type,
             initializer: initializer,
-            hasOptionalTypeDecl: hasOptionalTypeDecl,
+            dataType: typeAnnotation,
             attributes: attributes
         )
         

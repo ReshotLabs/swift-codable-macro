@@ -46,6 +46,7 @@ public struct CodableMacro: ExtensionMacro {
         case multipleCodingField = "multiple_coding_field"
         case unexpectedEmptyContainerStack = "unexpected_empty_container_stack"
         case missingDefaultOrOptional = "missing_default_or_optional"
+        case cannotInferType = "cannot_infer_type"
         
         
         var message: String {
@@ -55,6 +56,7 @@ public struct CodableMacro: ExtensionMacro {
                 case .multipleCodingField: "A stored property should have at most one CodingField macro"
                 case .unexpectedEmptyContainerStack: "Internal Error: unexpected empty container stack"
                 case .missingDefaultOrOptional: "Internal Error: missing macro-level default or optional mark, which should have been filtered out"
+                case .cannotInferType: "Fail to infer explicit type of the property. Make sure to have an type annotation or an initializer"
             }
         }
         
