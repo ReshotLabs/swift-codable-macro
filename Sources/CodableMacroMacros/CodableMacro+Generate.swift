@@ -41,6 +41,8 @@ extension CodableMacro {
         context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
         
+        let transformFunctionName = context.makeUniqueName("transform")
+        
         func generateDecodeInitializerBody<C: BidirectionalCollection & RangeReplaceableCollection>(
             from steps: inout C
         ) throws -> [CodeBlockItemSyntax] where C.Element == CodingStep {
@@ -142,9 +144,9 @@ extension CodableMacro {
                         
                         let transformExpr = switch (codingFieldInfo.decodeTransform, codingFieldInfo.isRequired) {
                             case let (.some(transformSpec), true):
-                                "let value = try \(transformSpec.transformExpr)(rawValue)"
+                                "let value = try \(transformFunctionName)(rawValue, \(transformSpec.transformExpr))"
                             case let (.some(transformSpec), false):
-                                "let value = rawValue.flatMap({ try? \(transformSpec.transformExpr)($0) })"
+                                "let value = rawValue.flatMap({ try? \(transformFunctionName)($0, \(transformSpec.transformExpr))})"
                             default:
                                 "let value = rawValue"
                         } as CodeBlockItemListSyntax
@@ -182,6 +184,11 @@ extension CodableMacro {
         return [
             .init(
                 try InitializerDeclSyntax("public \(raw: isClass ? "required " : "")init(from decoder: Decoder) throws") {
+                    """
+                    func \(transformFunctionName)<T, R>(_ value: T, _ transform: (T) throws -> R) throws -> R {
+                        return try transform(value)
+                    }
+                    """
                     try generateDecodeInitializerBody(from: &steps)
                 }
             )
@@ -190,41 +197,66 @@ extension CodableMacro {
     }
     
     
-    static func generateEncodeMethod(from steps: [CodingStep]) throws -> DeclSyntax {
+    static func generateEncodeMethod(
+        from steps: [CodingStep],
+        context: some MacroExpansionContext
+    ) throws -> DeclSyntax {
+        
+        let transformFunctionName = context.makeUniqueName("transform")
         
         let decl = try FunctionDeclSyntax("public func encode(to encoder: Encoder) throws") {
+            
+            """
+            func \(transformFunctionName)<T, R>(_ value: T, _ transform: (T) throws -> R) throws -> R {
+                return try transform(value)
+            }
+            """
             
             steps.compactMap { step in
                 
                 switch step {
                     // container step with parent container
                     case let .container(container, .some(parentContainer)):
-                        """
-                        var \(container.name) = \(parentContainer.name).nestedContainer(
-                            keyedBy: \(container.keysDef).self, 
-                            forKey: .\(raw: parentContainer.key)
-                        )
-                        """
+                        return """
+                            var \(container.name) = \(parentContainer.name).nestedContainer(
+                                keyedBy: \(container.keysDef).self, 
+                                forKey: .\(raw: parentContainer.key)
+                            )
+                            """
                     // container step with no parent container (the root container)
                     case let .container(container, .none):
-                        """
-                        var \(container.name) = encoder.container(keyedBy: \(container.keysDef).self)
-                        """
+                        return """
+                            var \(container.name) = encoder.container(keyedBy: \(container.keysDef).self)
+                            """
                     // step representing the end of a not-required container
                     case .endOptionalContainer:
-                        nil
-                    // value step of optional properties
-                    case let .value(codingFieldInfo, parentContainer) where codingFieldInfo.propertyInfo.hasOptionalTypeDecl:
-                        """
-                        if self.\(codingFieldInfo.propertyInfo.name) != nil {
-                            try \(parentContainer.name).encode(self.\(codingFieldInfo.propertyInfo.name), forKey: .\(raw: parentContainer.key))
-                        }
-                        """
-                    // value step of non optional properties
+                        return nil
+                    // value step
                     case let .value(codingFieldInfo, parentContainer):
-                        """
-                        try \(parentContainer.name).encode(self.\(codingFieldInfo.propertyInfo.name), forKey: .\(raw: parentContainer.key))
-                        """
+                        let transformExpr = if let transformSpec = codingFieldInfo.encodeTransform {
+                            "let transformedValue = try \(transformFunctionName)(value, \(transformSpec.transformExpr))"
+                        } else {
+                            "let transformedValue = value"
+                        } as CodeBlockItemSyntax
+                        let encodeExpr = "try \(parentContainer.name).encode(transformedValue, forKey: .\(raw: parentContainer.key))" as CodeBlockItemSyntax
+                        return if codingFieldInfo.propertyInfo.hasOptionalTypeDecl {
+                            // optional properties
+                            """
+                            if let value = self.\(codingFieldInfo.propertyInfo.name) {
+                                \(transformExpr)
+                                \(encodeExpr)
+                            }
+                            """
+                        } else {
+                            // non optional properties
+                            """
+                            do {
+                                let value = self.\(codingFieldInfo.propertyInfo.name)
+                                \(transformExpr)
+                                \(encodeExpr)
+                            }
+                            """
+                        }
                 }
                 
             }

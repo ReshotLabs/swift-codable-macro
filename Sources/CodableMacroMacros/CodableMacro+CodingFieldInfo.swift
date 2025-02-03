@@ -22,6 +22,7 @@ extension CodableMacro {
         var defaultValue: ExprSyntax? = nil
         var isIgnored: Bool = false
         var decodeTransform: DecodeTransformMacro.Spec? = nil
+        var encodeTransform: EncodeTransformMacro.Spec? = nil
         
         var isRequired: Bool { propertyInfo.isRequired && defaultValue == nil }
         
@@ -106,11 +107,17 @@ extension CodableMacro {
             macroNodes: attributes[.decodeTransform, default: []]
         )
         
+        let encodeTransformSpec = try EncodeTransformMacro.processProperty(
+            property,
+            macroNodes: attributes[.encodeTransform, default: []]
+        )
+        
         return .init(
             propertyInfo: property,
             path: path,
             defaultValue: defaultValue,
-            decodeTransform: decodeTransformSpec
+            decodeTransform: decodeTransformSpec,
+            encodeTransform: encodeTransformSpec
         )
         
     }

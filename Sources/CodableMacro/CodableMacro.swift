@@ -133,7 +133,7 @@ public macro DecodeTransform<Source: Decodable, Target>(
 
 @attached(peer)
 public macro EncodeTransform<Source, Target: Encodable>(
-    source sourceType: Source.Type = Source.self,
+    source sourceType: Source.Type,
     target targetType: Target.Type = Target.self,
     with transform: @escaping (Source) throws -> Target
 ) = #externalMacro(module: "CodableMacroMacros", type: "EncodeTransformMacro")

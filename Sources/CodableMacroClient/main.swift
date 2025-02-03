@@ -54,7 +54,8 @@ struct TypeA: Equatable {
     var field12: Int
     
     @CodingField("field13")
-    @DecodeTransform(source: UInt.self, with: { Int($0.advanced(by: 1)) })
+    @DecodeTransform(source: String.self, with: { Int($0)! })
+    @EncodeTransform(source: Int.self, with: \.description)
     var field13Renamed: Int = 1
     
     var field13: Int {
@@ -100,9 +101,7 @@ let data = try JSONEncoder().encode(instance)
 print(String(data: data, encoding: .utf8) ?? "")
 
 let decodedInstance = try JSONDecoder().decode(TypeA.self, from: data)
-var expectedInstance = instance
-expectedInstance.field13Renamed += 1
-print(decodedInstance == expectedInstance)
+print(decodedInstance == instance)
 
 
 // contains a coding ignore, still have to provide implementation instead of using that
@@ -178,6 +177,7 @@ func advanceByOne(input: Int) -> UInt {
 @Codable
 struct TypeH: Equatable {
     @DecodeTransform(source: Int.self, with: advanceByOne(input:))
+    @EncodeTransform(source: UInt.self, with: { Int($0 - 1) })
     @CodingField("a", "b", default: 2)
     var a: UInt = 1
     @CodingIgnore

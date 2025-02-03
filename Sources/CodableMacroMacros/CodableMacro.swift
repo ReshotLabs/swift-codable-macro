@@ -151,7 +151,7 @@ extension CodableMacro {
         
         decls += generateEnumDeclarations(from: enumDecls)
         decls += try generateDecodeInitializer(from: operations, isClass: isClass, context: context)
-        decls.append(try generateEncodeMethod(from: operations))
+        decls.append(try generateEncodeMethod(from: operations, context: context))
         
         if shouldAutoInit {
             decls.append("init() {}")

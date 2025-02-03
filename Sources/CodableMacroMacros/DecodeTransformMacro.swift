@@ -23,7 +23,7 @@ struct DecodeTransformMacro: CodingDecoratorMacro {
     
     
     static let macroArgumentsParsingRule: [ArgumentsParsingRule] = [
-        .labeled("source", canIgnore: true),
+        .labeled("source"),
         .labeled("target", canIgnore: true),
         .labeled("with")
     ]
