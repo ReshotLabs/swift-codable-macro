@@ -56,7 +56,8 @@ struct TypeA: Equatable {
     @CodingField("field13")
     @DecodeTransform(source: String.self, with: { Int($0)! })
     @EncodeTransform(source: Int.self, with: \.description)
-    var field13Renamed: Int = 1
+    @CodingValidate(source: Int.self, with: { $0 % 2 == 0 })
+    var field13Renamed: Int = 2
     
     var field13: Int {
         get { field13Renamed }
@@ -82,7 +83,7 @@ struct TypeA: Equatable {
     var ignoredComputed: Int { 1 }
     
     
-    init() {
+    init(field13: Int = 2) {
         self.field1 = "field1"
         self.field2 = 1
         self.field3 = .init()
@@ -90,6 +91,7 @@ struct TypeA: Equatable {
         self.field5 = 1
         self.field11 = 1
         self.field12 = 1
+        self.field13Renamed = field13
     }
     
 }
@@ -102,6 +104,16 @@ print(String(data: data, encoding: .utf8) ?? "")
 
 let decodedInstance = try JSONDecoder().decode(TypeA.self, from: data)
 print(decodedInstance == instance)
+
+
+do {
+    _ = try JSONDecoder().decode(
+        TypeA.self,
+        from: JSONEncoder().encode(TypeA(field13: 1))
+    )
+} catch {
+    print(error)
+}
 
 
 // contains a coding ignore, still have to provide implementation instead of using that

@@ -35,6 +35,9 @@ extension CodingDecoratorMacro {
         providingPeersOf declaration: some DeclSyntaxProtocol,
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
+        guard let declaration = declaration.as(VariableDeclSyntax.self) else {
+            throw .diagnostic(node: declaration, message: Error.attachTypeError)
+        }
         return []
     }
     

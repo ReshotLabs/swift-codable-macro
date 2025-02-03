@@ -14,35 +14,28 @@ import Foundation
 
 
 
-public struct CodingFieldMacro: PeerMacro {
-    
-    public static func expansion(
-        of node: SwiftSyntax.AttributeSyntax,
-        providingPeersOf declaration: some SwiftSyntax.DeclSyntaxProtocol,
-        in context: some SwiftSyntaxMacros.MacroExpansionContext
-    ) throws -> [SwiftSyntax.DeclSyntax] {
-        guard let declaration = declaration.as(VariableDeclSyntax.self) else {
-            throw .diagnostic(node: declaration, message: Error.attachTypeError)
-        }
-        guard try PropertyInfo.extract(from: declaration).type != .computed else {
-            throw .diagnostic(node: declaration, message: Error.attachTypeError)
-        }
-        return []
-    }
-    
+struct CodingFieldMacro: CodingDecoratorMacro {
     
     static let macroArgumentsParsingRule: [ArgumentsParsingRule] = [
         .varArg(canIgnore: true), .labeled("default", canIgnore: true)
     ]
     
     
-    static func processCodingField(
+    static func processProperty(
         _ property: PropertyInfo,
-        macroNode: SwiftSyntax.AttributeSyntax
+        macroNodes: [SwiftSyntax.AttributeSyntax]
     ) throws(DiagnosticsError) -> (path: [String], defaultValue: ExprSyntax?) {
         
         guard property.type != .computed else {
             throw .diagnostic(node: property.name, message: Error.attachTypeError)
+        }
+        
+        guard macroNodes.count < 2 else {
+            throw .diagnostic(node: property.name, message: Error.duplicateMacro(name: "CodingField"))
+        }
+        
+        guard let macroNode = macroNodes.first else {
+            return ([property.name.trimmed.text], nil)
         }
         
         guard
@@ -82,32 +75,16 @@ public struct CodingFieldMacro: PeerMacro {
         
     }
     
+}
+
+
+
+fileprivate extension CodingDecoratorMacroError {
     
-    enum Error: String, LocalizedError, DiagnosticMessage {
-        
-        case attachTypeError = "attach_type"
-        case noIdentifierFound = "no_identifier"
-        case notStringLiteral = "not_string_literal"
-        
-        
-        var message: String {
-            switch self {
-                case .attachTypeError: "The CodingField macro can only be applied to stored properties"
-                case .noIdentifierFound: "The CodingField macro can only be applied to stored properties"
-                case .notStringLiteral: "The path can be specified using string literal"
-            }
-        }
-        
-        var diagnosticID: SwiftDiagnostics.MessageID {
-            .init(domain: "com.serika.codable_macro.coding_field", id: self.rawValue)
-        }
-        
-        var severity: SwiftDiagnostics.DiagnosticSeverity { .error }
-        
-        var errorDescription: String? {
-            message
-        }
-        
-    }
+    static let notStringLiteral: Self = .init(
+        id: "no_string_literal",
+        message: "The path can be specified using string literal",
+        severity: .error
+    )
     
 }

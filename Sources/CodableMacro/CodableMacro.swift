@@ -137,3 +137,10 @@ public macro EncodeTransform<Source, Target: Encodable>(
     target targetType: Target.Type = Target.self,
     with transform: @escaping (Source) throws -> Target
 ) = #externalMacro(module: "CodableMacroMacros", type: "EncodeTransformMacro")
+
+
+@attached(peer)
+public macro CodingValidate<Source: Decodable>(
+    source sourceType: Source.Type,
+    with validate: @escaping (Source) throws -> Bool
+) = #externalMacro(module: "CodableMacroMacros", type: "CodingValidateMacro")

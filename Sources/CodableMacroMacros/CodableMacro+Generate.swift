@@ -42,6 +42,7 @@ extension CodableMacro {
     ) throws -> [DeclSyntax] {
         
         let transformFunctionName = context.makeUniqueName("transform")
+        let validateFunctionName = context.makeUniqueName("validate")
         
         func generateDecodeInitializerBody<C: BidirectionalCollection & RangeReplaceableCollection>(
             from steps: inout C
@@ -151,6 +152,24 @@ extension CodableMacro {
                                 "let value = rawValue"
                         } as CodeBlockItemListSyntax
                         
+                        let validateExprs = if codingFieldInfo.validateExprs.isEmpty {
+                            [CodeBlockItemSyntax]()
+                        } else if codingFieldInfo.isRequired {
+                            codingFieldInfo.validateExprs.map { expr in
+                                #"try \#(validateFunctionName)("\#(propertyInfo.name)", \#(StringLiteralExprSyntax(content: expr.description)), value, \#(expr))"#
+                            } as [CodeBlockItemSyntax]
+                        } else {
+                            [
+                                CodeBlockItemSyntax(item: .expr(.init(
+                                    try IfExprSyntax("if let value") {
+                                        codingFieldInfo.validateExprs.map { expr in
+                                            #"try \#(validateFunctionName)("\#(propertyInfo.name)", \#(StringLiteralExprSyntax(content: expr.description)), value, \#(expr))"#
+                                        }
+                                    }
+                                )))
+                            ]
+                        }
+                        
                         let assignmentExpr = if let defaultValue = codingFieldInfo.defaultValue {
                             "self.\(propertyInfo.name) = value ?? \(defaultValue)"
                         } else if let initializer = propertyInfo.initializer {
@@ -161,14 +180,14 @@ extension CodableMacro {
                             "self.\(propertyInfo.name) = value"
                         } as CodeBlockItemSyntax
                         
-                        codeBlockItems.append("""
-                            do {
-                                \(decodeExpr)
-                                \(transformExpr)
-                                \(assignmentExpr)
+                        codeBlockItems.append(.init(item: .stmt(.init(
+                            try DoStmtSyntax("do") {
+                                decodeExpr
+                                transformExpr
+                                validateExprs
+                                assignmentExpr
                             }
-                            """
-                        )
+                        ))))
                         
                 }
                 
@@ -189,6 +208,19 @@ extension CodableMacro {
                         return try transform(value)
                     }
                     """
+                    #"""
+                    func \#(validateFunctionName)<T>(_ propertyName: String, _ validateExpr: String, _ value: T, _ validate: (T) throws -> Bool) throws {
+                        let valid = (try? validate(value)) ?? false
+                        guard valid else {
+                            throw CodingValidationError(
+                                type: "\(Self.self)",
+                                property: propertyName,
+                                validationExpr: validateExpr,
+                                value: "\(value as Any)"
+                            )
+                        }
+                    }
+                    """#
                     try generateDecodeInitializerBody(from: &steps)
                 }
             )

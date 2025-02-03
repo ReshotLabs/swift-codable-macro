@@ -23,6 +23,7 @@ extension CodableMacro {
         var isIgnored: Bool = false
         var decodeTransform: DecodeTransformMacro.Spec? = nil
         var encodeTransform: EncodeTransformMacro.Spec? = nil
+        var validateExprs: [ExprSyntax] = []
         
         var isRequired: Bool { propertyInfo.isRequired && defaultValue == nil }
         
@@ -83,24 +84,10 @@ extension CodableMacro {
         }
         
         // extract `path` and `defaultValue` from `@CodingField` macro
-        let (path, defaultValue) = try { () throws(DiagnosticsError) in
-            
-            let codingFieldMacroList = attributes[.codingField]
-            
-            guard (codingFieldMacroList?.count ?? 0) < 2 else {
-                // There should not be multiple `@CodingField` macro on one property
-                throw .diagnostic(node: property.name, message: Error.multipleCodingField)
-            }
-            
-            return if let codingFieldMacro = codingFieldMacroList?.first {
-                // case when there is a `@CodingField` macro
-                try CodingFieldMacro.processCodingField(property, macroNode: codingFieldMacro)
-            } else {
-                // case when there is no `@CodingField` macro
-                ([property.name.trimmed.text], nil)
-            }
-            
-        }()
+        let (path, defaultValue) = try CodingFieldMacro.processProperty(
+            property,
+            macroNodes: attributes[.codingField, default: []]
+        )
         
         let decodeTransformSpec = try DecodeTransformMacro.processProperty(
             property,
@@ -112,12 +99,18 @@ extension CodableMacro {
             macroNodes: attributes[.encodeTransform, default: []]
         )
         
+        let validateExprs = try CodingValidateMacro.processProperty(
+            property,
+            macroNodes: attributes[.codingValidate, default: []]
+        )
+        
         return .init(
             propertyInfo: property,
             path: path,
             defaultValue: defaultValue,
             decodeTransform: decodeTransformSpec,
-            encodeTransform: encodeTransformSpec
+            encodeTransform: encodeTransformSpec,
+            validateExprs: validateExprs
         )
         
     }
