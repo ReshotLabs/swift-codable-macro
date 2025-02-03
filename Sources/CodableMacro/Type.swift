@@ -22,3 +22,33 @@
 public func codableMacroStaticType<T>(of _: @autoclosure () throws -> T) -> T.Type {
     return T.self
 }
+
+
+
+public protocol SingleValueCodableProtocol: Codable {
+    
+    associatedtype CodingValue: Codable
+    
+    func singleValueEncode() throws -> CodingValue
+    
+    init(from codingValue: CodingValue) throws
+    
+}
+
+
+
+extension SingleValueCodableProtocol {
+    
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let value = try container.decode(CodingValue.self)
+        try self.init(from: value)
+    }
+    
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.singleValueContainer()
+        let codingValue = try self.singleValueEncode()
+        try container.encode(codingValue)
+    }
+    
+}

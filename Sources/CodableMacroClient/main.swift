@@ -199,3 +199,30 @@ struct TypeH: Equatable {
 
 print(try JSONDecoder().decode(TypeH.self, from: .init(#"{"a": "1"}"#.utf8)) == TypeH(a: 2))
 print(try JSONDecoder().decode(TypeH.self, from: .init(#"{"a": {"b": 3}}"#.utf8)) == TypeH(a: 4))
+
+
+
+@SingleValueCodable
+struct TypeI {
+    var a: Int
+    func singleValueEncode() throws -> String {
+        return a.description
+    }
+    init(from codingValue: String) throws {
+        guard let value = Int(codingValue) else {
+            throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: ""))
+        }
+        self.a = value
+    }
+}
+
+
+
+@SingleValueCodable
+class TypeJ {
+    @SingleValueCodableDelegate
+    var a: Int?
+    var b: Int = 1
+    // property that require initialization (uncomment to check the error message)
+//    var c: Int
+}

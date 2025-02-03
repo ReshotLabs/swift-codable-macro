@@ -47,23 +47,3 @@ struct CodingValidateMacro: CodingDecoratorMacro {
     }
     
 }
-
-
-
-//public struct CodingValidationError: LocalizedError {
-//    
-//    public let type: String
-//    public let property: String
-//    public let validationExpr: String
-//    
-//    public init(type: String, property: String, validationExpr: String) {
-//        self.type = type
-//        self.property = property
-//        self.validationExpr = validationExpr
-//    }
-//    
-//    public var errorDescription: String? {
-//        "ValidationError when decoding \(type).\(property): Fail to match requirement \(validationExpr)"
-//    }
-//    
-//}

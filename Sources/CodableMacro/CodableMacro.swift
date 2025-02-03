@@ -144,3 +144,12 @@ public macro CodingValidate<Source: Decodable>(
     source sourceType: Source.Type,
     with validate: @escaping (Source) throws -> Bool
 ) = #externalMacro(module: "CodableMacroMacros", type: "CodingValidateMacro")
+
+
+@attached(member, names: arbitrary)
+@attached(extension, conformances: SingleValueCodableProtocol, names: arbitrary)
+public macro SingleValueCodable() = #externalMacro(module: "CodableMacroMacros", type: "SingleValueCodableMacro")
+
+
+@attached(peer)
+public macro SingleValueCodableDelegate() = #externalMacro(module: "CodableMacroMacros", type: "SingleValueCodableDelegateMacro")

@@ -14,6 +14,8 @@ struct CodableMacroPlugin: CompilerPlugin {
         DecodeTransformMacro.self,
         EncodeTransformMacro.self,
         CodingValidateMacro.self,
+        SingleValueCodableMacro.self,
+        SingleValueCodableDelegateMacro.self
     ]
 }
 
@@ -27,6 +29,7 @@ enum DecoratorMacros: String, Equatable, Hashable {
     case decodeTransform = "DecodeTransform"
     case encodeTransform = "EncodeTransform"
     case codingValidate = "CodingValidate"
+    case singleValueCodableDelegate = "SingleValueCodableDelegate"
     
     var typeSyntax: TypeSyntax {
         .init(IdentifierTypeSyntax(name: "\(raw: rawValue)"))
