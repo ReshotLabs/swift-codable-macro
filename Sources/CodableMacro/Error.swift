@@ -8,11 +8,16 @@
 import Foundation
 
 
+/// Error representing a failure when validating the decoded value
 public struct CodingValidationError: LocalizedError, CustomStringConvertible {
     
+    /// Name of the type that is being decoded
     public let type: String
+    /// Name of the property that cause the error when being decoded
     public let property: String
+    /// The validation code
     public let validationExpr: String
+    /// The decoded value that fail the validation
     public let value: String
     
     public init(type: String, property: String, validationExpr: String, value: String) {

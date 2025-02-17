@@ -48,6 +48,33 @@ public struct Person {
 
 Done! The `Codable` conformance and implementation of `encode(to:)` and `init(from:)` will be generated automatically! No other additional implementation code required! 
 
+This is not all the capability of this package. The following codes provide a brief view of what it can do. 
+
+```swift
+@Codable
+struct Person {
+    @CodingField("data", "id")
+    @DecodeTransform(source: String.self, with: { UUID(uuidString: $0)! })
+    @EncodeTransform(source: UUID.self, with: \.uuidString)
+    var id: UUID
+    @CodingField("data", "meta", "name")
+    @CodingValidate(source: String.self, with: { !$0.isEmpty })
+    @CodingValidate(source: String.self, with: { !$0.contains(where: { $0.isNumber }) })
+    var name: String 
+    @CodingIgnore
+	var habit: String = "writing Swift Macro"
+}
+
+@SingleValueCodable
+struct FilePath {
+    @SingleValueCodableDelegate
+    var storage: String
+    var isDir: Bool = false 
+}
+```
+
+
+
 ## Provided Macros
 
 **Codable**
@@ -62,12 +89,37 @@ Specify a custom coding path and a default value for a stored property. If the c
 
 Make a stored property to be ignored when doing encoding / decoding. It requires that property to be optional or has a standard initializer. 
 
+**DecodeTransform(source:with:)**
+
+Specify a custom transformation when decoding for a property.  It will first try to decode the value to the provided `sourceType`, then convert it using the provided transformation. 
+
+**EncodeTransform(source:with:)**
+
+Specify a custom transformation when encoding a property. It will first convert the value using the provided transformation, then encoded the converted value. 
+
+**CodingValidate(source:with:)**
+
+Specify a validation rules when decoding for a property. 
+
+**SingleValueCodable**
+
+Annotate a Class or a struct for auto conforming to `Codable` protocol by a provided rule to convert an instance from/to an instance of another type that conforms to `Codable`. 
+
+The rule can be provided by: 
+
+* Implement `singleValueEncode()` and `init(from:)`
+* Annotate one of the stored property with `SingleValueCodableDelegate` macro 
+
+**SingleValueCodableDelegate**
+
+Used together with `SingleValueCodable`, mark a property as the only target for encoding and decoding. 
+
 ## Installation 
 
 In `Package.swift`, add the following line into your dependencies: 
 
 ```swift
-.package(url: "https://github.com/Star-Lord-PHB/swift-codable-macro.git", from: "1.0.0"),
+.package(url: "https://github.com/Star-Lord-PHB/swift-codable-macro.git", from: "2.0.0")
 ```
 
 Add `CodableMacro` as a dependency of your target:

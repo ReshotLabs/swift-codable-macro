@@ -123,6 +123,21 @@ public macro CodingIgnore() = #externalMacro(module: "CodableMacroMacros", type:
 
 
 
+/// Provide a transformation rule when decoding for a stored property
+///
+/// First decode the value as the `sourceType`, then apply the transformation to convert
+/// to the type of the property
+///
+/// ```swift
+/// @DecodeTransform(source: String.self, with: { UUID(uuidString: $0)! })
+/// var id: UUID
+/// ```
+///
+/// - Attention: ONLY when the process of decoding the value as the `sourceType` success that
+/// the transformation will be invoked
+///
+/// - Attention: This macro can ONLY be applied to stored properties and will raise compilation
+/// error if applied to the wrong target
 @attached(peer)
 public macro DecodeTransform<Source: Decodable, Target>(
     source sourceType: Source.Type,
@@ -131,6 +146,18 @@ public macro DecodeTransform<Source: Decodable, Target>(
 ) = #externalMacro(module: "CodableMacroMacros", type: "DecodeTransformMacro")
 
 
+/// Provide a transformation rule when encoding a stored property
+///
+/// First convert the value of the property using the transformation, then encode
+/// the converted value
+///
+/// ```swift
+/// @EncodeTransform(source: UUID.self, with: \.uuidString)
+/// var id: UUID
+/// ```
+///
+/// - Attention: This macro can ONLY be applied to stored properties and will raise compilation
+/// error if applied to the wrong target
 @attached(peer)
 public macro EncodeTransform<Source, Target: Encodable>(
     source sourceType: Source.Type,
@@ -139,6 +166,13 @@ public macro EncodeTransform<Source, Target: Encodable>(
 ) = #externalMacro(module: "CodableMacroMacros", type: "EncodeTransformMacro")
 
 
+/// Provide a validation rule when decoding for a stored property
+///
+/// If the property is neigher optional nor has an default value, an error will be thrown,
+/// otherwise `nil` or the default value will be used.
+///
+/// - Attention: This macro can ONLY be applied to stored properties and will raise compilation
+/// error if applied to the wrong target
 @attached(peer)
 public macro CodingValidate<Source: Decodable>(
     source sourceType: Source.Type,
@@ -146,10 +180,87 @@ public macro CodingValidate<Source: Decodable>(
 ) = #externalMacro(module: "CodableMacroMacros", type: "CodingValidateMacro")
 
 
+/// Automatically make the annotated `class` or `struct` to conform to [`Codable`] by converting
+/// instances from/to instances of another type.
+///
+/// What this macro does is simply conform the type to ``SingleValueCodableProtocol``, which
+/// has already provided the implementation of [`encode(to:)`] and [`init(from:)`], but requires
+/// implementation of:
+/// * ``SingleValueCodableProtocol/singleValueEncode()``: Convert the instance to an
+/// instance of another type that will actually be encoded.
+/// * ``SingleValueCodableProtocol/init(from:)``: Create an instance of this type using an
+/// instance of another type being decoded.
+///
+/// ```swift
+/// @SingleValueCodable
+/// struct Test {
+///     var a: Int
+///     func singleValueEncode() throws -> String {
+///         self.a.description
+///     }
+///     init(from codingValue: String) throws {
+///         self.a = .init(codingValue)!
+///     }
+/// }
+/// ```
+///
+/// If only one property in the type is directly responsible for the encoding and decoding process,
+/// then simply annotate that property with the ``SingleValueCodableDelegate()`` macro without
+/// having to manually implement the two functions above. An example is as follow.
+///
+/// ```swift
+/// // if your implementation looks like this
+/// @SingleValueCodable
+/// struct Test {
+///     var a: Int
+///     var b: String = "b"
+///     func singleValueEncode() throws -> Int { self.a }
+///     init(from codingValue: String) throws {
+///         self.a = codingValue
+///     }
+/// }
+///
+/// // then it can be re-written as follow
+/// @SingleValueCodable
+/// struct Test {
+///     @SingleValueCodableDelegate
+///     var a: Int
+///     var b: String = "b"
+/// }
+/// ```
+///
+/// [`Codable`]: https://developer.apple.com/documentation/swift/codable
+/// [`encode(to:)`]: https://developer.apple.com/documentation/swift/encodable/encode(to:)-7ibwv
+/// [`init(from:)`]: https://developer.apple.com/documentation/swift/decodable/init(from:)-8ezpn
 @attached(member, names: arbitrary)
 @attached(extension, conformances: SingleValueCodableProtocol, names: arbitrary)
 public macro SingleValueCodable() = #externalMacro(module: "CodableMacroMacros", type: "SingleValueCodableMacro")
 
 
+/// Annotate a stored property as the only property responsible for the encoding and decoding
+/// process.
+///
+/// The following two definitions are identical:
+/// ```swift
+/// @SingleValueCodable
+/// struct Test {
+///     @SingleValueCodableDelegate
+///     var a: Int
+///     var b: String = "b"
+/// }
+///
+/// @SingleValueCodable
+/// struct Test {
+///     var a: Int
+///     var b: String = "b"
+///     func singleValueEncode() throws -> Int { self.a }
+///     init(from codingValue: String) throws {
+///         self.a = codingValue
+///     }
+/// }
+///
+/// - Attention: This macro can ONLY be applied to stored properties and will raise compilation
+/// error if applied to the wrong target
+/// ```
 @attached(peer)
 public macro SingleValueCodableDelegate() = #externalMacro(module: "CodableMacroMacros", type: "SingleValueCodableDelegateMacro")

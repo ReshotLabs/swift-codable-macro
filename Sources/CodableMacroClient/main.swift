@@ -147,6 +147,13 @@ class TypeB {
     
 }
 
+extension TypeB: Equatable {
+    static func == (lhs: TypeB, rhs: TypeB) -> Bool {
+        lhs.a == rhs.a &&
+        lhs.b == rhs.b
+    }
+}
+
 
 @Codable
 class TypeC {
@@ -231,8 +238,40 @@ struct TypeI {
 @SingleValueCodable
 class TypeJ {
     @SingleValueCodableDelegate
-    var a: Int?
+    var a: TypeB?
     var b: Int = 1
     // property that require initialization (uncomment to check the error message)
 //    var c: Int
+    init(a: TypeB? = nil, b: Int = 1) {
+        self.a = a
+        self.b = b
+    }
+}
+
+extension TypeJ: Equatable {
+    static func == (lhs: TypeJ, rhs: TypeJ) -> Bool {
+        lhs.a == rhs.a &&
+        lhs.b == rhs.b
+    }
+}
+
+
+let typeJInstance = TypeJ(a: .init())
+typeJInstance.a?.a = 2
+typeJInstance.a?.b = 5
+print(String(data: try JSONEncoder().encode(typeJInstance), encoding: .utf8)!)
+print(try JSONDecoder().decode(TypeJ.self, from: .init(#"{"field": 2, "b": 5}"#.utf8)) == typeJInstance)
+
+
+
+@SingleValueCodable
+struct TypeK {
+    @SingleValueCodableDelegate
+    let a: String = ""
+    // computed property not allowed (uncomment to check the error message)
+//    @SingleValueCodableDelegate
+//    var b: Int? { .init(a) }
+    // multiple delegate (uncomment to check the error message)
+//    @SingleValueCodableDelegate
+//    var c: Int = 1
 }
