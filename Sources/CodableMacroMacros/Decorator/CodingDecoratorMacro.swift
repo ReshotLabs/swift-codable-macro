@@ -10,13 +10,12 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 import SwiftDiagnostics
-import Foundation
+
 
 
 protocol CodingDecoratorMacro: PeerMacro {
     
     associatedtype CodingSpec
-    typealias Error = CodingDecoratorMacroError
     
     static var macroArgumentsParsingRule: [ArgumentsParsingRule] { get }
     
@@ -28,6 +27,7 @@ protocol CodingDecoratorMacro: PeerMacro {
 }
 
 
+
 extension CodingDecoratorMacro {
     
     static func expansion(
@@ -36,7 +36,7 @@ extension CodingDecoratorMacro {
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
         guard declaration.is(VariableDeclSyntax.self) else {
-            throw .diagnostic(node: declaration, message: Error.attachTypeError)
+            throw .diagnostic(node: declaration, message: .decorator.general.attachTypeError)
         }
         return []
     }
@@ -45,7 +45,7 @@ extension CodingDecoratorMacro {
 
 
 
-struct CodingDecoratorMacroError: LocalizedError, DiagnosticMessage {
+struct CodingDecoratorMacroDiagnosticMessage: DiagnosticMessage {
     
     let id: String
     let rawMessage: String
@@ -53,14 +53,12 @@ struct CodingDecoratorMacroError: LocalizedError, DiagnosticMessage {
     let isInternal: Bool
     
     var diagnosticID: MessageID {
-        .init(domain: "com.serika.codable-macro.decorator-macro", id: id)
+        .init(domain: "com.serika.codable-macro.decorator", id: id)
     }
     
     var message: String {
         "\(isInternal ? "Internal Error: " : "")\(rawMessage)"
     }
-    
-    var errorDescription: String? { message }
     
     
     init(id: String, message: String, severity: DiagnosticSeverity, isInternal: Bool = false) {
@@ -104,4 +102,61 @@ struct CodingDecoratorMacroError: LocalizedError, DiagnosticMessage {
         )
     }
     
+}
+
+
+
+enum CodingDecoratorMacroDiagnosticMessageGroup {}
+
+
+
+extension DiagnosticMessage where Self == CodingDecoratorMacroDiagnosticMessage {
+    static var decorator: CodingDecoratorMacroDiagnosticMessageGroup.Type { CodingDecoratorMacroDiagnosticMessageGroup.self }
+}
+
+
+
+enum GeneralCodingDecoratorMacroDiagnosticMessage {
+    
+    static let attachTypeError: CodingDecoratorMacroDiagnosticMessage = .init(
+        id: "attach_type_error",
+        message: "The Decorator macro for custom Coding can only be applied to stored properties",
+        severity: .error
+    )
+    
+    static func missingArgument(_ argumentName: String, isInternal: Bool = true) -> CodingDecoratorMacroDiagnosticMessage {
+        .init(
+            id: "missing_argument_\(argumentName)",
+            message: "Missing required argument: \(argumentName)",
+            severity: .error,
+            isInternal: isInternal
+        )
+    }
+    
+    static func noArguments(isInternal: Bool = true) -> CodingDecoratorMacroDiagnosticMessage {
+        .init(
+            id: "no_arguments",
+            message: "No arguments provided",
+            severity: .error,
+            isInternal: isInternal
+        )
+    }
+    
+    
+    static func duplicateMacro(name: String) -> CodingDecoratorMacroDiagnosticMessage {
+        .init(
+            id: "multiple_\(name)",
+            message: "A stored property should have at most one \(name) macro",
+            severity: .error
+        )
+    }
+    
+}
+
+
+
+extension CodingDecoratorMacroDiagnosticMessageGroup {
+    static var general: GeneralCodingDecoratorMacroDiagnosticMessage.Type {
+        GeneralCodingDecoratorMacroDiagnosticMessage.self
+    }
 }

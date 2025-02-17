@@ -10,23 +10,6 @@ import SwiftDiagnostics
 import SwiftSyntax
 
 
-struct StringDiagnosticsMessage: DiagnosticMessage {
-    
-    let message: String
-    private(set) var severity: DiagnosticSeverity = .error
-    
-    let diagnosticID: MessageID = .init(domain: "com.serika.coding_macro", id: UUID().uuidString)
-    
-}
-
-
-extension DiagnosticMessage where Self == StringDiagnosticsMessage {
-    static func string(_ message: String, severity: DiagnosticSeverity = .error) -> Self {
-        .init(message: message, severity: severity)
-    }
-}
-
-
 
 struct StringNoteMessage: NoteMessage {
     let message: String

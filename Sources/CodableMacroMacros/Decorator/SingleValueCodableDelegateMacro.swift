@@ -21,12 +21,12 @@ struct SingleValueCodableDelegateMacro: CodingDecoratorMacro {
         macroNodes: [AttributeSyntax]
     ) throws(DiagnosticsError) -> Void {
         
-        guard propertyInfo.type != .computed else {
-            throw .diagnostic(node: propertyInfo.name, message: Error.attachTypeError)
+        guard propertyInfo.type != .computed || macroNodes.isEmpty else {
+            throw .diagnostic(node: propertyInfo.name, message: .decorator.general.attachTypeError)
         }
         
         guard macroNodes.count < 2 else {
-            throw .diagnostic(node: propertyInfo.name, message: Error.duplicateMacro(name: "SingleValueCodableDelegate"))
+            throw .diagnostic(node: propertyInfo.name, message: .decorator.general.duplicateMacro(name: "SingleValueCodableDelegate"))
         }
         
         // no need to extract and information for now, may add something in the future

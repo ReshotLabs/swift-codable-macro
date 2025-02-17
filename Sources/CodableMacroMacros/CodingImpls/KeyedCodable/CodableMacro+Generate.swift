@@ -100,7 +100,7 @@ extension CodableMacro {
                                 } else if $0.propertyInfo.initializer == nil, $0.propertyInfo.hasOptionalTypeDecl {
                                     "self.\($0.propertyInfo.name) = nil"
                                 } else {
-                                    throw .diagnostic(node: $0.propertyInfo.name, message: Error.missingDefaultOrOptional)
+                                    throw .diagnostic(node: $0.propertyInfo.name, message: .codingMacro.codable.missingDefaultOrOptional)
                                 }
                             }
                         }
@@ -124,7 +124,7 @@ extension CodableMacro {
                             break
                         }
                         guard let typeExpression = propertyInfo.typeExpression else {
-                            throw .diagnostic(node: propertyInfo.name, message: Error.cannotInferType)
+                            throw .diagnostic(node: propertyInfo.name, message: .codingMacro.general.cannotInferType)
                         }
                         
                         let decodeExpr = if codingFieldInfo.isRequired {

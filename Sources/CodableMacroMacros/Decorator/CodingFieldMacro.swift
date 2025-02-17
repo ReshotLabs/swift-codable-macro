@@ -24,14 +24,18 @@ struct CodingFieldMacro: CodingDecoratorMacro {
     static func processProperty(
         _ property: PropertyInfo,
         macroNodes: [SwiftSyntax.AttributeSyntax]
-    ) throws(DiagnosticsError) -> (path: [String], defaultValue: ExprSyntax?) {
+    ) throws(DiagnosticsError) -> (path: [String], defaultValue: ExprSyntax?)? {
         
         guard property.type != .computed else {
-            throw .diagnostic(node: property.name, message: Error.attachTypeError)
+            if macroNodes.isEmpty {
+                return nil
+            } else {
+                throw .diagnostic(node: property.name, message: .decorator.general.attachTypeError)
+            }
         }
         
         guard macroNodes.count < 2 else {
-            throw .diagnostic(node: property.name, message: Error.duplicateMacro(name: "CodingField"))
+            throw .diagnostic(node: property.name, message: .decorator.general.duplicateMacro(name: "CodingField"))
         }
         
         guard let macroNode = macroNodes.first else {
@@ -68,7 +72,7 @@ struct CodingFieldMacro: CodingDecoratorMacro {
         let defaultValue = arguments[1].first?.expression
         
         guard (pathElements?.count ?? 0) == arguments[0].count else {
-            throw .diagnostic(node: macroArguments, message: Error.notStringLiteral)
+            throw .diagnostic(node: macroArguments, message: .decorator.codingField.notStringLiteral)
         }
         
         return (pathElements, defaultValue)
@@ -78,13 +82,24 @@ struct CodingFieldMacro: CodingDecoratorMacro {
 }
 
 
-
-fileprivate extension CodingDecoratorMacroError {
+extension CodingFieldMacro {
     
-    static let notStringLiteral: Self = .init(
-        id: "no_string_literal",
-        message: "The path can be specified using string literal",
-        severity: .error
-    )
+    enum CodingFieldMacroError {
+        static let notStringLiteral: CodingDecoratorMacroDiagnosticMessage = .init(
+            id: "no_string_literal",
+            message: "The path can be specified using string literal",
+            severity: .error
+        )
+    }
+    
+}
+
+
+
+extension CodingDecoratorMacroDiagnosticMessageGroup {
+    
+    static var codingField: CodingFieldMacro.CodingFieldMacroError.Type {
+        CodingFieldMacro.CodingFieldMacroError.self
+    }
     
 }

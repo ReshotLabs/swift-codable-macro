@@ -26,18 +26,18 @@ struct CodingValidateMacro: CodingDecoratorMacro {
         macroNodes: [AttributeSyntax]
     ) throws(DiagnosticsError) -> [ExprSyntax] {
         
-        guard propertyInfo.type != .computed else {
-            throw .diagnostic(node: propertyInfo.name, message: Error.attachTypeError)
+        guard propertyInfo.type != .computed || macroNodes.isEmpty else {
+            throw .diagnostic(node: propertyInfo.name, message: .decorator.general.attachTypeError)
         }
         
         return try macroNodes.map { (attribute) throws(DiagnosticsError) in
             
             guard let arguments = try attribute.arguments?.grouped(with: macroArgumentsParsingRule) else {
-                throw .diagnostic(node: attribute, message: Error.noArguments())
+                throw .diagnostic(node: attribute, message: .decorator.general.noArguments())
             }
             
             guard let validExpr = arguments[1].first?.expression.trimmed else {
-                throw .diagnostic(node: attribute, message: Error.missingArgument("validate"))
+                throw .diagnostic(node: attribute, message: .decorator.general.missingArgument("validate"))
             }
             
             return validExpr

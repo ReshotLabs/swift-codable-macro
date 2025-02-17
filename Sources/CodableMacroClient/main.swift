@@ -57,6 +57,7 @@ struct TypeA: Equatable {
     @DecodeTransform(source: String.self, with: { Int($0)! })
     @EncodeTransform(source: Int.self, with: \.description)
     @CodingValidate(source: Int.self, with: { $0 % 2 == 0 })
+    @CodingValidate(source: Int.self, with: { $0 > 0 })
     var field13Renamed: Int = 2
     
     var field13: Int {
@@ -110,6 +111,15 @@ do {
     _ = try JSONDecoder().decode(
         TypeA.self,
         from: JSONEncoder().encode(TypeA(field13: 1))
+    )
+} catch {
+    print(error)
+}
+
+do {
+    _ = try JSONDecoder().decode(
+        TypeA.self,
+        from: JSONEncoder().encode(TypeA(field13: -2))
     )
 } catch {
     print(error)

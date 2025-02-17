@@ -79,7 +79,7 @@ extension CodableMacro {
                     )
                     enumDeclList.append(newEnum)
                     guard let parentContainerName = containerStack.last else {
-                        throw .diagnostic(node: macroNode, message: Error.unexpectedEmptyContainerStack)
+                        throw .diagnostic(node: macroNode, message: .codingMacro.codable.unexpectedEmptyContainerStack)
                     }
                     let containerName = "\(newEnum.name)Container" as TokenSyntax
                     steps.append(.container(
@@ -97,7 +97,7 @@ extension CodableMacro {
                     
                 case let .leaf(pathElement, field):
                     guard let parentContainerName = containerStack.last else {
-                        throw .diagnostic(node: macroNode, message: Error.unexpectedEmptyContainerStack)
+                        throw .diagnostic(node: macroNode, message: .codingMacro.codable.unexpectedEmptyContainerStack)
                     }
                     steps.append(.value(
                         field,

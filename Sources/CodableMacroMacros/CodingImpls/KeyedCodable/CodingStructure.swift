@@ -164,7 +164,7 @@ extension CodingStructure {
                         let conflictStructure = children[pathElementToMatch],
                         let field2 = firstLeaf(in: conflictStructure)?.field.propertyInfo.name
                     else {
-                        throw .diagnostic(node: field.propertyInfo.name, message: Error.unknown)
+                        throw .diagnostic(node: field.propertyInfo.name, message: .codingMacro.codingStructureParsing.unknown)
                     }
                     throw .diagnostics(makePathConflictDiagnostics(property1: field.propertyInfo.name, property2: field2))
                 }
@@ -192,7 +192,7 @@ extension CodingStructure {
                         let conflictStructure = children[pathElementToMatch],
                         let field2 = firstLeaf(in: conflictStructure)?.field.propertyInfo.name
                     else {
-                        throw .diagnostic(node: field.propertyInfo.name, message: Error.unknown)
+                        throw .diagnostic(node: field.propertyInfo.name, message: .codingMacro.codingStructureParsing.unknown)
                     }
                     throw .diagnostics(makePathConflictDiagnostics(property1: field.propertyInfo.name, property2: field2))
                 }
@@ -232,7 +232,7 @@ extension CodingStructure {
         [
             .init(
                 node: property1,
-                message: Error.pathConflict,
+                message: .codingMacro.codingStructureParsing.pathConflict,
                 notes: [
                     .init(
                         node: .init(property1),
@@ -254,34 +254,39 @@ extension CodingStructure {
             ),
             .init(
                 node: property2,
-                message: .string("path of \"\(property1.trimmed.text)\" conflicts with path of this property")
+                message: .codingMacro.codingStructureParsing.pathConflictDestination(source: property1)
             )
         ]
     }
     
     
-    enum Error: DiagnosticMessage {
+    enum CodingStructureParsingError {
         
-        case pathConflict
-        case unknown
+        static let pathConflict: CodingMacroDiagnosticMessage = .init(
+            id: "path_conflict",
+            message: "Property has path that conflict with that of another property"
+        )
         
-        var message: String {
-            switch self {
-                case .pathConflict: "Property has path that conflict with that of another property"
-                case .unknown: "Internal Error: Unknown"
-            }
+        static func pathConflictDestination(source: TokenSyntax) -> CodingMacroDiagnosticMessage {
+            .init(
+                id: "path_conflict_destination",
+                message: "path of \"\(source.trimmed.text)\" conflicts with path of this property"
+            )
         }
         
-        var diagnosticID: SwiftDiagnostics.MessageID {
-            let id = switch self {
-                case .pathConflict: "path_conflict"
-                case .unknown: "unknown"
-            }
-            return .init(domain: "com.serika.codable_macro.coding_structure", id: id)
-        }
-        
-        var severity: SwiftDiagnostics.DiagnosticSeverity { .error }
+        static let unknown: CodingMacroDiagnosticMessage = .init(
+            id: "unknown",
+            message: "Internal Error: Unknown"
+        )
         
     }
     
+}
+
+
+
+extension CodingMacroDiagnosticMessageGroup {
+    static var codingStructureParsing: CodingStructure.CodingStructureParsingError.Type {
+        CodingStructure.CodingStructureParsingError.self
+    }
 }

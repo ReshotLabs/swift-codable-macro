@@ -14,7 +14,7 @@ import Foundation
 
 
 
-struct PropertyInfo: Sendable, Equatable {
+struct PropertyInfo: Sendable, Equatable, Hashable {
     
     var name: TokenSyntax
     var type: PropertyType
@@ -24,7 +24,7 @@ struct PropertyInfo: Sendable, Equatable {
     
     var hasOptionalTypeDecl: Bool { dataType?.is(OptionalTypeSyntax.self) == true }
     var nameStr: String { name.text }
-    var isRequired: Bool { initializer == nil && !hasOptionalTypeDecl }
+    var isRequired: Bool { type != .computed && initializer == nil && !hasOptionalTypeDecl }
     var typeExpression: ExprSyntax? {
         if let dataType {
             "\(dataType).self"
@@ -58,7 +58,7 @@ extension PropertyInfo {
         let attributes = declaration.attributes.compactMap { $0.as(AttributeSyntax.self) }
         
         guard let name = declaration.bindings.first?.pattern.as(IdentifierPatternSyntax.self)?.identifier else {
-            throw .diagnostic(node: declaration, message: Error.missingIdentifier)
+            throw .diagnostic(node: declaration, message: .syntaxInfo.property.missingIdentifier)
         }
         
         let initializer = declaration.bindings.first?.initializer?.value
@@ -95,17 +95,17 @@ extension PropertyInfo {
     }
     
     
-    enum Error: String, LocalizedError, DiagnosticMessage {
-        case missingIdentifier = "missing_identifier"
-        var diagnosticID: MessageID {
-            .init(domain: "com.serika.codable_macro.property_info", id: self.rawValue)
-        }
-        var severity: DiagnosticSeverity { .error }
-        var message: String {
-            switch self {
-                case .missingIdentifier: "Missing identifier for property"
-            }
-        }
+    enum Error {
+        static let missingIdentifier: SyntaxInfoDiagnosticMessage = .init(
+            id: "missing_identifier",
+            message: "Missing identifier for property"
+        )
     }
     
+}
+
+
+
+extension SyntaxInfoDiagnosticMessageGroup {
+    static var property: PropertyInfo.Error.Type { PropertyInfo.Error.self }
 }

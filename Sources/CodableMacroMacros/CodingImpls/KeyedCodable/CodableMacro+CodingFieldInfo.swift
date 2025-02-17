@@ -30,14 +30,12 @@ extension CodableMacro {
     }
     
     
-    static func extractCodingFieldInfoList(from members: MemberBlockItemListSyntax)
+    static func extractCodingFieldInfoList(from properties: [PropertyInfo])
     throws(DiagnosticsError) -> ([CodingFieldInfo], canAutoImplement: Bool) {
         
-        let infoList = try members
-            .compactMap { $0.decl.as(VariableDeclSyntax.self) }
-            .map(PropertyInfo.extract(from:))
-            .filter { $0.type != .computed }
+        let infoList = try properties
             .map(extractCodingFieldInfo(from:))
+            .compactMap(\.self)
         
         let notIgnoredInfoList = infoList.filter { !$0.isIgnored }
         
@@ -68,7 +66,7 @@ extension CodableMacro {
     }
     
     
-    static func extractCodingFieldInfo(from property: PropertyInfo) throws(DiagnosticsError) -> CodingFieldInfo {
+    static func extractCodingFieldInfo(from property: PropertyInfo) throws(DiagnosticsError) -> CodingFieldInfo? {
         
         // Find and group all the decorator macros supported
         let attributes = property.attributes
@@ -84,10 +82,12 @@ extension CodableMacro {
         }
         
         // extract `path` and `defaultValue` from `@CodingField` macro
-        let (path, defaultValue) = try CodingFieldMacro.processProperty(
-            property,
-            macroNodes: attributes[.codingField, default: []]
-        )
+        guard
+            let (path, defaultValue) = try CodingFieldMacro.processProperty(
+                property,
+                macroNodes: attributes[.codingField, default: []]
+            )
+        else { return nil }
         
         let decodeTransformSpec = try DecodeTransformMacro.processProperty(
             property,

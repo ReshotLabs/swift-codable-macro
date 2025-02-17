@@ -23,11 +23,7 @@ public struct CodingIgnoreMacro: PeerMacro {
     ) throws(DiagnosticsError) -> [SwiftSyntax.DeclSyntax] {
         
         guard let declaration = declaration.as(VariableDeclSyntax.self) else {
-            throw .diagnostic(node: declaration, message: Error.attachTypeError)
-        }
-        
-        guard declaration.bindings.first?.pattern.as(IdentifierPatternSyntax.self)?.identifier != nil else {
-            throw .diagnostic(node: declaration, message: Error.noIdentifierFound)
+            throw .diagnostic(node: declaration, message: .decorator.general.attachTypeError)
         }
         
         guard let accessorBlock = declaration.bindings.first?.accessorBlock else {
@@ -36,7 +32,7 @@ public struct CodingIgnoreMacro: PeerMacro {
         }
         
         guard let accessorDeclList = accessorBlock.accessors.as(AccessorDeclListSyntax.self) else {
-            throw .diagnostic(node: declaration, message: Error.attachTypeError)
+            throw .diagnostic(node: declaration, message: .decorator.general.attachTypeError)
         }
         
         guard
@@ -44,7 +40,7 @@ public struct CodingIgnoreMacro: PeerMacro {
                 .map({ $0.accessorSpecifier.trimmed })
                 .contains(where: { $0 == "set" || $0 == "get"})
         else {
-            throw .diagnostic(node: declaration, message: Error.attachTypeError)
+            throw .diagnostic(node: declaration, message: .decorator.general.attachTypeError)
         }
         
         try checkCanBeIgnore(declaration, context: context)
@@ -62,34 +58,24 @@ public struct CodingIgnoreMacro: PeerMacro {
         let isOptional = declaration.bindings.first?.typeAnnotation?.type.is(OptionalTypeSyntax.self) == true
         
         guard hasInitializer || isOptional else {
-            throw .diagnostic(node: declaration, message: Error.cannotBeIgnored)
+            throw .diagnostic(node: declaration, message: .decorator.codingIgnore.cannotBeIgnored)
         }
         
     }
     
     
     
-    enum Error: String, DiagnosticMessage {
-        
-        case attachTypeError = "attach_type"
-        case noIdentifierFound = "no_identifier"
-        case cannotBeIgnored = "cannot_be_ignored"
-        
-        
-        var message: String {
-            switch self {
-                case .attachTypeError: "The CodingIgnore macro can only be applied to stored properties"
-                case .noIdentifierFound: "The CodingIgnore macro can only be applied to stored properties"
-                case .cannotBeIgnored: "The field can only be ignored when it has a default value or is optional"
-            }
-        }
-        
-        var diagnosticID: SwiftDiagnostics.MessageID {
-            .init(domain: "com.serika.codable_macro.coding_ignore", id: self.rawValue)
-        }
-        
-        var severity: SwiftDiagnostics.DiagnosticSeverity { .error }
-        
+    enum Error {
+        static let cannotBeIgnored: CodingDecoratorMacroDiagnosticMessage = .init(
+            id: "can_not_be_ignored",
+            message: "The field can only be ignored when it has a default value or is optional",
+            severity: .error
+        )
     }
     
+}
+
+
+extension CodingDecoratorMacroDiagnosticMessageGroup {
+    static var codingIgnore: CodingIgnoreMacro.Error.Type { CodingIgnoreMacro.Error.self }
 }

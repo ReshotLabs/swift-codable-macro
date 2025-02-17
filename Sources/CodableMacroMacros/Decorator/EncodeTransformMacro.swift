@@ -1,5 +1,5 @@
 //
-//  DecodeTransformMacro.swift
+//  EncodeTransformMacro.swift
 //  swift-codable-macro
 //
 //  Created by SerikaPHB  on 2025/2/1.
@@ -10,15 +10,13 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 import SwiftDiagnostics
-import Foundation
 
 
-
-struct DecodeTransformMacro: CodingDecoratorMacro {
+struct EncodeTransformMacro: CodingDecoratorMacro {
     
     struct Spec: Equatable {
-        var sourceTypeExpr: ExprSyntax
-        var transformExpr: ExprSyntax
+        let sourceTypeExpr: ExprSyntax
+        let transformExpr: ExprSyntax
     }
     
     
@@ -34,25 +32,25 @@ struct DecodeTransformMacro: CodingDecoratorMacro {
         macroNodes: [SwiftSyntax.AttributeSyntax]
     ) throws(DiagnosticsError) -> Spec? {
         
-        guard propertyInfo.type != .computed else {
-            throw .diagnostic(node: propertyInfo.name, message: Error.attachTypeError)
+        guard propertyInfo.type != .computed || macroNodes.isEmpty else {
+            throw .diagnostic(node: propertyInfo.name, message: .decorator.general.attachTypeError)
         }
         
         guard macroNodes.count <= 1 else {
-            throw .diagnostic(node: propertyInfo.name, message: Error.duplicateMacro(name: "DecodeTransformMacro"))
+            throw .diagnostic(node: propertyInfo.name, message: .decorator.general.duplicateMacro(name: "EncodeTransformMacro"))
         }
         
         guard let macroNode = macroNodes.first else { return nil }
         
         guard let arguments = try macroNode.arguments?.grouped(with: macroArgumentsParsingRule) else {
-            throw .diagnostic(node: macroNode, message: Error.noArguments())
+            throw .diagnostic(node: macroNode, message: .decorator.general.noArguments())
         }
         
         guard let sourceTypeExpr = arguments[0].first?.expression.trimmed else {
-            throw .diagnostic(node: macroNode, message: Error.missingArgument("soureType"))
+            throw .diagnostic(node: macroNode, message: .decorator.general.missingArgument("soureType"))
         }
         guard let transformExpr = arguments[2].first?.expression.trimmed else {
-            throw .diagnostic(node: macroNode, message: Error.missingArgument("transform"))
+            throw .diagnostic(node: macroNode, message: .decorator.general.missingArgument("transform"))
         }
         
         return .init(sourceTypeExpr: sourceTypeExpr, transformExpr: transformExpr)
