@@ -54,15 +54,11 @@ public protocol SingleValueCodableProtocol: Codable {
 extension SingleValueCodableProtocol {
     
     public init(from decoder: any Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        let value = try container.decode(CodingValue.self)
-        try self.init(from: value)
+        try self.init(from: .init(from: decoder))
     }
     
     public func encode(to encoder: any Encoder) throws {
-        var container = encoder.singleValueContainer()
-        let codingValue = try self.singleValueEncode()
-        try container.encode(codingValue)
+        try self.singleValueEncode().encode(to: encoder)
     }
     
 }
