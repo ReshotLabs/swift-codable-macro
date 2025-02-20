@@ -16,12 +16,6 @@ import Foundation
 
 struct DecodeTransformMacro: CodingDecoratorMacro {
     
-    struct Spec: Equatable {
-        var sourceTypeExpr: ExprSyntax
-        var transformExpr: ExprSyntax
-    }
-    
-    
     static let macroArgumentsParsingRule: [ArgumentsParsingRule] = [
         .labeled("source"),
         .labeled("target", canIgnore: true),
@@ -55,8 +49,17 @@ struct DecodeTransformMacro: CodingDecoratorMacro {
             throw .diagnostic(node: macroNode, message: .decorator.general.missingArgument("transform"))
         }
         
-        return .init(sourceTypeExpr: sourceTypeExpr, transformExpr: transformExpr)
+        return .init(
+            decodeSourceType: sourceTypeExpr,
+            transforms: transformExpr
+        )
         
+    }
+    
+    
+    struct Spec {
+        var decodeSourceType: ExprSyntax
+        var transforms: ExprSyntax
     }
     
 }

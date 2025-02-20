@@ -130,27 +130,35 @@ extension CodableMacro {
                         let decodeExpr = if codingFieldInfo.isRequired {
                             """
                             let rawValue = try \(parentContainer.name).decode(
-                                \(codingFieldInfo.decodeTransform?.sourceTypeExpr ?? typeExpression),
+                                \(codingFieldInfo.decodeTransform?.decodeSourceType ?? typeExpression),
                                 forKey: .\(raw: parentContainer.key)
                             )
                             """
                         } else {
                             """
                             let rawValue = try? \(parentContainer.name).decodeIfPresent(
-                                \(codingFieldInfo.decodeTransform?.sourceTypeExpr ?? typeExpression),
+                                \(codingFieldInfo.decodeTransform?.decodeSourceType ?? typeExpression),
                                 forKey: .\(raw: parentContainer.key)
                             )
                             """
                         } as CodeBlockItemSyntax
                         
-                        let transformExpr = switch (codingFieldInfo.decodeTransform, codingFieldInfo.isRequired) {
+                        let transformExprs = switch (codingFieldInfo.decodeTransform, codingFieldInfo.isRequired) {
                             case let (.some(transformSpec), true):
-                                "let value = try \(transformFunctionName)(rawValue, \(transformSpec.transformExpr))"
+                                transformSpec.transformExprs.enumerated().map { i, transform in
+                                    let sourceVarName = i == 0 ? "rawValue" : "value\(raw: i)" as TokenSyntax
+                                    let destVarName = i == transformSpec.transformExprs.count - 1 ? "value" : "value\(raw: i + 1)" as TokenSyntax
+                                    return "let \(destVarName) = try \(transformFunctionName)(\(sourceVarName), \(transform))"
+                                }
                             case let (.some(transformSpec), false):
-                                "let value = rawValue.flatMap({ try? \(transformFunctionName)($0, \(transformSpec.transformExpr))})"
+                                transformSpec.transformExprs.enumerated().map { i, transform in
+                                    let sourceVarName = i == 0 ? "rawValue" : "value\(raw: i)" as TokenSyntax
+                                    let destVarName = i == transformSpec.transformExprs.count - 1 ? "value" : "value\(raw: i + 1)" as TokenSyntax
+                                    return "let \(destVarName) = \(sourceVarName).flatMap({ try? \(transformFunctionName)($0, \(transform))})"
+                                }
                             default:
-                                "let value = rawValue"
-                        } as CodeBlockItemListSyntax
+                                ["let value = rawValue"]
+                        } as [CodeBlockItemSyntax]
                         
                         let validateExprs = if codingFieldInfo.validateExprs.isEmpty {
                             [CodeBlockItemSyntax]()
@@ -183,7 +191,7 @@ extension CodableMacro {
                         codeBlockItems.append(.init(item: .stmt(.init(
                             try DoStmtSyntax("do") {
                                 decodeExpr
-                                transformExpr
+                                transformExprs
                                 validateExprs
                                 assignmentExpr
                             }
@@ -244,7 +252,7 @@ extension CodableMacro {
             }
             """
             
-            steps.compactMap { step in
+            try steps.compactMap { step in
                 
                 switch step {
                     // container step with parent container
@@ -265,29 +273,33 @@ extension CodableMacro {
                         return nil
                     // value step
                     case let .value(codingFieldInfo, parentContainer):
-                        let transformExpr = if let transformSpec = codingFieldInfo.encodeTransform {
-                            "let transformedValue = try \(transformFunctionName)(value, \(transformSpec.transformExpr))"
+                        let transformExprs = if let transformSpecs = codingFieldInfo.encodeTransform {
+                            transformSpecs.enumerated().map { i, transform in
+                                let sourceVarName = i == 0 ? "value" : "transformedValue\(raw: i)" as TokenSyntax
+                                let destVarName = i == transformSpecs.count - 1 ? "transformedValue" : "transformedValue\(raw: i+1)" as TokenSyntax
+                                return "let \(destVarName) = try \(transformFunctionName)(\(sourceVarName), \(transform))"
+                            }
                         } else {
-                            "let transformedValue = value"
-                        } as CodeBlockItemSyntax
+                            ["let transformedValue = value"]
+                        } as [CodeBlockItemSyntax]
                         let encodeExpr = "try \(parentContainer.name).encode(transformedValue, forKey: .\(raw: parentContainer.key))" as CodeBlockItemSyntax
                         return if codingFieldInfo.propertyInfo.hasOptionalTypeDecl {
                             // optional properties
-                            """
-                            if let value = self.\(codingFieldInfo.propertyInfo.name) {
-                                \(transformExpr)
-                                \(encodeExpr)
-                            }
-                            """
+                            try .init(item: .expr(.init(
+                                IfExprSyntax("if let value = self.\(codingFieldInfo.propertyInfo.name)") {
+                                    transformExprs
+                                    encodeExpr
+                                }
+                            )))
                         } else {
                             // non optional properties
-                            """
-                            do {
-                                let value = self.\(codingFieldInfo.propertyInfo.name)
-                                \(transformExpr)
-                                \(encodeExpr)
-                            }
-                            """
+                            try .init(item: .stmt(.init(
+                                DoStmtSyntax("do") {
+                                    "let value = self.\(codingFieldInfo.propertyInfo.name)"
+                                    transformExprs
+                                    encodeExpr
+                                }
+                            )))
                         }
                 }
                 

@@ -7,7 +7,7 @@
 
 
 /// Return the type of the input expression,
-/// where the expression will not be evaluated (due to the use of autoclosure
+/// where the expression will not be evaluated (due to the use of autoclosure)
 ///
 /// ```swift
 /// func test() -> Int {

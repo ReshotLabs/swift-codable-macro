@@ -151,6 +151,15 @@ enum GeneralCodingDecoratorMacroDiagnosticMessage {
         )
     }
     
+    
+    static func conflictDecorators(_ decorators: [String]) -> CodingDecoratorMacroDiagnosticMessage {
+        .init(
+            id: "conflicting_decorators",
+            message: "\(decorators.joined(separator: ", ")) cannot be used together",
+            severity: .error
+        )
+    }
+    
 }
 
 

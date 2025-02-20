@@ -203,6 +203,22 @@ func advanceByOne(input: Int) -> UInt {
 }
 
 
+struct IntStrCodingTransformer: EvenCodingTransformProtocol {
+    func decodeTransform(_ value: String) throws -> Int {
+        .init(value)!
+    }
+    func encodeTransform(_ value: Int) throws -> String {
+        value.description
+    }
+}
+
+
+struct IdenticalTransformer<T: Codable>: EvenCodingTransformProtocol {
+    func decodeTransform(_ value: T) throws -> T { value }
+    func encodeTransform(_ value: T) throws -> T { value }
+}
+
+
 @Codable
 struct TypeH: Equatable {
     @DecodeTransform(source: Int.self, with: advanceByOne(input:))
@@ -211,11 +227,25 @@ struct TypeH: Equatable {
     var a: UInt = 1
     @CodingIgnore
     var b: Int = 1
+    // CodingTransform and DecodeTransform cannot be used together (uncomment to check the error message)
+//    @DecodeTransform(source: String.self, with: { Int($0)! })
+    @CodingTransform(IntStrCodingTransformer())
+    var c: Int = 1
+    @CodingTransform(.iso8601DateTransform, IdenticalTransformer<String>())
+    var d: Date = .distantPast
+    @CodingTransform(.boolTransform(option: .customString(true: "t", false: "f")))
+    var e: Bool = false
+    @CodingTransform(.dataBase64Transform(options: .lineLength76Characters))
+    var f: Data = .init()
 }
 
 
-print(try JSONDecoder().decode(TypeH.self, from: .init(#"{"a": "1"}"#.utf8)) == TypeH(a: 2))
-print(try JSONDecoder().decode(TypeH.self, from: .init(#"{"a": {"b": 3}}"#.utf8)) == TypeH(a: 4))
+print(String(data: try JSONEncoder().encode(TypeH(c: 4)), encoding: .utf8)!)
+print(
+    try JSONDecoder().decode(TypeH.self, from: .init(#"{"a": "1", "c": "2", "d": "2021-01-01T00:00:00Z", "e": "t"}"#.utf8))
+    == TypeH(a: 2, c: 2, d: Calendar.current.date(from: .init(timeZone: .init(secondsFromGMT: 0), year: 2021, month: 1, day: 1))!, e: true)
+)
+print(try JSONDecoder().decode(TypeH.self, from: .init(#"{"a": {"b": 3}, "c": "4", "e": "f"}"#.utf8)) == TypeH(a: 4, c: 4))
 
 
 

@@ -166,6 +166,40 @@ public macro EncodeTransform<Source, Target: Encodable>(
 ) = #externalMacro(module: "CodableMacroMacros", type: "EncodeTransformMacro")
 
 
+/// Provide custom transformers used for both encoding and decoding
+///
+/// The transformers must conforms to ``CodingTransformProtocol``, which provide rules of
+/// transformation for encoding and decoding.
+///
+/// You can specify multiple transformers and their order matters:
+/// * Encode: in order (from first to last)
+/// * Decode: reversed order (from last to first)
+///
+/// ```swift
+/// @Codable
+/// struct Test {
+///     @CodingTransform(
+///         .doubleDateTransform,
+///         .doubleTypeTransform(option: .string)
+///     )
+///     var a: Date
+/// }
+/// ```
+///
+/// In this example:
+/// * For encoding, first use the `.doubleDateTransform` to convert `Date` to `Double`, then use
+/// the `.doubleTypeTransform(option: .string)` to convert `Double` to `String`
+/// * For decoding, first use the `.doubleTypeTransform(option: .string)` to convert `String`
+/// to `Double`, then use the `.doubleDateTransform` to convert `Double` to `Date`
+///
+/// - Attention: This macro can ONLY be applied to stored properties and will raise compilation
+/// error if applied to the wrong target
+@attached(peer)
+public macro CodingTransform<each Transformer: EvenCodingTransformProtocol>(
+    _ transformers: repeat each Transformer
+) = #externalMacro(module: "CodableMacroMacros", type: "CodingTransformMacro")
+
+
 /// Provide a validation rule when decoding for a stored property
 ///
 /// If the property is neigher optional nor has an default value, an error will be thrown,

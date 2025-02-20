@@ -13,6 +13,7 @@ struct CodableMacroPlugin: CompilerPlugin {
         CodingIgnoreMacro.self,
         DecodeTransformMacro.self,
         EncodeTransformMacro.self,
+        CodingTransformMacro.self,
         CodingValidateMacro.self,
         SingleValueCodableMacro.self,
         SingleValueCodableDelegateMacro.self
@@ -28,6 +29,7 @@ enum DecoratorMacros: String, Equatable, Hashable {
     case codingIgnore = "CodingIgnore"
     case decodeTransform = "DecodeTransform"
     case encodeTransform = "EncodeTransform"
+    case codingTransform = "CodingTransform"
     case codingValidate = "CodingValidate"
     case singleValueCodableDelegate = "SingleValueCodableDelegate"
     

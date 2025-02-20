@@ -30,7 +30,7 @@ struct EncodeTransformMacro: CodingDecoratorMacro {
     static func processProperty(
         _ propertyInfo: PropertyInfo,
         macroNodes: [SwiftSyntax.AttributeSyntax]
-    ) throws(DiagnosticsError) -> Spec? {
+    ) throws(DiagnosticsError) -> ExprSyntax? {
         
         guard propertyInfo.type != .computed || macroNodes.isEmpty else {
             throw .diagnostic(node: propertyInfo.name, message: .decorator.general.attachTypeError)
@@ -46,14 +46,11 @@ struct EncodeTransformMacro: CodingDecoratorMacro {
             throw .diagnostic(node: macroNode, message: .decorator.general.noArguments())
         }
         
-        guard let sourceTypeExpr = arguments[0].first?.expression.trimmed else {
-            throw .diagnostic(node: macroNode, message: .decorator.general.missingArgument("soureType"))
-        }
         guard let transformExpr = arguments[2].first?.expression.trimmed else {
             throw .diagnostic(node: macroNode, message: .decorator.general.missingArgument("transform"))
         }
         
-        return .init(sourceTypeExpr: sourceTypeExpr, transformExpr: transformExpr)
+        return transformExpr
         
     }
     

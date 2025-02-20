@@ -21,12 +21,18 @@ extension CodableMacro {
         var path: [String] = []
         var defaultValue: ExprSyntax? = nil
         var isIgnored: Bool = false
-        var decodeTransform: DecodeTransformMacro.Spec? = nil
-        var encodeTransform: EncodeTransformMacro.Spec? = nil
+        var decodeTransform: DecodeTransformSpec? = nil
+        var encodeTransform: [ExprSyntax]? = nil
         var validateExprs: [ExprSyntax] = []
         
         var isRequired: Bool { propertyInfo.isRequired && defaultValue == nil }
         
+    }
+    
+    
+    struct DecodeTransformSpec: Sendable, Equatable {
+        var decodeSourceType: ExprSyntax
+        var transformExprs: [ExprSyntax]
     }
     
     
@@ -89,16 +95,45 @@ extension CodableMacro {
             )
         else { return nil }
         
-        let decodeTransformSpec = try DecodeTransformMacro.processProperty(
-            property,
-            macroNodes: attributes[.decodeTransform, default: []]
-        )
+        let encodeTransformMacros = attributes[.encodeTransform, default: []]
+        let decodeTransformMacros = attributes[.decodeTransform, default: []]
+        let codingTransformMacros = attributes[.codingTransform, default: []]
         
-        let encodeTransformSpec = try EncodeTransformMacro.processProperty(
-            property,
-            macroNodes: attributes[.encodeTransform, default: []]
-        )
+        guard !((!encodeTransformMacros.isEmpty || !decodeTransformMacros.isEmpty) && !codingTransformMacros.isEmpty) else {
+            // CodingTransform cannot be used together with EncodeTransform and DecodeTransform
+            let allTransformMacros = encodeTransformMacros + decodeTransformMacros + codingTransformMacros
+            let allTransformMacroStrs = allTransformMacros.map(\.attributeName.trimmedDescription)
+            throw .diagnostics(
+                allTransformMacros.map {
+                    .init(node: $0, message: .decorator.general.conflictDecorators(allTransformMacroStrs))
+                }
+            )
+        }
         
+        // extract transformations
+        let encodeTransforms: [ExprSyntax]?
+        let decodeTransformSpec: DecodeTransformSpec?
+        
+        if let specs = try CodingTransformMacro.processProperty(
+            property,
+            macroNodes: codingTransformMacros
+        ) {
+            decodeTransformSpec = .init(decodeSourceType: specs.decodeSourceType, transformExprs: specs.decodeTransforms)
+            encodeTransforms = specs.encodeTransforms
+        } else {
+            if let decodeSpec = try DecodeTransformMacro.processProperty(property, macroNodes: decodeTransformMacros) {
+                decodeTransformSpec = .init(decodeSourceType: decodeSpec.decodeSourceType, transformExprs: [decodeSpec.transforms])
+            } else {
+                decodeTransformSpec = nil
+            }
+            if let encodeTransform = try EncodeTransformMacro.processProperty(property, macroNodes: encodeTransformMacros) {
+                encodeTransforms = [encodeTransform]
+            } else {
+                encodeTransforms = nil
+            }
+        }
+        
+        // extract validations
         let validateExprs = try CodingValidateMacro.processProperty(
             property,
             macroNodes: attributes[.codingValidate, default: []]
@@ -109,7 +144,7 @@ extension CodableMacro {
             path: path,
             defaultValue: defaultValue,
             decodeTransform: decodeTransformSpec,
-            encodeTransform: encodeTransformSpec,
+            encodeTransform: encodeTransforms,
             validateExprs: validateExprs
         )
         
