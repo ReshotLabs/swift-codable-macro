@@ -57,7 +57,6 @@ struct SingleValueCodableMacro: CodingImplMacroProtocol {
         }
         
         let requiredProperties = Set(allProperties.filter(\.isRequired).map(\.name)).subtracting([delegateProperty.name])
-        
         guard requiredProperties.isEmpty else {
             throw .diagnostics(
                 requiredProperties.map { .init(node: $0, message: .codingMacro.singleValueCodable.unhandledRequiredProperties) }
@@ -66,6 +65,14 @@ struct SingleValueCodableMacro: CodingImplMacroProtocol {
         
         guard let typeExpr = delegateProperty.dataType else {
             throw .diagnostic(node: delegateProperty.name, message: .codingMacro.general.missingExplicitType)
+        }
+        
+        let defaultValue = if let initializer = delegateProperty.initializer {
+            initializer
+        } else if delegateProperty.hasOptionalTypeDecl {
+            "nil as \(typeExpr)" as ExprSyntax
+        } else {
+            nil as ExprSyntax?
         }
         
         let canDecode = delegateProperty.type != .constant || delegateProperty.initializer == nil
@@ -82,6 +89,10 @@ struct SingleValueCodableMacro: CodingImplMacroProtocol {
             }
             """
         ] as [DeclSyntax]
+        
+        if let defaultValue {
+            decls.append("public static var singleValueCodingDefaultValue: \(typeExpr)? { \(defaultValue) }")
+        }
         
         if shouldAutoInit {
             decls.append("public init() {}")

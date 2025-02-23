@@ -52,39 +52,44 @@ extension CodableMacro {
         // the stack top is the current container for coding any sub fields or containers
         var containerStack: [TokenSyntax] = []
         
+        let containerCodingKeysPrefix = "$__coding_container_keys_" as TokenSyntax
+        let containerVarNamePrefix = "$__coding_container_" as TokenSyntax
+        
         func dfs(_ structure: borrowing CodingStructure) throws(DiagnosticsError) {
             
             switch structure {
                     
                 case let .root(children):
-                    let newEnum = EnumDeclSpec(
-                        name: context.makeUniqueName("root"),
-                        cases: .init(children.keys)
+                    let containerName = "root" as TokenSyntax
+                    let containerCodingKeysName = "\(containerCodingKeysPrefix)\(containerName)" as TokenSyntax
+                    let containerVarName = "\(containerVarNamePrefix)\(containerName)" as TokenSyntax
+                    enumDeclList.append(
+                        .init(name: containerCodingKeysName, cases: .init(children.keys))
                     )
-                    enumDeclList.append(newEnum)
                     steps.append(.container(
-                        .init(name: "root", keysDef: newEnum.name, isRequired: true),
+                        .init(name: containerVarName, keysDef: containerCodingKeysName, isRequired: true),
                         parent: nil
                     ))
-                    containerStack.append("root")
+                    containerStack.append(containerName)
                     for (_, child) in children {
                         try dfs(child)
                     }
                     containerStack.removeLast()
                     
                 case let .node(pathElement, children, required):
-                    let newEnum = EnumDeclSpec(
-                        name: context.makeUniqueName(pathElement),
-                        cases: .init(children.keys)
-                    )
-                    enumDeclList.append(newEnum)
                     guard let parentContainerName = containerStack.last else {
                         throw .diagnostic(node: macroNode, message: .codingMacro.codable.unexpectedEmptyContainerStack)
                     }
-                    let containerName = "\(newEnum.name)Container" as TokenSyntax
+                    let containerName = "\(parentContainerName)_\(raw: pathElement)" as TokenSyntax
+                    let containerCodingKeysName = "\(containerCodingKeysPrefix)\(containerName)" as TokenSyntax
+                    let containerVarName = "\(containerVarNamePrefix)\(containerName)" as TokenSyntax
+                    enumDeclList.append(
+                        .init(name: containerCodingKeysName, cases: .init(children.keys))
+                    )
+                    let parentContainerVarName = "\(containerVarNamePrefix)\(parentContainerName)" as TokenSyntax
                     steps.append(.container(
-                        .init(name: containerName, keysDef: newEnum.name, isRequired: required),
-                        parent: .init(name: parentContainerName, key: "k\(pathElement)")
+                        .init(name: containerVarName, keysDef: containerCodingKeysName, isRequired: required),
+                        parent: .init(name: parentContainerVarName, key: "k\(pathElement)")
                     ))
                     containerStack.append(containerName)
                     for (_, child) in children {
@@ -99,9 +104,10 @@ extension CodableMacro {
                     guard let parentContainerName = containerStack.last else {
                         throw .diagnostic(node: macroNode, message: .codingMacro.codable.unexpectedEmptyContainerStack)
                     }
+                    let parentContainerVarName = "\(containerVarNamePrefix)\(parentContainerName)" as TokenSyntax
                     steps.append(.value(
                         field,
-                        parent: .init(name: parentContainerName, key: "k\(pathElement)")
+                        parent: .init(name: parentContainerVarName, key: "k\(pathElement)")
                     ))
                     
             }

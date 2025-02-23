@@ -51,6 +51,10 @@ struct CodingFieldMacro: CodingDecoratorMacro {
         
         let (pathElements, defaultValue) = try extractPathAndDefault(from: macroRawArguments)
         
+        if let defaultValue, property.initializer != nil, property.type == .constant {
+            throw .diagnostic(node: defaultValue, message: .decorator.codingField.defaultValueOnConstantwithInitializer)
+        }
+        
         return (pathElements ?? [property.name.trimmed.text], defaultValue)
         
     }
@@ -88,6 +92,11 @@ extension CodingFieldMacro {
         static let notStringLiteral: CodingDecoratorMacroDiagnosticMessage = .init(
             id: "no_string_literal",
             message: "The path can be specified using string literal",
+            severity: .error
+        )
+        static let defaultValueOnConstantwithInitializer: CodingDecoratorMacroDiagnosticMessage = .init(
+            id: "default_value_on_constant_with_initializer",
+            message: "Default value cannot be specified on a constant with an initializer",
             severity: .error
         )
     }

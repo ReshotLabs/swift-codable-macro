@@ -37,7 +37,7 @@ struct EncodeTransformMacro: CodingDecoratorMacro {
         }
         
         guard macroNodes.count <= 1 else {
-            throw .diagnostic(node: propertyInfo.name, message: .decorator.general.duplicateMacro(name: "EncodeTransformMacro"))
+            throw .diagnostic(node: propertyInfo.name, message: .decorator.general.duplicateMacro(name: "EncodeTransform"))
         }
         
         guard let macroNode = macroNodes.first else { return nil }

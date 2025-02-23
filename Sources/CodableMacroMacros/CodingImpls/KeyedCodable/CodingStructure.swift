@@ -10,6 +10,7 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 import SwiftDiagnostics
+import OrderedCollections
 
 
 infix operator ==== : ComparisonPrecedence
@@ -18,8 +19,8 @@ infix operator ==== : ComparisonPrecedence
 /// Represent the Encoding / Decoding structure as a tree
 indirect enum CodingStructure: Hashable, Equatable {
     
-    case root(children: [String: CodingStructure])
-    case node(pathElement: String, children: [String: CodingStructure], required: Bool)
+    case root(children: OrderedDictionary<String, CodingStructure>)
+    case node(pathElement: String, children: OrderedDictionary<String, CodingStructure>, required: Bool)
     case leaf(pathElement: String, field: CodableMacro.CodingFieldInfo)
     
     var pathElement: String? {

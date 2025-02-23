@@ -34,7 +34,7 @@ struct CodableMacro: CodingImplMacroProtocol {
         /// Whether an empty initializer should be created, only for class
         var shouldAutoInit: Bool {
             isClass
-            && !declGroupInfo.properties.contains(where: \.isRequired)  // all stored properties are initialized
+            && !declGroupInfo.properties.contains(where: \.isRequired)  // all stored properties are initialized or optional
             && !declGroupInfo.hasInitializer                            // has no initializer
         }
         

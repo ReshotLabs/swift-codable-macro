@@ -37,7 +37,7 @@ struct TypeA: Equatable {
     var field8: Int? = 2
     
     // not initializable constant (should be ignored when decoding)
-    @CodingField(default: 1)
+    @CodingField
     let field9: Int = 2
     
     // stored property with observer

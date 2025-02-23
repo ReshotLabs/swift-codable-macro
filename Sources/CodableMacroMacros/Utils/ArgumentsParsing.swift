@@ -70,7 +70,7 @@ extension LabeledExprListSyntax {
                 if rule.canIgnore { continue }
                 throw .diagnostic(
                     node: self,
-                    message: ArgumentsParsingRule.Error.notMatch(rule: rule, argumentIndex: parmIndex)
+                    message: .argumentParsing.notMatch(rule: rule, argumentIndex: parmIndex)
                 )
             }
             
@@ -80,7 +80,7 @@ extension LabeledExprListSyntax {
                 if rule.canIgnore { continue }
                 throw .diagnostic(
                     node: self,
-                    message: ArgumentsParsingRule.Error.notMatch(rule: rule, argumentIndex: parmIndex)
+                    message: .argumentParsing.notMatch(rule: rule, argumentIndex: parmIndex)
                 )
             }
             
@@ -98,7 +98,7 @@ extension LabeledExprListSyntax {
         guard parmIndex == self.count else {
             throw.diagnostic(
                 node: self,
-                message: ArgumentsParsingRule.Error.extraArguments(index: parmIndex)
+                message: .argumentParsing.extraArguments(index: parmIndex)
             )
         }
         
@@ -172,7 +172,7 @@ extension ArgumentsParsingRule {
         var message: String {
             switch self {
                 case let .notMatch(rule, argumentIndex):
-                    "expect \(rule.label == nil ? "labelled " : "")\(rule.isVarArg ? "vararg" : "argument") at index \(argumentIndex)"
+                    "expect \(rule.label == nil ? " " : "labelled")\(rule.isVarArg ? "vararg" : "argument") at index \(argumentIndex)"
                 case let .extraArguments(index):
                     "unexpected extra arguments after index \(index)"
             }
@@ -182,3 +182,8 @@ extension ArgumentsParsingRule {
     
 }
 
+
+
+extension DiagnosticMessage where Self == ArgumentsParsingRule.Error {
+    static var argumentParsing: ArgumentsParsingRule.Error.Type { ArgumentsParsingRule.Error.self }
+}

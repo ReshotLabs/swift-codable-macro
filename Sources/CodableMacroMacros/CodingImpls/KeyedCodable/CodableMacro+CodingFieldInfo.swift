@@ -57,9 +57,14 @@ extension CodableMacro {
         
         guard
             infoList.contains(where: {
-                $0.path.count > 1                                       // has custom path
-                || $0.defaultValue != nil                               // has custom macro level default value
-                || $0.path.first != $0.propertyInfo.name.trimmed.text   // has custom path
+                $0.path.count > 1                                           // has custom path
+                || $0.defaultValue != nil                                   // has custom macro level default value
+                || $0.path.first != $0.propertyInfo.name.trimmed.text       // has custom path
+                || $0.propertyInfo.initializer != nil                       // has initialized
+                || $0.propertyInfo.hasOptionalTypeDecl                      // is optional type
+                || !$0.validateExprs.isEmpty                                // has validation
+                || $0.encodeTransform?.isEmpty == false                     // has encode transform
+                || $0.decodeTransform?.transformExprs.isEmpty == false      // has decode transform
             })
         else {
             // if no stored properties has any of the characteristics above, can auto-implement
@@ -82,8 +87,9 @@ extension CodableMacro {
                 result[decoratorMacro, default: []].append(attribute)
             }
         
-        guard attributes[.codingIgnore, default: []].isEmpty else {
+        if let ignoreMacros = attributes[.codingIgnore], !ignoreMacros.isEmpty {
             // found `@CodingIgnore`
+            try CodingIgnoreMacro.processProperty(property, macroNodes: ignoreMacros)
             return .init(propertyInfo: property, isIgnored: true)
         }
         

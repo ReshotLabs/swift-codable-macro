@@ -133,7 +133,7 @@ enum GeneralCodingDecoratorMacroDiagnosticMessage {
         )
     }
     
-    static func noArguments(isInternal: Bool = true) -> CodingDecoratorMacroDiagnosticMessage {
+    static func noArguments(isInternal: Bool = false) -> CodingDecoratorMacroDiagnosticMessage {
         .init(
             id: "no_arguments",
             message: "No arguments provided",

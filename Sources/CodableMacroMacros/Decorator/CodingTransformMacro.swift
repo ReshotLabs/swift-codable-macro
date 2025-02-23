@@ -36,9 +36,9 @@ struct CodingTransformMacro: CodingDecoratorMacro {
             throw .diagnostic(node: macroNode, message: .decorator.general.noArguments())
         }
         
-        let transformerTypeList = arguments[0].map(\.expression)
+        let transformerTypeList = arguments[0].map(\.expression.trimmed)
         
-        guard let decodeSourceType = transformerTypeList.first else {
+        guard let decodeSourceType = transformerTypeList.last?.trimmed else {
             throw .diagnostic(node: macroNode, message: .decorator.general.missingArgument("transformers"))
         }
         

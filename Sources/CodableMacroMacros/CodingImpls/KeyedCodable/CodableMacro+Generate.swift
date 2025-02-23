@@ -41,8 +41,8 @@ extension CodableMacro {
         context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
         
-        let transformFunctionName = context.makeUniqueName("transform")
-        let validateFunctionName = context.makeUniqueName("validate")
+        let transformFunctionName = "$__coding_transform" as TokenSyntax
+        let validateFunctionName = "$__coding_validate" as TokenSyntax
         
         func generateDecodeInitializerBody<C: BidirectionalCollection & RangeReplaceableCollection>(
             from steps: inout C
@@ -136,7 +136,7 @@ extension CodableMacro {
                             """
                         } else {
                             """
-                            let rawValue = try? \(parentContainer.name).decodeIfPresent(
+                            let rawValue = try? \(parentContainer.name).decode(
                                 \(codingFieldInfo.decodeTransform?.decodeSourceType ?? typeExpression),
                                 forKey: .\(raw: parentContainer.key)
                             )
@@ -164,14 +164,16 @@ extension CodableMacro {
                             [CodeBlockItemSyntax]()
                         } else if codingFieldInfo.isRequired {
                             codingFieldInfo.validateExprs.map { expr in
-                                #"try \#(validateFunctionName)("\#(propertyInfo.name)", \#(StringLiteralExprSyntax(content: expr.description)), value, \#(expr))"#
+                                let exprString = StringLiteralExprSyntax(content: IndentRemover().visit(expr).formatted().description)
+                                return #"try \#(validateFunctionName)("\#(propertyInfo.name)", \#(exprString), value, \#(expr))"#
                             } as [CodeBlockItemSyntax]
                         } else {
                             [
                                 CodeBlockItemSyntax(item: .expr(.init(
                                     try IfExprSyntax("if let value") {
                                         codingFieldInfo.validateExprs.map { expr in
-                                            #"try \#(validateFunctionName)("\#(propertyInfo.name)", \#(StringLiteralExprSyntax(content: expr.description)), value, \#(expr))"#
+                                            let exprString = StringLiteralExprSyntax(content: IndentRemover().visit(expr).formatted().description)
+                                            return #"try \#(validateFunctionName)("\#(propertyInfo.name)", \#(exprString), value, \#(expr))"#
                                         }
                                     }
                                 )))
@@ -242,7 +244,7 @@ extension CodableMacro {
         context: some MacroExpansionContext
     ) throws -> DeclSyntax {
         
-        let transformFunctionName = context.makeUniqueName("transform")
+        let transformFunctionName = "$__coding_transform" as TokenSyntax
         
         let decl = try FunctionDeclSyntax("public func encode(to encoder: Encoder) throws") {
             

@@ -41,6 +41,8 @@ public protocol SingleValueCodableProtocol: Codable {
     /// The type for actual encoding / decoding process
     associatedtype CodingValue: Codable
     
+    static var singleValueCodingDefaultValue: CodingValue? { get }
+    
     /// Convert the instance to an instance of another type for being encoded
     func singleValueEncode() throws -> CodingValue
     
@@ -54,11 +56,18 @@ public protocol SingleValueCodableProtocol: Codable {
 extension SingleValueCodableProtocol {
     
     public init(from decoder: any Decoder) throws {
-        try self.init(from: .init(from: decoder))
+        if let defaultValue = Self.singleValueCodingDefaultValue {
+            let decodedValue = (try? CodingValue.init(from: decoder)) ?? defaultValue
+            try self.init(from: decodedValue)
+        } else {
+            try self.init(from: .init(from: decoder))
+        }
     }
     
     public func encode(to encoder: any Encoder) throws {
         try self.singleValueEncode().encode(to: encoder)
     }
+    
+    public static var singleValueCodingDefaultValue: CodingValue? { nil }
     
 }
