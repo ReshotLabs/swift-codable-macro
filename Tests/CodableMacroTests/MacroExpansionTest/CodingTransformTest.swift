@@ -20,9 +20,16 @@ import Foundation
 #endif
 
 
+extension CodingExpansionTest {
+    
+    @Suite("Test CodingTransform macro")
+    final class CodingTransformTest: CodingExpansionTest {}
+    
+}
 
-@Suite("Test CodingTransform macro")
-struct CodingTransformTest {
+
+
+extension CodingExpansionTest.CodingTransformTest {
     
     @Codable
     struct Test1 {
@@ -125,22 +132,24 @@ struct CodingTransformTest {
                 public init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
-                    let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
-                    do {
-                        let rawValue = try? $__coding_container_root.decode(
-                            codableMacroStaticType(of: codingTransformPassThroughWithTypeInference(.doubleTypeTransform(option: .string))).TransformedType.self,
-                            forKey: .ka
-                        )
-                        let value1 = rawValue.flatMap({
-                                try? $__coding_transform($0, codingTransformPassThroughWithTypeInference(.doubleTypeTransform(option: .string)).decodeTransform)
-                            })
-                        let value2 = value1.flatMap({
-                                try? $__coding_transform($0, codingTransformPassThroughWithTypeInference(IdenticalCodingTransform<Double>()).decodeTransform)
-                            })
-                        let value = value2.flatMap({
-                                try? $__coding_transform($0, codingTransformPassThroughWithTypeInference(.doubleDateTransform()).decodeTransform)
-                            })
-                        self.a = value ?? .init()
+                    if let $__coding_container_root = try? decoder.container(keyedBy: $__coding_container_keys_root.self) {
+                        do {
+                            let rawValue = try? $__coding_container_root.decode(
+                                codableMacroStaticType(of: codingTransformPassThroughWithTypeInference(.doubleTypeTransform(option: .string))).TransformedType.self,
+                                forKey: .ka
+                            )
+                            let value1 = rawValue.flatMap({
+                                    try? $__coding_transform($0, codingTransformPassThroughWithTypeInference(.doubleTypeTransform(option: .string)).decodeTransform)
+                                })
+                            let value2 = value1.flatMap({
+                                    try? $__coding_transform($0, codingTransformPassThroughWithTypeInference(IdenticalCodingTransform<Double>()).decodeTransform)
+                                })
+                            let value = value2.flatMap({
+                                    try? $__coding_transform($0, codingTransformPassThroughWithTypeInference(.doubleDateTransform()).decodeTransform)
+                                })
+                            self.a = value ?? .init()
+                        }
+                    } else {
                     }
                 }
                 public func encode(to encoder: Encoder) throws {

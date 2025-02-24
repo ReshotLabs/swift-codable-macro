@@ -20,8 +20,16 @@ import Foundation
 #endif
 
 
-@Suite("Test SingleValueCodable macro", .tags(.expansion.singleValueCoding))
-struct SingleValueCodableTest {
+extension CodingExpansionTest {
+    
+    @Suite("Test SingleValueCodable macro", .tags(.expansion.singleValueCoding))
+    final class SingleValueCodableTest: CodingExpansionTest {}
+    
+}
+
+
+
+extension CodingExpansionTest.SingleValueCodableTest {
     
     @SingleValueCodable
     struct Test1 {

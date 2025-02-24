@@ -18,8 +18,16 @@ import SwiftSyntaxMacrosGenericTestSupport
 #endif
 
 
-@Suite("Test Codable macro for special cases")
-struct CodableMacroSpecialTest {
+extension CodingExpansionTest {
+    
+    @Suite("Test Codable macro for special cases")
+    final class CodableMacroSpecialTest: CodingExpansionTest {}
+    
+}
+
+
+
+extension CodingExpansionTest.CodableMacroSpecialTest {
     
     @Codable
     struct Test1 {
@@ -270,14 +278,16 @@ struct CodableMacroSpecialTest {
                 public required init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
-                    let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
-                    do {
-                        let rawValue = try? $__coding_container_root.decode(
-                            Int.self,
-                            forKey: .ka
-                        )
-                        let value = rawValue
-                        self.a = value ?? 1
+                    if let $__coding_container_root = try? decoder.container(keyedBy: $__coding_container_keys_root.self) {
+                        do {
+                            let rawValue = try? $__coding_container_root.decode(
+                                Int.self,
+                                forKey: .ka
+                            )
+                            let value = rawValue
+                            self.a = value ?? 1
+                        }
+                    } else {
                     }
                 }
             
@@ -327,14 +337,16 @@ struct CodableMacroSpecialTest {
                 public required init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
-                    let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
-                    do {
-                        let rawValue = try? $__coding_container_root.decode(
-                            Int.self,
-                            forKey: .ka
-                        )
-                        let value = rawValue
-                        self.a = value ?? 1
+                    if let $__coding_container_root = try? decoder.container(keyedBy: $__coding_container_keys_root.self) {
+                        do {
+                            let rawValue = try? $__coding_container_root.decode(
+                                Int.self,
+                                forKey: .ka
+                            )
+                            let value = rawValue
+                            self.a = value ?? 1
+                        }
+                    } else {
                     }
                 }
             
@@ -384,14 +396,17 @@ struct CodableMacroSpecialTest {
                 public required init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
-                    let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
-                    do {
-                        let rawValue = try? $__coding_container_root.decode(
-                            Int?.self,
-                            forKey: .ka
-                        )
-                        let value = rawValue
-                        self.a = value ?? nil
+                    if let $__coding_container_root = try? decoder.container(keyedBy: $__coding_container_keys_root.self) {
+                        do {
+                            let rawValue = try? $__coding_container_root.decode(
+                                Int?.self,
+                                forKey: .ka
+                            )
+                            let value = rawValue
+                            self.a = value ?? nil
+                        }
+                    } else {
+                        self.a = nil
                     }
                 }
             
@@ -440,14 +455,17 @@ struct CodableMacroSpecialTest {
                 public required init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
-                    let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
-                    do {
-                        let rawValue = try? $__coding_container_root.decode(
-                            Int?.self,
-                            forKey: .ka
-                        )
-                        let value = rawValue
-                        self.a = value ?? nil
+                    if let $__coding_container_root = try? decoder.container(keyedBy: $__coding_container_keys_root.self) {
+                        do {
+                            let rawValue = try? $__coding_container_root.decode(
+                                Int?.self,
+                                forKey: .ka
+                            )
+                            let value = rawValue
+                            self.a = value ?? nil
+                        }
+                    } else {
+                        self.a = nil
                     }
                 }
             

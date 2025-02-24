@@ -18,8 +18,16 @@ import SwiftSyntaxMacrosGenericTestSupport
 #endif
 
 
-@Suite("Test CodingIgnore macro")
-struct CodingIgnoreTest {
+extension CodingExpansionTest {
+    
+    @Suite("Test CodingIgnore macro")
+    final class CodingIgnoreTest: CodingExpansionTest {}
+    
+}
+
+
+
+extension CodingExpansionTest.CodingIgnoreTest {
     
     @Codable
     struct Test1 {

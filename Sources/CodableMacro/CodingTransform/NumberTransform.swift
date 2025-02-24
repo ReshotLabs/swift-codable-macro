@@ -47,7 +47,7 @@ where Number: Numeric & LosslessStringConvertible {
                 guard let value = Number(stringValue) else {
                     throw CodingTransformError(
                         transformerType: Self.self,
-                        message: "\(value) is not in a valid Integer value format"
+                        message: "\(value) is not in a valid number"
                     )
                 }
                 return value

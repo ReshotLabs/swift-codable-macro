@@ -55,43 +55,62 @@ extension CodableMacro {
                 switch step {
                     
                     // a container step with a required parent container
-                    case let .container(container, .some(parentContainer)) where container.isRequired:
-                        codeBlockItems.append("""
+                    case let .container(container, parentContainer) where container.isRequired:
+                        let expr = if let parentContainer {
+                            """
                             let \(container.name) = try \(parentContainer.name).nestedContainer(
                                 keyedBy: \(container.keysDef).self, 
                                 forKey: .\(raw: parentContainer.key)
                             )
                             """
-                        )
+                        } else {
+                            "let \(container.name) = try decoder.container(keyedBy: \(container.keysDef).self)"
+                        } as CodeBlockItemSyntax
+                        codeBlockItems.append(expr)
                     
                     // a container step with a non-required parent container
-                    case let .container(container, .some(parentContainer)):
+                    case let .container(container, parentContainer):
                         // finding fields that require initialization in the else branch
                         var valueStepsWithDefault: [CodingFieldInfo] = []
                         var count = 1
+                        var stepCount = 0
+                        var decodablePropertyCount = 0
                         for operation in steps.reversed() where count > 0 {
                             switch operation {
                                 case let .container(container, _) where !container.isRequired:
                                     count += 1
                                 case .endOptionalContainer:
                                     count -= 1
-                                case let .value(info, _) where info.defaultValue != nil :
-                                    valueStepsWithDefault.append(info)
-                                case let .value(info, _) where info.propertyInfo.initializer == nil && info.propertyInfo.hasOptionalTypeDecl:
-                                    valueStepsWithDefault.append(info)
+                                case let .value(info, _):
+                                    if info.defaultValue != nil {
+                                        valueStepsWithDefault.append(info)
+                                    } else if info.propertyInfo.initializer == nil && info.propertyInfo.hasOptionalTypeDecl {
+                                        valueStepsWithDefault.append(info)
+                                    }
+                                    if info.propertyInfo.initializer == nil || info.propertyInfo.type != .constant {
+                                        decodablePropertyCount += 1
+                                    }
                                 default: break
                             }
+                            stepCount += 1
                         }
-                        // for non-required container, only decode them when they actually exist
-                        // the else branch is for initializing fields with macro-level default values
-                        let expr = try IfExprSyntax(
+                        guard decodablePropertyCount > 0 else {
+                            steps.removeLast(stepCount)
+                            break
+                        }
+                        let ifExprHeader = if let parentContainer {
                             """
                             if let \(container.name) = try? \(parentContainer.name).nestedContainer(
                                 keyedBy: \(container.keysDef).self, 
                                 forKey: .\(raw: parentContainer.key)
                             )
                             """
-                        ) {
+                        } else {
+                            "if let \(container.name) = try? decoder.container(keyedBy: \(container.keysDef).self)"
+                        } as SyntaxNodeString
+                        // for non-required container, only decode them when they actually exist
+                        // the else branch is for initializing fields with macro-level default values
+                        let expr = try IfExprSyntax(ifExprHeader) {
                             try generateDecodeInitializerBody(from: &steps)
                         } else: {
                             try valueStepsWithDefault.map {
@@ -107,10 +126,10 @@ extension CodableMacro {
                         codeBlockItems.append(.init(item: .expr(.init(expr))))
                         
                     // container step with no parent (the root container)
-                    case let .container(container, .none):
-                        codeBlockItems.append(
-                            "let \(container.name) = try decoder.container(keyedBy: \(container.keysDef).self)"
-                        )
+//                    case let .container(container, .none):
+//                        codeBlockItems.append(
+//                            "let \(container.name) = try decoder.container(keyedBy: \(container.keysDef).self)"
+//                        )
                         
                     // step that mark the end of an not-required container step
                     case .endOptionalContainer:

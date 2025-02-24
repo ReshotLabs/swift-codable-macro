@@ -18,8 +18,16 @@ import SwiftSyntaxMacrosGenericTestSupport
 #endif
 
 
-@Suite("Test EncodeTransform macro")
-struct EncodeTransformTest {
+extension CodingExpansionTest {
+    
+    @Suite("Test EncodeTransform macro")
+    final class EncodeTransformTest: CodingExpansionTest {}
+    
+}
+
+
+
+extension CodingExpansionTest.EncodeTransformTest {
     
     @Codable
     struct Test1 {
@@ -135,7 +143,7 @@ struct EncodeTransformTest {
     
     @Codable
     struct Test3 {
-        @EncodeTransform(source: Int.self, with: EncodeTransformTest.int2Str(_:))
+        @EncodeTransform(source: Int.self, with: CodingExpansionTest.EncodeTransformTest.int2Str(_:))
         var a: Int
     }
     
@@ -145,7 +153,7 @@ struct EncodeTransformTest {
             source: """
             @Codable
             struct Test {
-                @EncodeTransform(source: Int.self, with: EncodeTransformTest.int2Str(_:))
+                @EncodeTransform(source: Int.self, with: CodingExpansionTest.EncodeTransformTest.int2Str(_:))
                 var a: Int
             }
             """,
@@ -176,7 +184,7 @@ struct EncodeTransformTest {
                     var $__coding_container_root = encoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
                         let value = self.a
-                        let transformedValue = try $__coding_transform(value, EncodeTransformTest.int2Str(_:))
+                        let transformedValue = try $__coding_transform(value, CodingExpansionTest.EncodeTransformTest.int2Str(_:))
                         try $__coding_container_root.encode(transformedValue, forKey: .ka)
                     }
                 }

@@ -20,8 +20,16 @@ import Foundation
 #endif
 
 
-@Suite("Test CodingValidate macro")
-struct CodingValidateTest {
+extension CodingExpansionTest {
+    
+    @Suite("Test CodingValidate macro")
+    final class CodingValidateTest: CodingExpansionTest {}
+    
+}
+
+
+
+extension CodingExpansionTest.CodingValidateTest {
     
     @Codable
     struct Test1 {
@@ -122,20 +130,23 @@ struct CodingValidateTest {
                 public init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
-                    let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
-                    do {
-                        let rawValue = try? $__coding_container_root.decode(
-                            Int?.self,
-                            forKey: .ka
-                        )
-                        let value = rawValue
-                        if let value {
-                            try $__coding_validate("a", "{\n    $0 > 0\n}", value, {
-                                    $0 > 0
-                                })
-                            try $__coding_validate("a", #"\.description.isEmpty"#, value, \.description.isEmpty)
+                    if let $__coding_container_root = try? decoder.container(keyedBy: $__coding_container_keys_root.self) {
+                        do {
+                            let rawValue = try? $__coding_container_root.decode(
+                                Int?.self,
+                                forKey: .ka
+                            )
+                            let value = rawValue
+                            if let value {
+                                try $__coding_validate("a", "{\n    $0 > 0\n}", value, {
+                                        $0 > 0
+                                    })
+                                try $__coding_validate("a", #"\.description.isEmpty"#, value, \.description.isEmpty)
+                            }
+                            self.a = value ?? nil
                         }
-                        self.a = value ?? nil
+                    } else {
+                        self.a = nil
                     }
                 }
                 public func encode(to encoder: Encoder) throws {

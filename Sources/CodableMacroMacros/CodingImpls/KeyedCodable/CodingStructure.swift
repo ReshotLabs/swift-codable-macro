@@ -19,7 +19,7 @@ infix operator ==== : ComparisonPrecedence
 /// Represent the Encoding / Decoding structure as a tree
 indirect enum CodingStructure: Hashable, Equatable {
     
-    case root(children: OrderedDictionary<String, CodingStructure>)
+    case root(children: OrderedDictionary<String, CodingStructure>, required: Bool)
     case node(pathElement: String, children: OrderedDictionary<String, CodingStructure>, required: Bool)
     case leaf(pathElement: String, field: CodableMacro.CodingFieldInfo)
     
@@ -32,6 +32,15 @@ indirect enum CodingStructure: Hashable, Equatable {
     }
     
     
+    var isRequired: Bool {
+        switch self {
+            case let .root(_, required): required
+            case let .node(_, _, required): required
+            case let .leaf(_, field): field.isRequired
+        }
+    }
+    
+    
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.pathElement == rhs.pathElement
     }
@@ -39,7 +48,7 @@ indirect enum CodingStructure: Hashable, Equatable {
     
     static func ==== (lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
-            case let (.root(childrenL), .root(childrenR)):
+            case let (.root(childrenL, _), .root(childrenR, _)):
                 guard childrenL.count == childrenR.count else { return false }
                 return childrenL.allSatisfy { (pathElement, childL) in
                     guard
@@ -78,7 +87,7 @@ extension CodingStructure: CustomStringConvertible {
     
     private func dfsAllPaths(of structure: CodingStructure, paths: inout [[String]]) {
         switch structure {
-            case let .root(children):
+            case let .root(children, _):
                 for child in children.values {
                     paths.append([])
                     dfsAllPaths(of: child, paths: &paths)
@@ -98,10 +107,10 @@ extension CodingStructure: CustomStringConvertible {
     
     var description: String {
         var allPaths = [[String]]()
-        let structure = if case .root(_) = self {
+        let structure = if case .root = self {
             self
         } else {
-            CodingStructure.root(children: [pathElement!: self])
+            CodingStructure.root(children: [pathElement!: self], required: self.isRequired)
         }
         dfsAllPaths(of: structure, paths: &allPaths)
         return allPaths
@@ -117,7 +126,7 @@ extension CodingStructure {
     
     static func parse(_ codingFieldInfoList: [CodableMacro.CodingFieldInfo]) throws(DiagnosticsError) -> CodingStructure {
         
-        var root = CodingStructure.root(children: [:])
+        var root = CodingStructure.root(children: [:], required: false)
         
         for codingFieldInfo in codingFieldInfoList {
             try matchAndUpdate(&root, with: codingFieldInfo.path, field: codingFieldInfo)
@@ -144,17 +153,17 @@ extension CodingStructure {
                 // seeing a leaf means that a path conflict exist
                 throw .diagnostics(makePathConflictDiagnostics(property1: field.propertyInfo.name, property2: conflictField.propertyInfo.name))
                 
-            case var .root(children):
+            case .root(var children, let required):
                 guard children[pathElementToMatch] != nil else {
                     // no match found
                     if isLeaf {
                         children[pathElementToMatch] = .leaf(pathElement: pathElementToMatch, field: field)
-                        structure = .root(children: children)
+                        structure = .root(children: children, required: required || field.isRequired)
                     } else {
                         var newNode = CodingStructure.node(pathElement: pathElementToMatch, children: [:], required: field.isRequired)
                         try matchAndUpdate(&newNode, with: path.dropFirst(), field: field)
                         children[pathElementToMatch] = newNode
-                        structure = .root(children: children)
+                        structure = .root(children: children, required: required || field.isRequired)
                     }
                     break
                 }
@@ -170,7 +179,7 @@ extension CodingStructure {
                     throw .diagnostics(makePathConflictDiagnostics(property1: field.propertyInfo.name, property2: field2))
                 }
                 try matchAndUpdate(&children[pathElementToMatch]!, with: path.dropFirst(), field: field)
-                structure = .root(children: children)
+                structure = .root(children: children, required: required || field.isRequired)
                 
             case .node(let pathElement, var children, let required):
                 guard children[pathElementToMatch] != nil else {
@@ -209,7 +218,7 @@ extension CodingStructure {
         in structure: CodingStructure
     ) -> (pathElement: String, field: CodableMacro.CodingFieldInfo)? {
         switch structure {
-            case let .root(children):
+            case let .root(children, _):
                 for child in children.values {
                     guard let first = firstLeaf(in: child) else { continue }
                     return first

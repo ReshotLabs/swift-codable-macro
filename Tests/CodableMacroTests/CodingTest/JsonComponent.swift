@@ -76,6 +76,30 @@ extension JsonComponent {
 }
 
 
+extension JsonComponent: CustomStringConvertible {
+    
+    var description: String {
+        switch self {
+            case .int(let int):
+                int.description
+            case .real(let double):
+                double.description
+            case .string(let string):
+                #""\#(string)""#
+            case .bool(let bool):
+                bool.description
+            case .null:
+                "null"
+            case .array(let set):
+                set.description
+            case .object(let dictionary):
+                dictionary.description
+        }
+    }
+    
+}
+
+
 extension JsonComponent:
     ExpressibleByDictionaryLiteral,
     ExpressibleByArrayLiteral,
@@ -162,7 +186,21 @@ extension JsonComponent {
                 for (innerIndex, value) in array.enumerated() {
                     try encode(value, key: .init(intValue: innerIndex), to: &nestedContainer)
                 }
-            default: fatalError()
+            case .int(let value):
+                var container = encoder.singleValueContainer()
+                try container.encode(value)
+            case .string(let value):
+                var container = encoder.singleValueContainer()
+                try container.encode(value)
+            case .null:
+                var container = encoder.singleValueContainer()
+                try container.encodeNil()
+            case .real(let value):
+                var container = encoder.singleValueContainer()
+                try container.encode(value)
+            case .bool(let value):
+                var container = encoder.singleValueContainer()
+                try container.encode(value)
         }
         
     }
@@ -289,9 +327,28 @@ extension JsonComponent {
             
         }
         
+        
+        func decode(from container: inout SingleValueDecodingContainer) throws -> JsonComponent {
+            return if let intVal = try? container.decode(Int.self) {
+                .int(intVal)
+            } else if let realVal = try? container.decode(Double.self) {
+                .real(realVal)
+            } else if let boolVal = try? container.decode(Bool.self) {
+                .bool(boolVal)
+            } else if container.decodeNil() == true {
+                .null
+            } else if let stringVal = try? container.decode(String.self) {
+                .string(stringVal)
+            } else {
+                throw CocoaError(.coderInvalidValue)
+            }
+        }
+        
         if let container = try? decoder.container(keyedBy: CodingKeys.self) {
             self = try decode(from: container)
         } else if var container = try? decoder.unkeyedContainer() {
+            self = try decode(from: &container)
+        } else if var container = try? decoder.singleValueContainer() {
             self = try decode(from: &container)
         } else {
             throw CocoaError(.coderInvalidValue)

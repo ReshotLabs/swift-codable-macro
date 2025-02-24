@@ -59,7 +59,7 @@ extension CodableMacro {
             
             switch structure {
                     
-                case let .root(children):
+                case let .root(children, required):
                     let containerName = "root" as TokenSyntax
                     let containerCodingKeysName = "\(containerCodingKeysPrefix)\(containerName)" as TokenSyntax
                     let containerVarName = "\(containerVarNamePrefix)\(containerName)" as TokenSyntax
@@ -67,12 +67,15 @@ extension CodableMacro {
                         .init(name: containerCodingKeysName, cases: .init(children.keys))
                     )
                     steps.append(.container(
-                        .init(name: containerVarName, keysDef: containerCodingKeysName, isRequired: true),
+                        .init(name: containerVarName, keysDef: containerCodingKeysName, isRequired: required),
                         parent: nil
                     ))
                     containerStack.append(containerName)
                     for (_, child) in children {
                         try dfs(child)
+                    }
+                    if !required {
+                        steps.append(.endOptionalContainer)
                     }
                     containerStack.removeLast()
                     

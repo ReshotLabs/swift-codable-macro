@@ -18,8 +18,16 @@ import SwiftSyntaxMacrosGenericTestSupport
 #endif
 
 
-@Suite("Test CodingField macro")
-struct CodingFieldTest {
+extension CodingExpansionTest {
+    
+    @Suite("Test CodingField macro")
+    final class CodingFieldTest: CodingExpansionTest {}
+    
+}
+
+
+
+extension CodingExpansionTest.CodingFieldTest {
     
     @Codable
     struct Test1 {
@@ -133,18 +141,20 @@ struct CodingFieldTest {
                 public init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
-                    let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
-                    if let $__coding_container_root_path1 = try? $__coding_container_root.nestedContainer(
-                        keyedBy: $__coding_container_keys_root_path1.self,
-                        forKey: .kpath1
-                    ) {
-                        do {
-                            let rawValue = try? $__coding_container_root_path1.decode(
-                                Int.self,
-                                forKey: .ka
-                            )
-                            let value = rawValue
-                            self.a = value ?? 1
+                    if let $__coding_container_root = try? decoder.container(keyedBy: $__coding_container_keys_root.self) {
+                        if let $__coding_container_root_path1 = try? $__coding_container_root.nestedContainer(
+                            keyedBy: $__coding_container_keys_root_path1.self,
+                            forKey: .kpath1
+                        ) {
+                            do {
+                                let rawValue = try? $__coding_container_root_path1.decode(
+                                    Int.self,
+                                    forKey: .ka
+                                )
+                                let value = rawValue
+                                self.a = value ?? 1
+                            }
+                        } else {
                         }
                     } else {
                     }
@@ -200,18 +210,21 @@ struct CodingFieldTest {
                 public init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
-                    let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
-                    if let $__coding_container_root_path1 = try? $__coding_container_root.nestedContainer(
-                        keyedBy: $__coding_container_keys_root_path1.self,
-                        forKey: .kpath1
-                    ) {
-                        do {
-                            let rawValue = try? $__coding_container_root_path1.decode(
-                                Int?.self,
-                                forKey: .ka
-                            )
-                            let value = rawValue
-                            self.a = value ?? nil
+                    if let $__coding_container_root = try? decoder.container(keyedBy: $__coding_container_keys_root.self) {
+                        if let $__coding_container_root_path1 = try? $__coding_container_root.nestedContainer(
+                            keyedBy: $__coding_container_keys_root_path1.self,
+                            forKey: .kpath1
+                        ) {
+                            do {
+                                let rawValue = try? $__coding_container_root_path1.decode(
+                                    Int?.self,
+                                    forKey: .ka
+                                )
+                                let value = rawValue
+                                self.a = value ?? nil
+                            }
+                        } else {
+                            self.a = nil
                         }
                     } else {
                         self.a = nil
@@ -269,18 +282,21 @@ struct CodingFieldTest {
                 public init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
-                    let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
-                    if let $__coding_container_root_path1 = try? $__coding_container_root.nestedContainer(
-                        keyedBy: $__coding_container_keys_root_path1.self,
-                        forKey: .kpath1
-                    ) {
-                        do {
-                            let rawValue = try? $__coding_container_root_path1.decode(
-                                Int?.self,
-                                forKey: .ka
-                            )
-                            let value = rawValue
-                            self.a = value ?? 2
+                    if let $__coding_container_root = try? decoder.container(keyedBy: $__coding_container_keys_root.self) {
+                        if let $__coding_container_root_path1 = try? $__coding_container_root.nestedContainer(
+                            keyedBy: $__coding_container_keys_root_path1.self,
+                            forKey: .kpath1
+                        ) {
+                            do {
+                                let rawValue = try? $__coding_container_root_path1.decode(
+                                    Int?.self,
+                                    forKey: .ka
+                                )
+                                let value = rawValue
+                                self.a = value ?? 2
+                            }
+                        } else {
+                            self.a = 2
                         }
                     } else {
                         self.a = 2
@@ -335,18 +351,21 @@ struct CodingFieldTest {
                 public init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
-                    let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
-                    if let $__coding_container_root_path1 = try? $__coding_container_root.nestedContainer(
-                        keyedBy: $__coding_container_keys_root_path1.self,
-                        forKey: .kpath1
-                    ) {
-                        do {
-                            let rawValue = try? $__coding_container_root_path1.decode(
-                                Int.self,
-                                forKey: .ka
-                            )
-                            let value = rawValue
-                            self.a = value ?? 1
+                    if let $__coding_container_root = try? decoder.container(keyedBy: $__coding_container_keys_root.self) {
+                        if let $__coding_container_root_path1 = try? $__coding_container_root.nestedContainer(
+                            keyedBy: $__coding_container_keys_root_path1.self,
+                            forKey: .kpath1
+                        ) {
+                            do {
+                                let rawValue = try? $__coding_container_root_path1.decode(
+                                    Int.self,
+                                    forKey: .ka
+                                )
+                                let value = rawValue
+                                self.a = value ?? 1
+                            }
+                        } else {
+                            self.a = 1
                         }
                     } else {
                         self.a = 1
@@ -473,7 +492,6 @@ struct CodingFieldTest {
                 public init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
-                    let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                 }
                 public func encode(to encoder: Encoder) throws {
                     \#(transformFunctionDefinition())
