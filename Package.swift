@@ -47,14 +47,21 @@ let package = Package(
         // A client of the library, which is able to use the macro in its own code.
         .executableTarget(name: "CodableMacroClient", dependencies: ["CodableMacro"]),
 
-        // A test target used to develop the macro implementation.
+        // A test target for testing macro expansion
         .testTarget(
-            name: "CodableMacroTests",
+            name: "CodableMacroExpansionTests",
             dependencies: [
                 "CodableMacroMacros",
                 "CodableMacro",
                 .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
             ]
         ),
+        // A test target for testing actual encoding / decoding process 
+        .testTarget(
+            name: "CodableMacroCodingTests",
+            dependencies: [
+                "CodableMacro"
+            ]
+        )
     ]
 )

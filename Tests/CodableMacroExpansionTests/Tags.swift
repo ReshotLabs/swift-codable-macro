@@ -21,9 +21,4 @@ extension Tag {
         @Tag static var computedProperty: Tag
     }
     
-    enum coding {
-        @Tag static var keyedCoding: Tag
-        @Tag static var singleValueCoding: Tag
-    }
-    
 }
