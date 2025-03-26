@@ -14,8 +14,17 @@ import SwiftDiagnostics
 
 struct SingleValueCodableMacro: CodingImplMacroProtocol {
     
-    static let comformance: TokenSyntax = "SingleValueCodableProtocol"
     static let supportedAttachedTypes: Set<AttachedType> = [.class, .struct]
+    
+    
+    static func makeExtensionHeader(
+        node: AttributeSyntax,
+        type: some TypeSyntaxProtocol,
+        declaration: some DeclGroupSyntax,
+        context: some MacroExpansionContext
+    ) throws -> SyntaxNodeString {
+        return "extension \(type): SingleValueCodableProtocol"
+    }
     
     
     static func makeDecls(

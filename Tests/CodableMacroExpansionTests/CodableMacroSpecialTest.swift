@@ -76,9 +76,11 @@ extension CodingExpansionTest.CodableMacroSpecialTest {
                 }
             
                 public required init(from decoder: Decoder) throws {
+            
                 }
             
                 public func encode(to encoder: Encoder) throws {
+            
                 }
             
             }
@@ -239,8 +241,7 @@ extension CodingExpansionTest.CodableMacroSpecialTest {
                     \#(transformFunctionDefinition())
                     var $__coding_container_root = encoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
-                        let value = self.a
-                        let transformedValue = value
+                        let transformedValue = self.a
                         try $__coding_container_root.encode(transformedValue, forKey: .ka)
                     }
                 }
@@ -295,8 +296,7 @@ extension CodingExpansionTest.CodableMacroSpecialTest {
                     \#(transformFunctionDefinition())
                     var $__coding_container_root = encoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
-                        let value = self.a
-                        let transformedValue = value
+                        let transformedValue = self.a
                         try $__coding_container_root.encode(transformedValue, forKey: .ka)
                     }
                 }
@@ -354,8 +354,7 @@ extension CodingExpansionTest.CodableMacroSpecialTest {
                     \#(transformFunctionDefinition())
                     var $__coding_container_root = encoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
-                        let value = self.a
-                        let transformedValue = value
+                        let transformedValue = self.a
                         try $__coding_container_root.encode(transformedValue, forKey: .ka)
                     }
                 }
@@ -486,6 +485,13 @@ extension CodingExpansionTest.CodableMacroSpecialTest {
             }
             """#
         )
+    }
+    
+    
+    class Test11Super: Codable {
+        required init() {
+            
+        }
     }
     
 }

@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "type": "swift-lldb",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:swift-codable-macro}",
+            "name": "Debug CodableMacroClient",
+            "program": "${workspaceFolder:swift-codable-macro}/.build/debug/CodableMacroClient",
+            "preLaunchTask": "swift: Build Debug CodableMacroClient"
+        },
+        {
+            "type": "swift-lldb",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:swift-codable-macro}",
+            "name": "Release CodableMacroClient",
+            "program": "${workspaceFolder:swift-codable-macro}/.build/release/CodableMacroClient",
+            "preLaunchTask": "swift: Build Release CodableMacroClient"
+        }
+    ]
+}

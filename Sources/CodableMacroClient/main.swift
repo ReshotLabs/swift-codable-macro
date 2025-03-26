@@ -305,3 +305,28 @@ struct TypeK {
 //    @SingleValueCodableDelegate
 //    var c: Int = 1
 }
+
+
+
+class TestClass: Codable {
+    var a: Int
+    init(a: Int) {
+        self.a = a
+    }
+}
+
+
+final class TestSubClass: TestClass {
+    var b: Int
+    init(b: Int) {
+        self.b = b
+        super.init(a: 1)
+    }
+    required init(from decoder: any Decoder) throws {
+        self.b = 1
+        super.init(a: 1)
+    }
+    override func encode(to encoder: any Encoder) throws {
+        
+    }
+}

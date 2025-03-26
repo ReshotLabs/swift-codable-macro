@@ -73,8 +73,7 @@ extension CodingExpansionTest.DecodeTransformTest {
                     \#(transformFunctionDefinition())
                     var $__coding_container_root = encoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
-                        let value = self.a
-                        let transformedValue = value
+                        let transformedValue = self.a
                         try $__coding_container_root.encode(transformedValue, forKey: .ka)
                     }
                 }
@@ -126,8 +125,7 @@ extension CodingExpansionTest.DecodeTransformTest {
                     \#(transformFunctionDefinition())
                     var $__coding_container_root = encoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
-                        let value = self.a
-                        let transformedValue = value
+                        let transformedValue = self.a
                         try $__coding_container_root.encode(transformedValue, forKey: .ka)
                     }
                 }
@@ -183,8 +181,7 @@ extension CodingExpansionTest.DecodeTransformTest {
                     \#(transformFunctionDefinition())
                     var $__coding_container_root = encoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
-                        let value = self.a
-                        let transformedValue = value
+                        let transformedValue = self.a
                         try $__coding_container_root.encode(transformedValue, forKey: .ka)
                     }
                 }

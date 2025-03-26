@@ -71,8 +71,7 @@ extension CodingExpansionTest.EncodeTransformTest {
                     \#(transformFunctionDefinition())
                     var $__coding_container_root = encoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
-                        let value = self.a
-                        let transformedValue = try $__coding_transform(value, {
+                        let transformedValue = try $__coding_transform(self.a, {
                                 $0.description
                             })
                         try $__coding_container_root.encode(transformedValue, forKey: .ka)
@@ -126,8 +125,7 @@ extension CodingExpansionTest.EncodeTransformTest {
                     \#(transformFunctionDefinition())
                     var $__coding_container_root = encoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
-                        let value = self.a
-                        let transformedValue = try $__coding_transform(value, \.description)
+                        let transformedValue = try $__coding_transform(self.a, \.description)
                         try $__coding_container_root.encode(transformedValue, forKey: .ka)
                     }
                 }
@@ -183,8 +181,7 @@ extension CodingExpansionTest.EncodeTransformTest {
                     \#(transformFunctionDefinition())
                     var $__coding_container_root = encoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
-                        let value = self.a
-                        let transformedValue = try $__coding_transform(value, CodingExpansionTest.EncodeTransformTest.int2Str(_:))
+                        let transformedValue = try $__coding_transform(self.a, CodingExpansionTest.EncodeTransformTest.int2Str(_:))
                         try $__coding_container_root.encode(transformedValue, forKey: .ka)
                     }
                 }

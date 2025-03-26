@@ -51,14 +51,8 @@ class CodingExpansionTest {
     func validateFunctionDefinition(indent: Int = 2) -> String {
     #"""
     func $__coding_validate<T>(_ propertyName: String, _ validateExpr: String, _ value: T, _ validate: (T) throws -> Bool) throws {
-        let valid = (try? validate(value)) ?? false
-        guard valid else {
-            throw CodingValidationError(
-                type: "\(Self.self)",
-                property: propertyName,
-                validationExpr: validateExpr,
-                value: "\(value as Any)"
-            )
+        guard (try? validate(value)) == true else {
+            throw CodingValidationError(type: "\(Self.self)", property: propertyName, validationExpr: validateExpr, value: "\(value as Any)")
         }
     }
     """#.replacingOccurrences(of: "\n", with: "\n" + String(repeating: " ", count: indent * 4))

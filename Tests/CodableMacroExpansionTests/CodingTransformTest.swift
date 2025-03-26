@@ -83,10 +83,9 @@ extension CodingExpansionTest.CodingTransformTest {
                     \#(transformFunctionDefinition())
                     var $__coding_container_root = encoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
-                        let value = self.a
-                        let transformedValue1 = try $__coding_transform(value, codingTransformPassThroughWithTypeInference(.doubleDateTransform()).encodeTransform)
-                        let transformedValue2 = try $__coding_transform(transformedValue1, codingTransformPassThroughWithTypeInference(IdenticalCodingTransform<Double>()).encodeTransform)
-                        let transformedValue = try $__coding_transform(transformedValue2, codingTransformPassThroughWithTypeInference(.doubleTypeTransform(option: .string)).encodeTransform)
+                        let value1 = try $__coding_transform(self.a, codingTransformPassThroughWithTypeInference(.doubleDateTransform()).encodeTransform)
+                        let value2 = try $__coding_transform(value1, codingTransformPassThroughWithTypeInference(IdenticalCodingTransform<Double>()).encodeTransform)
+                        let transformedValue = try $__coding_transform(value2, codingTransformPassThroughWithTypeInference(.doubleTypeTransform(option: .string)).encodeTransform)
                         try $__coding_container_root.encode(transformedValue, forKey: .ka)
                     }
                 }
@@ -156,10 +155,9 @@ extension CodingExpansionTest.CodingTransformTest {
                     \#(transformFunctionDefinition())
                     var $__coding_container_root = encoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
-                        let value = self.a
-                        let transformedValue1 = try $__coding_transform(value, codingTransformPassThroughWithTypeInference(.doubleDateTransform()).encodeTransform)
-                        let transformedValue2 = try $__coding_transform(transformedValue1, codingTransformPassThroughWithTypeInference(IdenticalCodingTransform<Double>()).encodeTransform)
-                        let transformedValue = try $__coding_transform(transformedValue2, codingTransformPassThroughWithTypeInference(.doubleTypeTransform(option: .string)).encodeTransform)
+                        let value1 = try $__coding_transform(self.a, codingTransformPassThroughWithTypeInference(.doubleDateTransform()).encodeTransform)
+                        let value2 = try $__coding_transform(value1, codingTransformPassThroughWithTypeInference(IdenticalCodingTransform<Double>()).encodeTransform)
+                        let transformedValue = try $__coding_transform(value2, codingTransformPassThroughWithTypeInference(.doubleTypeTransform(option: .string)).encodeTransform)
                         try $__coding_container_root.encode(transformedValue, forKey: .ka)
                     }
                 }

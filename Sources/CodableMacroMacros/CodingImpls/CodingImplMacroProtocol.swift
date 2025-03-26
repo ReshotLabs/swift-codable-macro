@@ -14,8 +14,14 @@ import SwiftDiagnostics
 
 protocol CodingImplMacroProtocol: ExtensionMacro, MemberMacro {
     
-    static var comformance: TokenSyntax { get }
     static var supportedAttachedTypes: Set<AttachedType> { get }
+    
+    static func makeExtensionHeader(
+        node: AttributeSyntax,
+        type: some TypeSyntaxProtocol,
+        declaration: some DeclGroupSyntax,
+        context: some MacroExpansionContext
+    ) throws -> SyntaxNodeString
     
     static func makeDecls(
         node: AttributeSyntax,
@@ -28,9 +34,6 @@ protocol CodingImplMacroProtocol: ExtensionMacro, MemberMacro {
 
 
 extension CodingImplMacroProtocol {
-    
-    static var comformance: TokenSyntax { "Codable" }
-    
     
     static func shouldAutoInit<Seq: Sequence>(
         declaration: some DeclGroupSyntax,
@@ -73,12 +76,13 @@ extension CodingImplMacroProtocol {
         guard supportedAttachedTypes.contains(attachType) else {
             throw .diagnostic(node: declaration, message: .codingMacro.general.attachType(of: self))
         }
+        let extensionHeader = try makeExtensionHeader(node: node, type: type, declaration: declaration, context: context)
         return switch attachType {
             case .actor, .class: [
-                try .init("extension \(type.trimmed): \(comformance)", membersBuilder: {})
+                try .init(extensionHeader, membersBuilder: {})
             ]
             case .enum, .struct: [
-                try .init("extension \(type.trimmed): \(comformance)") {
+                try .init(extensionHeader) {
                     try makeDecls(node: node, declaration: declaration, context: context)
                 }
             ]

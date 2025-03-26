@@ -19,317 +19,530 @@ extension CodableMacro {
         let name: TokenSyntax
         let cases: [String]
     }
-    
-    
-    
-    static func generateEnumDeclarations(from declSpecList: [EnumDeclSpec]) -> [DeclSyntax] {
-        
-        declSpecList.map { decl in
-            """
-            enum \(decl.name): String, CodingKey {
-                case \(raw: decl.cases.map({ #"k\#($0) = "\#($0)""# }).joined(separator: ","))
-            }
-            """
+
+
+    private static func generateSingleEnumDeclaration<Cases: Collection>(
+        name: TokenSyntax, 
+        cases: Cases
+    ) -> DeclSyntax 
+    where Cases.Element == String {
+        """
+        enum \(name): String, CodingKey {
+            case \(raw: cases.map { #"k\#($0) = "\#($0)""# }.joined(separator: ","))
         }
-        
+        """
     }
-    
-    
+
+
+    static func generateEnumDeclarations(from structure: CodingStructure, macroNode: AttributeSyntax) throws -> [DeclSyntax] {
+
+        let enumNamePrefix = "$__coding_container_keys_" as TokenSyntax
+
+        var containerStack: [TokenSyntax] = []
+        var enumDecls = [DeclSyntax]() 
+
+
+        func dfs(_ structure: CodingStructure) throws {
+
+            switch structure {
+
+                case let .root(children, _):
+                    let containerName = "root" as TokenSyntax
+                    enumDecls.append(
+                        generateSingleEnumDeclaration(name: "\(enumNamePrefix)\(containerName)", cases: children.keys)
+                    )
+                    containerStack.append(containerName)
+                    defer { containerStack.removeLast() }
+                    for child in children.values {
+                        try dfs(child)
+                    }
+
+                case let .node(pathElement, children, _):
+                    guard let parentContainerName = containerStack.last else {
+                        throw .diagnostic(node: macroNode, message: .codingMacro.codable.unexpectedEmptyContainerStack)
+                    }
+                    let containerName = "\(parentContainerName)_\(raw: pathElement)" as TokenSyntax
+                    enumDecls.append(
+                        generateSingleEnumDeclaration(name: "\(enumNamePrefix)\(containerName)", cases: children.keys)
+                    )
+                    containerStack.append(containerName)
+                    defer { containerStack.removeLast() }
+                    for child in children.values {
+                        try dfs(child)
+                    }
+
+                case .leaf: break 
+
+            }
+
+        }
+
+        try dfs(structure)
+
+        return enumDecls
+
+    }
+
+
     static func generateDecodeInitializer(
-        from steps: [CodingStep],
+        from structure: CodingStructure,
         isClass: Bool,
-        context: some MacroExpansionContext
-    ) throws -> [DeclSyntax] {
-        
-        let transformFunctionName = "$__coding_transform" as TokenSyntax
-        let validateFunctionName = "$__coding_validate" as TokenSyntax
-        
-        func generateDecodeInitializerBody<C: BidirectionalCollection & RangeReplaceableCollection>(
-            from steps: inout C
-        ) throws -> [CodeBlockItemSyntax] where C.Element == CodingStep {
-            
-            var codeBlockItems = [CodeBlockItemSyntax]()
-            
-            while let step = steps.popLast() {
-                
-                switch step {
-                    
-                    // a container step with a required parent container
-                    case let .container(container, parentContainer) where container.isRequired:
-                        let expr = if let parentContainer {
-                            """
-                            let \(container.name) = try \(parentContainer.name).nestedContainer(
-                                keyedBy: \(container.keysDef).self, 
-                                forKey: .\(raw: parentContainer.key)
-                            )
-                            """
-                        } else {
-                            "let \(container.name) = try decoder.container(keyedBy: \(container.keysDef).self)"
-                        } as CodeBlockItemSyntax
-                        codeBlockItems.append(expr)
-                    
-                    // a container step with a non-required parent container
-                    case let .container(container, parentContainer):
-                        // finding fields that require initialization in the else branch
-                        var valueStepsWithDefault: [CodingFieldInfo] = []
-                        var count = 1
-                        var stepCount = 0
-                        var decodablePropertyCount = 0
-                        for operation in steps.reversed() where count > 0 {
-                            switch operation {
-                                case let .container(container, _) where !container.isRequired:
-                                    count += 1
-                                case .endOptionalContainer:
-                                    count -= 1
-                                case let .value(info, _):
-                                    if info.defaultValue != nil {
-                                        valueStepsWithDefault.append(info)
-                                    } else if info.propertyInfo.initializer == nil && info.propertyInfo.hasOptionalTypeDecl {
-                                        valueStepsWithDefault.append(info)
-                                    }
-                                    if info.propertyInfo.initializer == nil || info.propertyInfo.type != .constant {
-                                        decodablePropertyCount += 1
-                                    }
-                                default: break
-                            }
-                            stepCount += 1
-                        }
-                        guard decodablePropertyCount > 0 else {
-                            steps.removeLast(stepCount)
-                            break
-                        }
-                        let ifExprHeader = if let parentContainer {
-                            """
-                            if let \(container.name) = try? \(parentContainer.name).nestedContainer(
-                                keyedBy: \(container.keysDef).self, 
-                                forKey: .\(raw: parentContainer.key)
-                            )
-                            """
-                        } else {
-                            "if let \(container.name) = try? decoder.container(keyedBy: \(container.keysDef).self)"
-                        } as SyntaxNodeString
-                        // for non-required container, only decode them when they actually exist
-                        // the else branch is for initializing fields with macro-level default values
-                        let expr = try IfExprSyntax(ifExprHeader) {
-                            try generateDecodeInitializerBody(from: &steps)
-                        } else: {
-                            try valueStepsWithDefault.map {
-                                if let defaultValue = $0.defaultValue {
-                                    "self.\($0.propertyInfo.name) = \(defaultValue)"
-                                } else if $0.propertyInfo.initializer == nil, $0.propertyInfo.hasOptionalTypeDecl {
-                                    "self.\($0.propertyInfo.name) = nil"
-                                } else {
-                                    throw .diagnostic(node: $0.propertyInfo.name, message: .codingMacro.codable.missingDefaultOrOptional)
-                                }
-                            }
-                        }
-                        codeBlockItems.append(.init(item: .expr(.init(expr))))
-                        
-                    // container step with no parent (the root container)
-//                    case let .container(container, .none):
-//                        codeBlockItems.append(
-//                            "let \(container.name) = try decoder.container(keyedBy: \(container.keysDef).self)"
-//                        )
-                        
-                    // step that mark the end of an not-required container step
-                    case .endOptionalContainer:
-                        return codeBlockItems
-                        
-                    // a value step that actually decode the value of a property
-                    case let .value(codingFieldInfo, parentContainer):
-                        let propertyInfo = codingFieldInfo.propertyInfo
-                        guard propertyInfo.type != .constant || propertyInfo.initializer == nil else {
-                            // a let constant with an initializer cannot be decoded, ignore it
-                            break
-                        }
-                        guard let typeExpression = propertyInfo.typeExpression else {
-                            throw .diagnostic(node: propertyInfo.name, message: .codingMacro.general.cannotInferType)
-                        }
-                        
-                        let decodeExpr = if codingFieldInfo.isRequired {
-                            """
-                            let rawValue = try \(parentContainer.name).decode(
-                                \(codingFieldInfo.decodeTransform?.decodeSourceType ?? typeExpression),
-                                forKey: .\(raw: parentContainer.key)
-                            )
-                            """
-                        } else {
-                            """
-                            let rawValue = try? \(parentContainer.name).decode(
-                                \(codingFieldInfo.decodeTransform?.decodeSourceType ?? typeExpression),
-                                forKey: .\(raw: parentContainer.key)
-                            )
-                            """
-                        } as CodeBlockItemSyntax
-                        
-                        let transformExprs = switch (codingFieldInfo.decodeTransform, codingFieldInfo.isRequired) {
-                            case let (.some(transformSpec), true):
-                                transformSpec.transformExprs.enumerated().map { i, transform in
-                                    let sourceVarName = i == 0 ? "rawValue" : "value\(raw: i)" as TokenSyntax
-                                    let destVarName = i == transformSpec.transformExprs.count - 1 ? "value" : "value\(raw: i + 1)" as TokenSyntax
-                                    return "let \(destVarName) = try \(transformFunctionName)(\(sourceVarName), \(transform))"
-                                }
-                            case let (.some(transformSpec), false):
-                                transformSpec.transformExprs.enumerated().map { i, transform in
-                                    let sourceVarName = i == 0 ? "rawValue" : "value\(raw: i)" as TokenSyntax
-                                    let destVarName = i == transformSpec.transformExprs.count - 1 ? "value" : "value\(raw: i + 1)" as TokenSyntax
-                                    return "let \(destVarName) = \(sourceVarName).flatMap({ try? \(transformFunctionName)($0, \(transform))})"
-                                }
-                            default:
-                                ["let value = rawValue"]
-                        } as [CodeBlockItemSyntax]
-                        
-                        let validateExprs = if codingFieldInfo.validateExprs.isEmpty {
-                            [CodeBlockItemSyntax]()
-                        } else if codingFieldInfo.isRequired {
-                            codingFieldInfo.validateExprs.map { expr in
-                                let exprString = StringLiteralExprSyntax(content: IndentRemover().visit(expr).formatted().description)
-                                return #"try \#(validateFunctionName)("\#(propertyInfo.name)", \#(exprString), value, \#(expr))"#
-                            } as [CodeBlockItemSyntax]
-                        } else {
-                            [
-                                CodeBlockItemSyntax(item: .expr(.init(
-                                    try IfExprSyntax("if let value") {
-                                        codingFieldInfo.validateExprs.map { expr in
-                                            let exprString = StringLiteralExprSyntax(content: IndentRemover().visit(expr).formatted().description)
-                                            return #"try \#(validateFunctionName)("\#(propertyInfo.name)", \#(exprString), value, \#(expr))"#
-                                        }
-                                    }
-                                )))
-                            ]
-                        }
-                        
-                        let assignmentExpr = if let defaultValue = codingFieldInfo.defaultValue {
-                            "self.\(propertyInfo.name) = value ?? \(defaultValue)"
-                        } else if let initializer = propertyInfo.initializer {
-                            "self.\(propertyInfo.name) = value ?? \(initializer)"
-                        } else if propertyInfo.hasOptionalTypeDecl {
-                            "self.\(propertyInfo.name) = value ?? nil"
-                        } else {
-                            "self.\(propertyInfo.name) = value"
-                        } as CodeBlockItemSyntax
-                        
-                        codeBlockItems.append(.init(item: .stmt(.init(
-                            try DoStmtSyntax("do") {
-                                decodeExpr
-                                transformExprs
-                                validateExprs
-                                assignmentExpr
-                            }
-                        ))))
-                        
-                }
-                
-            }
-            
-            return codeBlockItems
-            
-        }
-        
-        var steps = steps
-        steps.reverse()        // process from the end, which should be more efficient for array
-        
-        return [
-            .init(
-                try InitializerDeclSyntax("public \(raw: isClass ? "required " : "")init(from decoder: Decoder) throws") {
-                    """
-                    func \(transformFunctionName)<T, R>(_ value: T, _ transform: (T) throws -> R) throws -> R {
-                        return try transform(value)
-                    }
-                    """
-                    #"""
-                    func \#(validateFunctionName)<T>(_ propertyName: String, _ validateExpr: String, _ value: T, _ validate: (T) throws -> Bool) throws {
-                        let valid = (try? validate(value)) ?? false
-                        guard valid else {
-                            throw CodingValidationError(
-                                type: "\(Self.self)",
-                                property: propertyName,
-                                validationExpr: validateExpr,
-                                value: "\(value as Any)"
-                            )
-                        }
-                    }
-                    """#
-                    try generateDecodeInitializerBody(from: &steps)
-                }
-            )
-        ]
-        
-    }
-    
-    
-    static func generateEncodeMethod(
-        from steps: [CodingStep],
-        context: some MacroExpansionContext
+        inherit: Bool,
+        macroNode: AttributeSyntax
     ) throws -> DeclSyntax {
-        
-        let transformFunctionName = "$__coding_transform" as TokenSyntax
-        
-        let decl = try FunctionDeclSyntax("public func encode(to encoder: Encoder) throws") {
-            
-            """
-            func \(transformFunctionName)<T, R>(_ value: T, _ transform: (T) throws -> R) throws -> R {
-                return try transform(value)
-            }
-            """
-            
-            try steps.compactMap { step in
-                
-                switch step {
-                    // container step with parent container
-                    case let .container(container, .some(parentContainer)):
-                        return """
-                            var \(container.name) = \(parentContainer.name).nestedContainer(
-                                keyedBy: \(container.keysDef).self, 
-                                forKey: .\(raw: parentContainer.key)
-                            )
-                            """
-                    // container step with no parent container (the root container)
-                    case let .container(container, .none):
-                        return """
-                            var \(container.name) = encoder.container(keyedBy: \(container.keysDef).self)
-                            """
-                    // step representing the end of a not-required container
-                    case .endOptionalContainer:
-                        return nil
-                    // value step
-                    case let .value(codingFieldInfo, parentContainer):
-                        let transformExprs = if let transformSpecs = codingFieldInfo.encodeTransform {
-                            transformSpecs.enumerated().map { i, transform in
-                                let sourceVarName = i == 0 ? "value" : "transformedValue\(raw: i)" as TokenSyntax
-                                let destVarName = i == transformSpecs.count - 1 ? "transformedValue" : "transformedValue\(raw: i+1)" as TokenSyntax
-                                return "let \(destVarName) = try \(transformFunctionName)(\(sourceVarName), \(transform))"
-                            }
+
+        let containerCodingKeysPrefix = "$__coding_container_keys_" as TokenSyntax
+        let containerVarNamePrefix = "$__coding_container_" as TokenSyntax
+
+        var containerStack: [TokenSyntax] = []
+
+        func structureDfs(_ structure: CodingStructure) throws -> (items: [CodeBlockItemSyntax], fieldsWithDefault: [CodingFieldInfo]) {
+
+            var codeBlockItems = [CodeBlockItemSyntax]()
+            var fieldsWithDefault = [CodingFieldInfo]()
+
+            var initFieldsWithDefaultCodeBlockItems: [CodeBlockItemSyntax] {
+                get throws {
+                    try fieldsWithDefault.map { 
+                        if let defaultValue = $0.defaultValue {
+                            "self.\($0.propertyInfo.name) = \(defaultValue)"
+                        } else if $0.propertyInfo.initializer == nil, $0.propertyInfo.hasOptionalTypeDecl {
+                            "self.\($0.propertyInfo.name) = nil"
                         } else {
-                            ["let transformedValue = value"]
-                        } as [CodeBlockItemSyntax]
-                        let encodeExpr = "try \(parentContainer.name).encode(transformedValue, forKey: .\(raw: parentContainer.key))" as CodeBlockItemSyntax
-                        return if codingFieldInfo.propertyInfo.hasOptionalTypeDecl {
-                            // optional properties
-                            try .init(item: .expr(.init(
-                                IfExprSyntax("if let value = self.\(codingFieldInfo.propertyInfo.name)") {
-                                    transformExprs
-                                    encodeExpr
-                                }
-                            )))
-                        } else {
-                            // non optional properties
-                            try .init(item: .stmt(.init(
-                                DoStmtSyntax("do") {
-                                    "let value = self.\(codingFieldInfo.propertyInfo.name)"
-                                    transformExprs
-                                    encodeExpr
-                                }
-                            )))
+                            throw .diagnostic(node: $0.propertyInfo.name, message: .codingMacro.codable.missingDefaultOrOptional)
                         }
+                    }
                 }
-                
             }
-            
+
+            switch structure {
+
+                case let .root(children, isRequired): do {
+
+                    let containerName = "root" as TokenSyntax
+
+                    containerStack.append(containerName)
+                    defer { containerStack.removeLast() }
+
+                    let items = try children.values.flatMap { child in
+                        let (childItems, childFieldsWithDefault) = try structureDfs(child)
+                        fieldsWithDefault.append(contentsOf: childFieldsWithDefault)
+                        return childItems
+                    }
+
+                    guard !items.isEmpty else { break }
+
+                    codeBlockItems = try generateRootDecodeItems(
+                        containerVarName: "\(containerVarNamePrefix)\(containerName)" as TokenSyntax, 
+                        containerCodingKeysName: "\(containerCodingKeysPrefix)\(containerName)" as TokenSyntax, 
+                        isRequired: isRequired, 
+                        childDecodingItems: items, 
+                        fieldsWithDefaultInitItems: initFieldsWithDefaultCodeBlockItems
+                    )
+
+                }
+
+                case let .node(pathElement, children, isRequired): do {
+
+                    guard let parentContainerName = containerStack.last else {
+                        throw .diagnostic(node: macroNode, message: .codingMacro.codable.unexpectedEmptyContainerStack)
+                    }
+                    let containerName = "\(parentContainerName)_\(raw: pathElement)" as TokenSyntax
+
+                    containerStack.append(containerName)
+                    defer { containerStack.removeLast() }
+
+                    let items = try children.values.flatMap { child in
+                        let (childItems, childFieldsWithDefault) = try structureDfs(child)
+                        fieldsWithDefault.append(contentsOf: childFieldsWithDefault)
+                        return childItems
+                    }
+
+                    guard !items.isEmpty else { break }
+
+                    codeBlockItems = try generateContainerDecodeItems(
+                        parentContainerVarName: "\(containerVarNamePrefix)\(parentContainerName)" as TokenSyntax, 
+                        containerVarName: "\(containerVarNamePrefix)\(containerName)" as TokenSyntax, 
+                        containerCodingKeysName: "\(containerCodingKeysPrefix)\(containerName)" as TokenSyntax, 
+                        pathElement: pathElement, 
+                        isRequired: isRequired, 
+                        childDecodingItems: items, 
+                        fieldsWithDefaultInitItems: initFieldsWithDefaultCodeBlockItems
+                    )
+
+                }
+
+                case let .leaf(pathElement, field): do {
+
+                    guard let parentContainerName = containerStack.last else {
+                        throw .diagnostic(node: macroNode, message: .codingMacro.codable.unexpectedEmptyContainerStack)
+                    }
+                    let parentContainerVarName = "\(containerVarNamePrefix)\(parentContainerName)" as TokenSyntax
+                    let propertyInfo = field.propertyInfo
+
+                    if field.defaultValue != nil || (propertyInfo.initializer == nil && propertyInfo.hasOptionalTypeDecl) {
+                        fieldsWithDefault.append(field)
+                    }
+
+                    guard propertyInfo.type != .constant || propertyInfo.initializer == nil else {
+                        // a let constant with an initializer cannot be decoded, ignore it
+                        break
+                    }
+
+                    codeBlockItems.append(
+                        try field.makeDecodeBlock(containerVarName: parentContainerVarName, pathElement: pathElement)
+                    )
+
+                }
+
+            }
+
+            return (codeBlockItems, fieldsWithDefault)
+
         }
-        
-        return .init(decl)
-        
+
+        return .init(
+            try InitializerDeclSyntax("public \(raw: isClass ? "required " : "")init(from decoder: Decoder) throws") {
+                CodingFieldInfo.transformFunctionDecl
+                CodingFieldInfo.validationFunctionDecl
+                try structureDfs(structure).items
+                if inherit {
+                    "try super.init(from: decoder)"
+                }
+            }
+        )
+
+    }
+
+
+    static func generateEncodeMethod(
+        from structure: CodingStructure,
+        inherit: Bool,
+        macroNode: AttributeSyntax
+    ) throws -> DeclSyntax {
+
+        let containerCodingKeysPrefix = "$__coding_container_keys_" as TokenSyntax
+        let containerVarNamePrefix = "$__coding_container_" as TokenSyntax
+
+        var containerStack: [TokenSyntax] = []
+
+        func structureDfs(_ structure: CodingStructure) throws -> [CodeBlockItemSyntax] {
+
+            var items = [CodeBlockItemSyntax]()
+
+            switch structure {
+
+                case let .root(children, _):
+                    let containerName = "root" as TokenSyntax
+                    containerStack.append(containerName)
+                    defer { containerStack.removeLast() }
+                    items = try generateRootEncodeItems(
+                        containerVarName: "\(containerVarNamePrefix)\(containerName)" as TokenSyntax, 
+                        containerCodingKeysName: "\(containerCodingKeysPrefix)\(containerName)" as TokenSyntax, 
+                        childDecodingItems: children.values.flatMap { try structureDfs($0) }
+                    )
+
+                case let .node(pathElement, children, _):
+                    guard let parentContainerName = containerStack.last else {
+                        throw .diagnostic(node: macroNode, message: .codingMacro.codable.unexpectedEmptyContainerStack)
+                    }
+                    let containerName = "\(parentContainerName)_\(raw: pathElement)" as TokenSyntax
+                    containerStack.append(containerName)
+                    defer { containerStack.removeLast() }
+                    items = try generateContainerEncodeItems(
+                        parentContainerVarName: "\(containerVarNamePrefix)\(parentContainerName)", 
+                        containerVarName: "\(containerVarNamePrefix)\(containerName)", 
+                        containerCodingKeysName: "\(containerCodingKeysPrefix)\(containerName)", 
+                        pathElement: pathElement, 
+                        childDecodingItems: children.values.flatMap { try structureDfs($0) }
+                    )
+
+                case let .leaf(pathElement, field):
+                    guard let parentContainerName = containerStack.last else {
+                        throw .diagnostic(node: macroNode, message: .codingMacro.codable.unexpectedEmptyContainerStack)
+                    }
+                    let parentContainerVarName = "\(containerVarNamePrefix)\(parentContainerName)" as TokenSyntax
+                    try items.append(field.makeEncodeBlock(containerVarName: parentContainerVarName, pathElement: pathElement))
+
+            }
+
+            return items
+
+        }
+
+        return try .init(
+            FunctionDeclSyntax("public \(raw: inherit ? "override " : "")func encode(to encoder: Encoder) throws") {
+                if inherit {
+                    "try super.encode(to: encoder)"
+                }
+                CodingFieldInfo.transformFunctionDecl
+                try structureDfs(structure)
+            }
+        )
+
     }
     
+}
+
+
+
+extension CodableMacro {
+
+    private static func generateRootDecodeItems(
+        containerVarName: TokenSyntax,
+        containerCodingKeysName: TokenSyntax,
+        isRequired: Bool,
+        childDecodingItems: [CodeBlockItemSyntax],
+        fieldsWithDefaultInitItems: [CodeBlockItemSyntax]
+    ) throws -> [CodeBlockItemSyntax] {
+
+        var codeBlockItems = [CodeBlockItemSyntax]()
+
+        if isRequired {
+            codeBlockItems.append(
+                "let \(containerVarName) = try decoder.container(keyedBy: \(containerCodingKeysName).self)"
+            )
+            codeBlockItems.append(contentsOf: childDecodingItems)
+        } else {
+            let decodeExpr = "try? decoder.container(keyedBy: \(containerCodingKeysName).self)" as ExprSyntax
+            let decodeSubtreeExpr = try IfExprSyntax("if let \(containerVarName) = \(decodeExpr)") {
+                childDecodingItems
+            } else: {
+                fieldsWithDefaultInitItems
+            }
+            codeBlockItems.append(.init(item: .expr(.init(decodeSubtreeExpr))))
+        }
+
+        return codeBlockItems
+
+    }
+
+
+    private static func generateContainerDecodeItems(
+        parentContainerVarName: TokenSyntax,
+        containerVarName: TokenSyntax,
+        containerCodingKeysName: TokenSyntax,
+        pathElement: String,
+        isRequired: Bool,
+        childDecodingItems: [CodeBlockItemSyntax],
+        fieldsWithDefaultInitItems: [CodeBlockItemSyntax]
+    ) throws -> [CodeBlockItemSyntax] {
+
+        var codeBlockItems = [CodeBlockItemSyntax]()
+
+        if isRequired {
+            codeBlockItems.append("""
+                let \(containerVarName) = try \(parentContainerVarName).nestedContainer(
+                    keyedBy: \(containerCodingKeysName).self, 
+                    forKey: .k\(raw: pathElement)
+                )
+                """
+            )
+            codeBlockItems.append(contentsOf: childDecodingItems)
+        } else {
+            let decodeExpr = """
+                try? \(parentContainerVarName).nestedContainer(
+                    keyedBy: \(containerCodingKeysName).self, 
+                    forKey: .k\(raw: pathElement)
+                )
+                """ as ExprSyntax
+            let decodeSubtreeExpr = try IfExprSyntax("if let \(containerVarName) = \(decodeExpr)") {
+                childDecodingItems
+            } else: {
+                fieldsWithDefaultInitItems
+            }
+            codeBlockItems.append(.init(item: .expr(.init(decodeSubtreeExpr))))
+        }
+
+        return codeBlockItems
+
+    }
+
+
+    private static func generateContainerEncodeItems(
+        parentContainerVarName: TokenSyntax,
+        containerVarName: TokenSyntax,
+        containerCodingKeysName: TokenSyntax,
+        pathElement: String,
+        childDecodingItems: [CodeBlockItemSyntax]
+    ) throws -> [CodeBlockItemSyntax] {
+
+        var codeBlockItems = [CodeBlockItemSyntax]()
+
+        codeBlockItems.append("""
+            var \(containerVarName) = \(parentContainerVarName).nestedContainer(
+                keyedBy: \(containerCodingKeysName).self, 
+                forKey: .k\(raw: pathElement)
+            )
+            """
+        )
+        codeBlockItems.append(contentsOf: childDecodingItems)
+
+        return codeBlockItems
+
+    }
+
+
+    private static func generateRootEncodeItems(
+        containerVarName: TokenSyntax,
+        containerCodingKeysName: TokenSyntax,
+        childDecodingItems: [CodeBlockItemSyntax]
+    ) throws -> [CodeBlockItemSyntax] {
+        var codeBlockItems = [CodeBlockItemSyntax]()
+        codeBlockItems.append("var \(containerVarName) = encoder.container(keyedBy: \(containerCodingKeysName).self)")
+        codeBlockItems.append(contentsOf: childDecodingItems)
+        return codeBlockItems
+    }
+
+}
+
+
+
+extension CodableMacro.CodingFieldInfo {
+
+    static var transformFunctionName: TokenSyntax { "$__coding_transform" }
+    static var validateFunctionName: TokenSyntax { "$__coding_validate" }
+
+    static var transformFunctionDecl: DeclSyntax {
+        """
+        func \(transformFunctionName)<T, R>(_ value: T, _ transform: (T) throws -> R) throws -> R {
+            return try transform(value)
+        }
+        """
+    }
+
+    static var validationFunctionDecl: DeclSyntax {
+        #"""
+        func \#(validateFunctionName)<T>(_ propertyName: String, _ validateExpr: String, _ value: T, _ validate: (T) throws -> Bool) throws {
+            guard (try? validate(value)) == true else {
+                throw CodingValidationError(type: "\(Self.self)", property: propertyName, validationExpr: validateExpr, value: "\(value as Any)")
+            }
+        }
+        """#
+    }
+
+
+    func makeDecodeBlock(containerVarName: TokenSyntax, pathElement: String) throws -> CodeBlockItemSyntax {
+        let doStmt = try DoStmtSyntax("do") {
+            try self.makeDecodeExpr(parentContainerVarName: containerVarName, pathElement: pathElement, resultVarName: "rawValue")
+            try self.makeDecodeTransformExprs(sourceVarName: "rawValue", destVarName: "value")
+            try self.makeValidateionExprs(varName: "value")
+            try self.makeAssignmentExpr(varName: "value")
+        }
+        return .init(item: .stmt(.init(doStmt)))
+    }
+
+
+    func makeEncodeBlock(containerVarName: TokenSyntax, pathElement: String) throws -> CodeBlockItemSyntax {
+        if self.propertyInfo.hasOptionalTypeDecl {
+            let expr = try IfExprSyntax("if let value = self.\(propertyInfo.name)") {
+                try self.makeEncodeTransformExprs(sourceVarName: "value", destVarName: "transformedValue")
+                "try \(containerVarName).encode(transformedValue, forKey: .k\(raw: pathElement))"
+            }
+            return .init(item: .expr(.init(expr)))
+        } else {
+            let expr = try DoStmtSyntax("do") {
+                try self.makeEncodeTransformExprs(sourceVarName: "self.\(propertyInfo.name)", destVarName: "transformedValue")
+                "try \(containerVarName).encode(transformedValue, forKey: .k\(raw: pathElement))"
+            }
+            return .init(item: .stmt(.init(expr)))
+        }
+    }
+
+
+    func makeDecodeExpr(parentContainerVarName: TokenSyntax, pathElement: String, resultVarName: TokenSyntax) throws -> CodeBlockItemSyntax {
+        guard let typeExpression = propertyInfo.typeExpression else {
+            throw .diagnostic(node: propertyInfo.name, message: .codingMacro.general.cannotInferType)
+        }
+        return if self.isRequired {
+            """
+            let \(resultVarName) = try \(parentContainerVarName).decode(
+                \(self.decodeTransform?.decodeSourceType ?? typeExpression),
+                forKey: .k\(raw: pathElement)
+            )
+            """
+        } else {
+            """
+            let \(resultVarName) = try? \(parentContainerVarName).decode(
+                \(self.decodeTransform?.decodeSourceType ?? typeExpression),
+                forKey: .k\(raw: pathElement)
+            )
+            """
+        } as CodeBlockItemSyntax
+    }
+
+
+    func makeEncodeTransformExprs(sourceVarName: TokenSyntax, destVarName: TokenSyntax) throws -> [CodeBlockItemSyntax] {
+        guard let transformExprs = self.encodeTransform else { 
+            return ["let \(destVarName) = \(sourceVarName)"] 
+        }
+        return transformExprs.enumerated().map { i, transform in
+            let localSourceVarName = i == 0 ? sourceVarName : "value\(raw: i)" as TokenSyntax
+            let localDestVarName = i == transformExprs.count - 1 ? destVarName : "value\(raw: i + 1)" as TokenSyntax
+            return "let \(localDestVarName) = try \(Self.transformFunctionName)(\(localSourceVarName), \(transform))"
+        }
+    }
+
+
+    func makeDecodeTransformExprs(sourceVarName: TokenSyntax, destVarName: TokenSyntax) throws -> [CodeBlockItemSyntax] {
+
+        switch (self.decodeTransform, self.isRequired) {
+            case let (.some(transformSpec), true):
+                transformSpec.transformExprs.enumerated().map { i, transform in
+                    let localSourceVarName = i == 0 ? sourceVarName : "value\(raw: i)" as TokenSyntax
+                    let localDestVarName = i == transformSpec.transformExprs.count - 1 ? destVarName : "value\(raw: i + 1)" as TokenSyntax
+                    return "let \(localDestVarName) = try \(Self.transformFunctionName)(\(localSourceVarName), \(transform))"
+                }
+            case let (.some(transformSpec), false):
+                transformSpec.transformExprs.enumerated().map { i, transform in
+                    let localSourceVarName = i == 0 ? sourceVarName : "value\(raw: i)" as TokenSyntax
+                    let localDestVarName = i == transformSpec.transformExprs.count - 1 ? destVarName : "value\(raw: i + 1)" as TokenSyntax
+                    return "let \(localDestVarName) = \(localSourceVarName).flatMap({ try? \(Self.transformFunctionName)($0, \(transform))})"
+                }
+            default:
+                ["let \(destVarName) = \(sourceVarName)"]
+        } as [CodeBlockItemSyntax]
+
+    }
+
+    
+    func makeValidateionExprs(varName: TokenSyntax) throws -> [CodeBlockItemSyntax] {
+
+        if self.validateExprs.isEmpty {
+            [CodeBlockItemSyntax]()
+        } else if self.isRequired {
+            self.validateExprs.map { expr in
+                let exprString = StringLiteralExprSyntax(content: IndentRemover().visit(expr).formatted().description)
+                return #"try \#(Self.validateFunctionName)("\#(propertyInfo.name)", \#(exprString), \#(varName), \#(expr))"#
+            } as [CodeBlockItemSyntax]
+        } else {
+            [
+                CodeBlockItemSyntax(item: .expr(.init(
+                    try IfExprSyntax("if let \(varName)") {
+                        self.validateExprs.map { expr in
+                            let exprString = StringLiteralExprSyntax(content: IndentRemover().visit(expr).formatted().description)
+                            return #"try \#(Self.validateFunctionName)("\#(propertyInfo.name)", \#(exprString), \#(varName), \#(expr))"#
+                        }
+                    }
+                )))
+            ]
+        }
+
+    }
+
+    
+    func makeAssignmentExpr(varName: TokenSyntax) throws -> CodeBlockItemSyntax {
+        
+        if let defaultValue = self.defaultValue {
+            "self.\(propertyInfo.name) = \(varName) ?? \(defaultValue)"
+        } else if let initializer = propertyInfo.initializer {
+            "self.\(propertyInfo.name) = \(varName) ?? \(initializer)"
+        } else if propertyInfo.hasOptionalTypeDecl {
+            "self.\(propertyInfo.name) = \(varName) ?? nil"
+        } else {
+            "self.\(propertyInfo.name) = \(varName)"
+        }
+        
+    }
+
 }

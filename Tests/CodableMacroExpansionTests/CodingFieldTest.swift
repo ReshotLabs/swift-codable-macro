@@ -95,8 +95,7 @@ extension CodingExpansionTest.CodingFieldTest {
                         forKey: .kpath2
                     )
                     do {
-                        let value = self.a
-                        let transformedValue = value
+                        let transformedValue = self.a
                         try $__coding_container_root_path1_path2.encode(transformedValue, forKey: .ka)
                     }
                 }
@@ -167,8 +166,7 @@ extension CodingExpansionTest.CodingFieldTest {
                         forKey: .kpath1
                     )
                     do {
-                        let value = self.a
-                        let transformedValue = value
+                        let transformedValue = self.a
                         try $__coding_container_root_path1.encode(transformedValue, forKey: .ka)
                     }
                 }
@@ -379,8 +377,7 @@ extension CodingExpansionTest.CodingFieldTest {
                         forKey: .kpath1
                     )
                     do {
-                        let value = self.a
-                        let transformedValue = value
+                        let transformedValue = self.a
                         try $__coding_container_root_path1.encode(transformedValue, forKey: .ka)
                     }
                 }
@@ -455,8 +452,7 @@ extension CodingExpansionTest.CodingFieldTest {
                         forKey: .kpath
                     )
                     do {
-                        let value = self.a
-                        let transformedValue = value
+                        let transformedValue = self.a
                         try $__coding_container_root_path.encode(transformedValue, forKey: .ka)
                     }
                 }
@@ -497,8 +493,7 @@ extension CodingExpansionTest.CodingFieldTest {
                     \#(transformFunctionDefinition())
                     var $__coding_container_root = encoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
-                        let value = self.a
-                        let transformedValue = value
+                        let transformedValue = self.a
                         try $__coding_container_root.encode(transformedValue, forKey: .ka)
                     }
                 }
