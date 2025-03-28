@@ -53,16 +53,30 @@ This is not all the capability of this package. The following codes provide a br
 ```swift
 @Codable
 struct Person {
-    @CodingField("data", "id")
+    
+    @CodingField("data", "uid")
     @DecodeTransform(source: String.self, with: { UUID(uuidString: $0)! })
     @EncodeTransform(source: UUID.self, with: \.uuidString)
     var id: UUID
+    
     @CodingField("data", "meta", "name")
     @CodingValidate(source: String.self, with: { !$0.isEmpty })
     @CodingValidate(source: String.self, with: { !$0.contains(where: { $0.isNumber }) })
     var name: String 
+    
+    @CodingField("data", "meta", "gender", onMissing: .male, onMismatch: .female)
+    let gender: Gender
+    
+    @CodingField("data", "meta", "birth", default: .distancePast)
+    @CodingTransform(
+        .doubleDateTransform, 
+        .doubleTypeTransform(option: .string)
+    )
+    var birthday: Date
+    
     @CodingIgnore
 	var habit: String = "writing Swift Macro"
+    
 }
 
 @SingleValueCodable
@@ -73,8 +87,6 @@ struct FilePath {
 }
 ```
 
-
-
 ## Provided Macros
 
 **Codable**
@@ -84,6 +96,10 @@ Annotate a class or a struct for auto conforming to `Codable` protocol. It will 
 **CodingField(_:default:)**
 
 Specify a custom coding path and a default value for a stored property. If the coding path is not provided, the name of the property will be used. The default value is not required to be set using the `default` parameter, you can also provide a standard initializer for the property or use an optional type. The macro is able to take that into account. 
+
+**CodingField(_:onMissing:onMismatch:)**
+
+Similar to `CodingField(_:default:)`, but it allow specifying separate default values for value missing and type mismatch. 
 
 **CodingIgnore**
 
@@ -96,6 +112,13 @@ Specify a custom transformation when decoding for a property.  It will first try
 **EncodeTransform(source:with:)**
 
 Specify a custom transformation when encoding a property. It will first convert the value using the provided transformation, then encoded the converted value. 
+
+**CodingTransform(_:)**
+
+Specify a sequence of transformations when encoding / decoding a property. The transformations here should be instances of types that conform to `EvenCodingTransformProtocol`. 
+
+* When encoding the property, the transformations will be used in order
+* When decoding the property, the transformations will be used in reversed-order 
 
 **CodingValidate(source:with:)**
 

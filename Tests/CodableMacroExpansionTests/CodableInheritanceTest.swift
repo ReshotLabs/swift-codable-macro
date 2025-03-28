@@ -87,6 +87,7 @@ extension CodingExpansionTest.CodableInheritanceTest {
 
     @Codable(inherit: true)
     final class Test2: Base {
+        @CodingField(default: -1)
         var c: Int
     }
 
@@ -97,6 +98,7 @@ extension CodingExpansionTest.CodableInheritanceTest {
             source: """
             @Codable(inherit: true)
             final class Test2: Base {
+                @CodingField(default: -1)
                 var c: Int
             }
             """, 
@@ -111,14 +113,24 @@ extension CodingExpansionTest.CodableInheritanceTest {
                 public required init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
-                    let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
-                        let rawValue = try $__coding_container_root.decode(
-                            Int.self,
-                            forKey: .kc
-                        )
-                        let value = rawValue
-                        self.c = value
+                        let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
+                        do {
+                            let rawValue = try $__coding_container_root.decode(
+                                Int.self,
+                                forKey: .kc
+                            )
+                            let value = rawValue
+                            self.c = value
+                        } catch Swift.DecodingError.typeMismatch {
+                            self.c = -1
+                        } catch Swift.DecodingError.valueNotFound, Swift.DecodingError.keyNotFound {
+                            self.c = -1
+                        }
+                    } catch Swift.DecodingError.typeMismatch {
+                        self.c = -1
+                    } catch Swift.DecodingError.keyNotFound {
+                        self.c = -1
                     }
                     try super.init(from: decoder)
                 }

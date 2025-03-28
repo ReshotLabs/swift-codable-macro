@@ -4,6 +4,7 @@
 
 
 /// Automatically make the marked `class` or `struct` to conform to [`Codable`]
+/// - Parameter inherit: Whether this class has an super class that has already conformed to [`Codable`]
 ///
 /// When being expanded, it will look up all the stored properties and automatically generate
 /// the implementation of [`encode(to:)`] and [`init(from:)`]
@@ -70,7 +71,8 @@ public macro Codable(inherit: Bool = false) = #externalMacro(module: "CodableMac
 
 /// Provide customization for a stored property when doing encoding and decoding
 /// - Parameter path: The coding path for fetching / storing the value in the encoded data
-/// - Parameter default: The default value to use when the value does not exist in the encoded data
+/// - Parameter default: The default value to use when any error occurs when decoding that field, 
+///                      including value missing and type mismatch 
 ///
 /// * When the `path` parameter is not specified, the name of the property will be used
 /// * Stored properties without any of ``CodingField(_:)``, ``CodingField(_:default:)``
@@ -87,6 +89,73 @@ public macro Codable(inherit: Bool = false) = #externalMacro(module: "CodableMac
 /// - Attention: Must be used together with ``Codable()``
 @attached(peer)
 public macro CodingField<T>(_ path: String..., default: T) = #externalMacro(module: "CodableMacroMacros", type: "CodingFieldMacro")
+
+
+
+/// Provide customization for a stored property when doing encoding and decoding
+/// - Parameter path: The coding path for fetching / storing the value in the encoded data
+/// - Parameter onMissing: The default value to use when the required coding path is missing in the encoded data
+///
+/// * When the `path` parameter is not specified, the name of the property will be used
+/// * Stored properties without any of ``CodingField(_:)``, ``CodingField(_:default:)``
+/// and ``CodingIgnore()`` will be treated as being anotated with `@CodingField`
+/// * If both initializer and the `default` argument is provided, the `default` argument will
+/// suppress the initializer when decoding
+///
+/// - Attention: This macro can ONLY be applied to stored properties and will raise compilation
+/// error if applied to the wrong target
+///
+/// - Attention: Any two stored properties in a type MUST NOT have conflict coding path. Path `A`
+/// and path `B` are conflicted if `A` is exactly the same as `B` or `A` is a prefix of `B` or vice versa
+///
+/// - Attention: Must be used together with ``Codable()``
+@attached(peer)
+public macro CodingField<T>(_ path: String..., onMissing: T) = #externalMacro(module: "CodableMacroMacros", type: "CodingFieldMacro")
+
+
+
+/// Provide customization for a stored property when doing encoding and decoding
+/// - Parameter path: The coding path for fetching / storing the value in the encoded data
+/// - Parameter onMismatch: The default value to use when the value has wrong type the encoded data
+///
+/// * When the `path` parameter is not specified, the name of the property will be used
+/// * Stored properties without any of ``CodingField(_:)``, ``CodingField(_:default:)``
+/// and ``CodingIgnore()`` will be treated as being anotated with `@CodingField`
+/// * If both initializer and the `default` argument is provided, the `default` argument will
+/// suppress the initializer when decoding
+///
+/// - Attention: This macro can ONLY be applied to stored properties and will raise compilation
+/// error if applied to the wrong target
+///
+/// - Attention: Any two stored properties in a type MUST NOT have conflict coding path. Path `A`
+/// and path `B` are conflicted if `A` is exactly the same as `B` or `A` is a prefix of `B` or vice versa
+///
+/// - Attention: Must be used together with ``Codable()``
+@attached(peer)
+public macro CodingField<T>(_ path: String..., onMismatch: T) = #externalMacro(module: "CodableMacroMacros", type: "CodingFieldMacro")
+
+
+
+/// Provide customization for a stored property when doing encoding and decoding
+/// - Parameter path: The coding path for fetching / storing the value in the encoded data
+/// - Parameter onMissing: The default value to use when the required coding path is missing in the encoded data
+/// - Parameter onMismatch: The default value to use when the value has wrong type the encoded data
+///
+/// * When the `path` parameter is not specified, the name of the property will be used
+/// * Stored properties without any of ``CodingField(_:)``, ``CodingField(_:default:)``
+/// and ``CodingIgnore()`` will be treated as being anotated with `@CodingField`
+/// * If both initializer and the `default` argument is provided, the `default` argument will
+/// suppress the initializer when decoding
+///
+/// - Attention: This macro can ONLY be applied to stored properties and will raise compilation
+/// error if applied to the wrong target
+///
+/// - Attention: Any two stored properties in a type MUST NOT have conflict coding path. Path `A`
+/// and path `B` are conflicted if `A` is exactly the same as `B` or `A` is a prefix of `B` or vice versa
+///
+/// - Attention: Must be used together with ``Codable()``
+@attached(peer)
+public macro CodingField<T>(_ path: String..., onMissing: T, onMismatch: T) = #externalMacro(module: "CodableMacroMacros", type: "CodingFieldMacro")
 
 
 

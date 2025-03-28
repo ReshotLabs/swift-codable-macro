@@ -29,32 +29,52 @@ extension CodingTest.CodingFieldCodingTest {
         var c: Int = 2
         @CodingField("path2", "d", default: 2)
         var d: Int? = 1
+        @CodingField("path2", "e", onMissing: 2)
+        var e: Int = 1
+        @CodingField("path2", "f", onMismatch: 2)
+        var f: Int = 1
+        @CodingField("path3", "g", onMissing: 2, onMismatch: 3)
+        var g: Int = 1
     }
     
     @Test(
         "Test Decoding",
         arguments: [
             (
-                .success(.init(a: 1, b: 1, c: 1, d: 1)),
+                .success(.init(a: 1, b: 1, c: 1, d: 1, e: 0, f: 0, g: 0)),
                 [
                     "a": 1,
                     "path1": [
                         "b": 1,
                         "path2": [ "c": 1 ]
                     ],
-                    "path2": ["d": 1],
+                    "path2": ["d": 1, "e": 0, "f": 0],
+                    "path3": ["g": 0],
                     "b": 2
                 ]
             ),
             (
-                .success(.init(a: 1, b: nil, c: 2, d: 2)),
+                .success(.init(a: 1, b: nil, c: 2, d: 2, e: 2, f: 0, g: 2)),
                 [
                     "a": 1,
                     "path1": [
                         "b": "1",
                         "path1": [ "c": 1 ]
                     ],
-                    "path2": ["e": 1],
+                    "path2": ["z": 1, "f": 0],
+                    "d": 3
+                ]
+            ),
+            (
+                .success(.init(a: 1, b: nil, c: 1, d: 2, e: 0, f: 2, g: 3)),
+                [
+                    "a": 1,
+                    "path1": [
+                        "b": "1",
+                        "path2": [ "c": 1]
+                    ],
+                    "path2": ["z": 1, "e": 0, "f": "0"],
+                    "path3": [],
                     "d": 3
                 ]
             ),
@@ -64,9 +84,36 @@ extension CodingTest.CodingFieldCodingTest {
                     "a": "1",
                     "path1": [
                         "b": 1,
-                        "path2": [ "c": 1 ]
+                        "path2": [ "c": 1]
                     ],
-                    "path2": ["d": 1],
+                    "path2": ["d": 1, "e": 0, "f": 0],
+                    "path3": ["g": 0],
+                    "b": 2
+                ]
+            ),
+            (
+                .error,
+                [
+                    "a": 1,
+                    "path1": [
+                        "b": 1,
+                        "path2": [ "c": 1]
+                    ],
+                    "path2": ["d": 1, "e": "0", "f": 0],
+                    "path3": ["g": 0],
+                    "b": 2
+                ]
+            ),
+            (
+                .error,
+                [
+                    "a": 1,
+                    "path1": [
+                        "b": 1,
+                        "path2": [ "c": 1]
+                    ],
+                    "path2": ["d": 1, "e": 0],
+                    "path3": ["g": 0],
                     "b": 2
                 ]
             )
@@ -81,14 +128,15 @@ extension CodingTest.CodingFieldCodingTest {
         "Test Encoding",
         arguments: [
             (
-                .init(a: 1, b: 1, c: 1, d: 1),
+                .init(a: 1, b: 1, c: 1, d: 1, e: 0, f: 0, g: 0),
                 [
                     "a": 1,
                     "path1": [
                         "b": 1,
                         "path2": [ "c": 1 ]
                     ],
-                    "path2": ["d": 1]
+                    "path2": ["d": 1, "e": 0, "f": 0],
+                    "path3": ["g": 0],
                 ]
             ),
             (
@@ -98,7 +146,8 @@ extension CodingTest.CodingFieldCodingTest {
                     "path1": [
                         "path2": [ "c": 2 ]
                     ],
-                    "path2": ["d": 2]
+                    "path2": ["d": 2, "e": 1, "f": 1],
+                    "path3": ["g": 1],
                 ]
             )
         ] as [(SomeType1, JsonComponent)]

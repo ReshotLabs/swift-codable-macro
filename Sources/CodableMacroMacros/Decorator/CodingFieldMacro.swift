@@ -17,14 +17,17 @@ import Foundation
 struct CodingFieldMacro: CodingDecoratorMacro {
     
     static let macroArgumentsParsingRule: [ArgumentsParsingRule] = [
-        .varArg(canIgnore: true), .labeled("default", canIgnore: true)
+        .varArg(canIgnore: true), 
+        .labeled("default", canIgnore: true), 
+        .labeledVarArg("onMissing", canIgnore: true), 
+        .labeledVarArg("onMismatch", canIgnore: true)
     ]
     
     
     static func processProperty(
         _ property: PropertyInfo,
         macroNodes: [SwiftSyntax.AttributeSyntax]
-    ) throws(DiagnosticsError) -> (path: [String], defaultValue: ExprSyntax?)? {
+    ) throws(DiagnosticsError) -> (path: [String], defaultValueOnMissing: ExprSyntax?, defaultValueOnMismatch: ExprSyntax?)? {
         
         guard property.type != .computed else {
             if macroNodes.isEmpty {
@@ -39,30 +42,32 @@ struct CodingFieldMacro: CodingDecoratorMacro {
         }
         
         guard let macroNode = macroNodes.first else {
-            return ([property.name.trimmed.text], nil)
+            return ([property.name.trimmed.text], nil, nil)
         }
         
         guard
             let macroRawArguments = macroNode.arguments?.as(LabeledExprListSyntax.self),
             macroRawArguments.isEmpty == false
         else {
-            return ([property.name.trimmed.text], nil)
+            return ([property.name.trimmed.text], nil, nil)
         }
         
-        let (pathElements, defaultValue) = try extractPathAndDefault(from: macroRawArguments)
+        let (pathElements, defaultValueOnMissing, defaultValueOnMismatch) = try extractPathAndDefault(from: macroRawArguments)
         
-        if let defaultValue, property.initializer != nil, property.type == .constant {
+        if let defaultValue = defaultValueOnMissing ?? defaultValueOnMismatch, 
+           property.initializer != nil, property.type == .constant 
+        {
             throw .diagnostic(node: defaultValue, message: .decorator.codingField.defaultValueOnConstantwithInitializer)
         }
         
-        return (pathElements ?? [property.name.trimmed.text], defaultValue)
+        return (pathElements ?? [property.name.trimmed.text], defaultValueOnMissing, defaultValueOnMismatch)
         
     }
     
     
     static func extractPathAndDefault(
         from macroArguments: LabeledExprListSyntax
-    ) throws(DiagnosticsError) -> (pathElements: [String]?, defaultValue: ExprSyntax?) {
+    ) throws(DiagnosticsError) -> (pathElements: [String]?, defaultValueOnMissing: ExprSyntax?, defaultValueOnMismatch: ExprSyntax?) {
         
         let arguments = try macroArguments.grouped(with: macroArgumentsParsingRule)
         
@@ -74,12 +79,14 @@ struct CodingFieldMacro: CodingDecoratorMacro {
             }
         }
         let defaultValue = arguments[1].first?.expression
+        let onMissing = arguments[2].first?.expression ?? defaultValue
+        let onMismatch = arguments[3].first?.expression ?? defaultValue
         
         guard (pathElements?.count ?? 0) == arguments[0].count else {
             throw .diagnostic(node: macroArguments, message: .decorator.codingField.notStringLiteral)
         }
         
-        return (pathElements, defaultValue)
+        return (pathElements, onMissing, onMismatch)
         
     }
     

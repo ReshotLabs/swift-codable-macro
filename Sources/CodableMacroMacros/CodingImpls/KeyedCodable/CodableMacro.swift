@@ -63,7 +63,7 @@ struct CodableMacro: CodingImplMacroProtocol {
         // use the auto implementation provided by Swift Compiler if:
         // * no actual customization is found
         // * target is non-final class (where auto implementation will fail on extension)
-        // * there is inherited Codable
+        // * there is no inherited Codable
         guard isNonFinalClass || inherit || !canAutoCodable else { return [] }
         
         guard !codingFieldInfoList.isEmpty else {

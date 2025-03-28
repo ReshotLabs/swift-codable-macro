@@ -279,16 +279,20 @@ extension CodingExpansionTest.CodableMacroSpecialTest {
                 public required init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
-                    if let $__coding_container_root = try? decoder.container(keyedBy: $__coding_container_keys_root.self) {
+                    do {
+                        let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                         do {
-                            let rawValue = try? $__coding_container_root.decode(
+                            let rawValue = try $__coding_container_root.decode(
                                 Int.self,
                                 forKey: .ka
                             )
                             let value = rawValue
-                            self.a = value ?? 1
+                            self.a = value
+                        } catch Swift.DecodingError.typeMismatch {
+                        } catch Swift.DecodingError.valueNotFound, Swift.DecodingError.keyNotFound {
                         }
-                    } else {
+                    } catch Swift.DecodingError.typeMismatch {
+                    } catch Swift.DecodingError.keyNotFound {
                     }
                 }
             
@@ -337,16 +341,20 @@ extension CodingExpansionTest.CodableMacroSpecialTest {
                 public required init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
-                    if let $__coding_container_root = try? decoder.container(keyedBy: $__coding_container_keys_root.self) {
+                    do {
+                        let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                         do {
-                            let rawValue = try? $__coding_container_root.decode(
+                            let rawValue = try $__coding_container_root.decode(
                                 Int.self,
                                 forKey: .ka
                             )
                             let value = rawValue
-                            self.a = value ?? 1
+                            self.a = value
+                        } catch Swift.DecodingError.typeMismatch {
+                        } catch Swift.DecodingError.valueNotFound, Swift.DecodingError.keyNotFound {
                         }
-                    } else {
+                    } catch Swift.DecodingError.typeMismatch {
+                    } catch Swift.DecodingError.keyNotFound {
                     }
                 }
             
@@ -395,16 +403,23 @@ extension CodingExpansionTest.CodableMacroSpecialTest {
                 public required init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
-                    if let $__coding_container_root = try? decoder.container(keyedBy: $__coding_container_keys_root.self) {
+                    do {
+                        let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                         do {
-                            let rawValue = try? $__coding_container_root.decode(
+                            let rawValue = try $__coding_container_root.decode(
                                 Int?.self,
                                 forKey: .ka
                             )
                             let value = rawValue
-                            self.a = value ?? nil
+                            self.a = value
+                        } catch Swift.DecodingError.typeMismatch {
+                            self.a = nil
+                        } catch Swift.DecodingError.valueNotFound, Swift.DecodingError.keyNotFound {
+                            self.a = nil
                         }
-                    } else {
+                    } catch Swift.DecodingError.typeMismatch {
+                        self.a = nil
+                    } catch Swift.DecodingError.keyNotFound {
                         self.a = nil
                     }
                 }
@@ -454,16 +469,23 @@ extension CodingExpansionTest.CodableMacroSpecialTest {
                 public required init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
-                    if let $__coding_container_root = try? decoder.container(keyedBy: $__coding_container_keys_root.self) {
+                    do {
+                        let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                         do {
-                            let rawValue = try? $__coding_container_root.decode(
+                            let rawValue = try $__coding_container_root.decode(
                                 Int?.self,
                                 forKey: .ka
                             )
                             let value = rawValue
-                            self.a = value ?? nil
+                            self.a = value
+                        } catch Swift.DecodingError.typeMismatch {
+                            self.a = nil
+                        } catch Swift.DecodingError.valueNotFound, Swift.DecodingError.keyNotFound {
+                            self.a = nil
                         }
-                    } else {
+                    } catch Swift.DecodingError.typeMismatch {
+                        self.a = nil
+                    } catch Swift.DecodingError.keyNotFound {
                         self.a = nil
                     }
                 }

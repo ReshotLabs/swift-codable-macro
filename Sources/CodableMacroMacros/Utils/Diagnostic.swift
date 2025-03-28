@@ -78,3 +78,10 @@ extension Error where Self == DiagnosticsError {
     }
     
 }
+
+
+
+struct InternalError: LocalizedError {
+    let message: String
+    var errorDescription: String? { message }
+}

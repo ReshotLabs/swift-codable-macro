@@ -19,8 +19,8 @@ infix operator ==== : ComparisonPrecedence
 /// Represent the Encoding / Decoding structure as a tree
 indirect enum CodingStructure: Hashable, Equatable {
     
-    case root(children: OrderedDictionary<String, CodingStructure>, required: Bool)
-    case node(pathElement: String, children: OrderedDictionary<String, CodingStructure>, required: Bool)
+    case root(children: OrderedDictionary<String, CodingStructure>, requirementStrategy: CodableMacro.RequriementStrategy)
+    case node(pathElement: String, children: OrderedDictionary<String, CodingStructure>, requirementStrategy: CodableMacro.RequriementStrategy)
     case leaf(pathElement: String, field: CodableMacro.CodingFieldInfo)
     
     var pathElement: String? {
@@ -32,11 +32,11 @@ indirect enum CodingStructure: Hashable, Equatable {
     }
     
     
-    var isRequired: Bool {
+    var requirementStrategy: CodableMacro.RequriementStrategy {
         switch self {
-            case let .root(_, required): required
-            case let .node(_, _, required): required
-            case let .leaf(_, field): field.isRequired
+            case let .root(_, strategy): strategy
+            case let .node(_, _, strategy): strategy
+            case let .leaf(_, field): field.requirementStrategy
         }
     }
     
@@ -110,7 +110,7 @@ extension CodingStructure: CustomStringConvertible {
         let structure = if case .root = self {
             self
         } else {
-            CodingStructure.root(children: [pathElement!: self], required: self.isRequired)
+            CodingStructure.root(children: [pathElement!: self], requirementStrategy: self.requirementStrategy)
         }
         dfsAllPaths(of: structure, paths: &allPaths)
         return allPaths
@@ -126,7 +126,7 @@ extension CodingStructure {
     
     static func parse(_ codingFieldInfoList: [CodableMacro.CodingFieldInfo]) throws(DiagnosticsError) -> CodingStructure {
         
-        var root = CodingStructure.root(children: [:], required: false)
+        var root = CodingStructure.root(children: [:], requirementStrategy: .allowAll)
         
         for codingFieldInfo in codingFieldInfoList {
             try matchAndUpdate(&root, with: codingFieldInfo.path, field: codingFieldInfo)
@@ -153,17 +153,17 @@ extension CodingStructure {
                 // seeing a leaf means that a path conflict exist
                 throw .diagnostics(makePathConflictDiagnostics(property1: field.propertyInfo.name, property2: conflictField.propertyInfo.name))
                 
-            case .root(var children, let required):
+            case .root(var children, let requirementStrategy):
                 guard children[pathElementToMatch] != nil else {
                     // no match found
                     if isLeaf {
                         children[pathElementToMatch] = .leaf(pathElement: pathElementToMatch, field: field)
-                        structure = .root(children: children, required: required || field.isRequired)
+                        structure = .root(children: children, requirementStrategy: requirementStrategy | field.requirementStrategy)
                     } else {
-                        var newNode = CodingStructure.node(pathElement: pathElementToMatch, children: [:], required: field.isRequired)
+                        var newNode = CodingStructure.node(pathElement: pathElementToMatch, children: [:], requirementStrategy: field.requirementStrategy)
                         try matchAndUpdate(&newNode, with: path.dropFirst(), field: field)
                         children[pathElementToMatch] = newNode
-                        structure = .root(children: children, required: required || field.isRequired)
+                        structure = .root(children: children, requirementStrategy: requirementStrategy | field.requirementStrategy)
                     }
                     break
                 }
@@ -179,19 +179,19 @@ extension CodingStructure {
                     throw .diagnostics(makePathConflictDiagnostics(property1: field.propertyInfo.name, property2: field2))
                 }
                 try matchAndUpdate(&children[pathElementToMatch]!, with: path.dropFirst(), field: field)
-                structure = .root(children: children, required: required || field.isRequired)
+                structure = .root(children: children, requirementStrategy: requirementStrategy | field.requirementStrategy)
                 
-            case .node(let pathElement, var children, let required):
+            case .node(let pathElement, var children, let requirementStrategy):
                 guard children[pathElementToMatch] != nil else {
                     // no match found
                     if isLeaf {
                         children[pathElementToMatch] = .leaf(pathElement: pathElementToMatch, field: field)
-                        structure = .node(pathElement: pathElement, children: children, required: required || field.isRequired)
+                        structure = .node(pathElement: pathElement, children: children, requirementStrategy: requirementStrategy | field.requirementStrategy)
                     } else {
-                        var newNode = CodingStructure.node(pathElement: pathElementToMatch, children: [:], required: required || field.isRequired)
+                        var newNode = CodingStructure.node(pathElement: pathElementToMatch, children: [:], requirementStrategy: requirementStrategy | field.requirementStrategy)
                         try matchAndUpdate(&newNode, with: path.dropFirst(), field: field)
                         children[pathElementToMatch] = newNode
-                        structure = .node(pathElement: pathElement, children: children, required: required || field.isRequired)
+                        structure = .node(pathElement: pathElement, children: children, requirementStrategy: requirementStrategy | field.requirementStrategy)
                     }
                     break
                 }
@@ -207,7 +207,7 @@ extension CodingStructure {
                     throw .diagnostics(makePathConflictDiagnostics(property1: field.propertyInfo.name, property2: field2))
                 }
                 try matchAndUpdate(&children[pathElementToMatch]!, with: path.dropFirst(), field: field)
-                structure = .node(pathElement: pathElement, children: children, required: required || field.isRequired)
+                structure = .node(pathElement: pathElement, children: children, requirementStrategy: requirementStrategy | field.requirementStrategy)
                 
         }
         

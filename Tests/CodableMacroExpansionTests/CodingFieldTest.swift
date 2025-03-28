@@ -140,22 +140,28 @@ extension CodingExpansionTest.CodingFieldTest {
                 public init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
-                    if let $__coding_container_root = try? decoder.container(keyedBy: $__coding_container_keys_root.self) {
-                        if let $__coding_container_root_path1 = try? $__coding_container_root.nestedContainer(
-                            keyedBy: $__coding_container_keys_root_path1.self,
-                            forKey: .kpath1
-                        ) {
+                    do {
+                        let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
+                        do {
+                            let $__coding_container_root_path1 = try $__coding_container_root.nestedContainer(
+                                keyedBy: $__coding_container_keys_root_path1.self,
+                                forKey: .kpath1
+                            )
                             do {
-                                let rawValue = try? $__coding_container_root_path1.decode(
+                                let rawValue = try $__coding_container_root_path1.decode(
                                     Int.self,
                                     forKey: .ka
                                 )
                                 let value = rawValue
-                                self.a = value ?? 1
+                                self.a = value
+                            } catch Swift.DecodingError.typeMismatch {
+                            } catch Swift.DecodingError.valueNotFound, Swift.DecodingError.keyNotFound {
                             }
-                        } else {
+                        } catch Swift.DecodingError.typeMismatch {
+                        } catch Swift.DecodingError.keyNotFound {
                         }
-                    } else {
+                    } catch Swift.DecodingError.typeMismatch {
+                    } catch Swift.DecodingError.keyNotFound {
                     }
                 }
                 public func encode(to encoder: Encoder) throws {
@@ -208,23 +214,33 @@ extension CodingExpansionTest.CodingFieldTest {
                 public init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
-                    if let $__coding_container_root = try? decoder.container(keyedBy: $__coding_container_keys_root.self) {
-                        if let $__coding_container_root_path1 = try? $__coding_container_root.nestedContainer(
-                            keyedBy: $__coding_container_keys_root_path1.self,
-                            forKey: .kpath1
-                        ) {
+                    do {
+                        let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
+                        do {
+                            let $__coding_container_root_path1 = try $__coding_container_root.nestedContainer(
+                                keyedBy: $__coding_container_keys_root_path1.self,
+                                forKey: .kpath1
+                            )
                             do {
-                                let rawValue = try? $__coding_container_root_path1.decode(
+                                let rawValue = try $__coding_container_root_path1.decode(
                                     Int?.self,
                                     forKey: .ka
                                 )
                                 let value = rawValue
-                                self.a = value ?? nil
+                                self.a = value
+                            } catch Swift.DecodingError.typeMismatch {
+                                self.a = nil
+                            } catch Swift.DecodingError.valueNotFound, Swift.DecodingError.keyNotFound {
+                                self.a = nil
                             }
-                        } else {
+                        } catch Swift.DecodingError.typeMismatch {
+                            self.a = nil
+                        } catch Swift.DecodingError.keyNotFound {
                             self.a = nil
                         }
-                    } else {
+                    } catch Swift.DecodingError.typeMismatch {
+                        self.a = nil
+                    } catch Swift.DecodingError.keyNotFound {
                         self.a = nil
                     }
                 }
@@ -280,23 +296,33 @@ extension CodingExpansionTest.CodingFieldTest {
                 public init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
-                    if let $__coding_container_root = try? decoder.container(keyedBy: $__coding_container_keys_root.self) {
-                        if let $__coding_container_root_path1 = try? $__coding_container_root.nestedContainer(
-                            keyedBy: $__coding_container_keys_root_path1.self,
-                            forKey: .kpath1
-                        ) {
+                    do {
+                        let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
+                        do {
+                            let $__coding_container_root_path1 = try $__coding_container_root.nestedContainer(
+                                keyedBy: $__coding_container_keys_root_path1.self,
+                                forKey: .kpath1
+                            )
                             do {
-                                let rawValue = try? $__coding_container_root_path1.decode(
+                                let rawValue = try $__coding_container_root_path1.decode(
                                     Int?.self,
                                     forKey: .ka
                                 )
                                 let value = rawValue
-                                self.a = value ?? 2
+                                self.a = value
+                            } catch Swift.DecodingError.typeMismatch {
+                                self.a = 2
+                            } catch Swift.DecodingError.valueNotFound, Swift.DecodingError.keyNotFound {
+                                self.a = 2
                             }
-                        } else {
+                        } catch Swift.DecodingError.typeMismatch {
+                            self.a = 2
+                        } catch Swift.DecodingError.keyNotFound {
                             self.a = 2
                         }
-                    } else {
+                    } catch Swift.DecodingError.typeMismatch {
+                        self.a = 2
+                    } catch Swift.DecodingError.keyNotFound {
                         self.a = 2
                     }
                 }
@@ -349,23 +375,33 @@ extension CodingExpansionTest.CodingFieldTest {
                 public init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
-                    if let $__coding_container_root = try? decoder.container(keyedBy: $__coding_container_keys_root.self) {
-                        if let $__coding_container_root_path1 = try? $__coding_container_root.nestedContainer(
-                            keyedBy: $__coding_container_keys_root_path1.self,
-                            forKey: .kpath1
-                        ) {
+                    do {
+                        let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
+                        do {
+                            let $__coding_container_root_path1 = try $__coding_container_root.nestedContainer(
+                                keyedBy: $__coding_container_keys_root_path1.self,
+                                forKey: .kpath1
+                            )
                             do {
-                                let rawValue = try? $__coding_container_root_path1.decode(
+                                let rawValue = try $__coding_container_root_path1.decode(
                                     Int.self,
                                     forKey: .ka
                                 )
                                 let value = rawValue
-                                self.a = value ?? 1
+                                self.a = value
+                            } catch Swift.DecodingError.typeMismatch {
+                                self.a = 1
+                            } catch Swift.DecodingError.valueNotFound, Swift.DecodingError.keyNotFound {
+                                self.a = 1
                             }
-                        } else {
+                        } catch Swift.DecodingError.typeMismatch {
+                            self.a = 1
+                        } catch Swift.DecodingError.keyNotFound {
                             self.a = 1
                         }
-                    } else {
+                    } catch Swift.DecodingError.typeMismatch {
+                        self.a = 1
+                    } catch Swift.DecodingError.keyNotFound {
                         self.a = 1
                     }
                 }
@@ -501,16 +537,218 @@ extension CodingExpansionTest.CodingFieldTest {
             """#
         )
     }
+
+
+    @Codable
+    struct Test10 {
+        @CodingField(onMissing: 2)
+        var a: Int = 1
+    }
+
+    @Test("var | missing default")
+    func test10() async throws {
+        assertMacroExpansion(
+            source: """
+            @Codable
+            struct Test {
+                @CodingField(onMissing: 2)
+                var a: Int = 1
+            }
+            """, 
+            expandedSource: #"""
+            struct Test {
+                var a: Int = 1
+            }
+
+            extension Test: Codable {
+                enum $__coding_container_keys_root: String, CodingKey {
+                    case ka = "a"
+                }
+                public init(from decoder: Decoder) throws {
+                    func $__coding_transform<T, R>(_ value: T, _ transform: (T) throws -> R) throws -> R {
+                        return try transform(value)
+                    }
+                    func $__coding_validate<T>(_ propertyName: String, _ validateExpr: String, _ value: T, _ validate: (T) throws -> Bool) throws {
+                        guard (try? validate(value)) == true else {
+                            throw CodingValidationError(type: "\(Self.self)", property: propertyName, validationExpr: validateExpr, value: "\(value as Any)")
+                        }
+                    }
+                    do {
+                        let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
+                        do {
+                            let rawValue = try $__coding_container_root.decode(
+                                Int.self,
+                                forKey: .ka
+                            )
+                            let value = rawValue
+                            self.a = value
+                        } catch Swift.DecodingError.valueNotFound, Swift.DecodingError.keyNotFound {
+                            self.a = 2
+                        }
+                    } catch Swift.DecodingError.keyNotFound {
+                        self.a = 2
+                    }
+                }
+                public func encode(to encoder: Encoder) throws {
+                    func $__coding_transform<T, R>(_ value: T, _ transform: (T) throws -> R) throws -> R {
+                        return try transform(value)
+                    }
+                    var $__coding_container_root = encoder.container(keyedBy: $__coding_container_keys_root.self)
+                    do {
+                        let transformedValue = self.a
+                        try $__coding_container_root.encode(transformedValue, forKey: .ka)
+                    }
+                }
+            }
+            """#
+        )
+    }
+
+
+    @Codable
+    struct Test11 {
+        @CodingField(onMismatch: 2)
+        var a: Int = 1
+    }
+
+    @Test("var | mismatch default")
+    func test11() async throws {
+        assertMacroExpansion(
+            source: """
+            @Codable
+            struct Test {
+                @CodingField(onMismatch: 2)
+                var a: Int = 1
+            }
+            """, 
+            expandedSource: #"""
+            struct Test {
+                var a: Int = 1
+            }
+
+            extension Test: Codable {
+                enum $__coding_container_keys_root: String, CodingKey {
+                    case ka = "a"
+                }
+                public init(from decoder: Decoder) throws {
+                    func $__coding_transform<T, R>(_ value: T, _ transform: (T) throws -> R) throws -> R {
+                        return try transform(value)
+                    }
+                    func $__coding_validate<T>(_ propertyName: String, _ validateExpr: String, _ value: T, _ validate: (T) throws -> Bool) throws {
+                        guard (try? validate(value)) == true else {
+                            throw CodingValidationError(type: "\(Self.self)", property: propertyName, validationExpr: validateExpr, value: "\(value as Any)")
+                        }
+                    }
+                    do {
+                        let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
+                        do {
+                            let rawValue = try $__coding_container_root.decode(
+                                Int.self,
+                                forKey: .ka
+                            )
+                            let value = rawValue
+                            self.a = value
+                        } catch Swift.DecodingError.typeMismatch {
+                            self.a = 2
+                        }
+                    } catch Swift.DecodingError.typeMismatch {
+                        self.a = 2
+                    }
+                }
+                public func encode(to encoder: Encoder) throws {
+                    func $__coding_transform<T, R>(_ value: T, _ transform: (T) throws -> R) throws -> R {
+                        return try transform(value)
+                    }
+                    var $__coding_container_root = encoder.container(keyedBy: $__coding_container_keys_root.self)
+                    do {
+                        let transformedValue = self.a
+                        try $__coding_container_root.encode(transformedValue, forKey: .ka)
+                    }
+                }
+            }
+            """#
+        )
+    }
+
+
+    @Codable
+    struct Test12 {
+        @CodingField(onMissing: 2, onMismatch: 3)
+        var a: Int = 1
+    }
+
+    @Test("var | missing default + mismatch default")
+    func test12() async throws {
+        assertMacroExpansion(
+            source: """
+            @Codable
+            struct Test {
+                @CodingField(onMissing: 2, onMismatch: 3)
+                var a: Int = 1
+            }
+            """, 
+            expandedSource: #"""
+            struct Test {
+                var a: Int = 1
+            }
+
+            extension Test: Codable {
+                enum $__coding_container_keys_root: String, CodingKey {
+                    case ka = "a"
+                }
+                public init(from decoder: Decoder) throws {
+                    func $__coding_transform<T, R>(_ value: T, _ transform: (T) throws -> R) throws -> R {
+                        return try transform(value)
+                    }
+                    func $__coding_validate<T>(_ propertyName: String, _ validateExpr: String, _ value: T, _ validate: (T) throws -> Bool) throws {
+                        guard (try? validate(value)) == true else {
+                            throw CodingValidationError(type: "\(Self.self)", property: propertyName, validationExpr: validateExpr, value: "\(value as Any)")
+                        }
+                    }
+                    do {
+                        let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
+                        do {
+                            let rawValue = try $__coding_container_root.decode(
+                                Int.self,
+                                forKey: .ka
+                            )
+                            let value = rawValue
+                            self.a = value
+                        } catch Swift.DecodingError.typeMismatch {
+                            self.a = 3
+                        } catch Swift.DecodingError.valueNotFound, Swift.DecodingError.keyNotFound {
+                            self.a = 2
+                        }
+                    } catch Swift.DecodingError.typeMismatch {
+                        self.a = 3
+                    } catch Swift.DecodingError.keyNotFound {
+                        self.a = 2
+                    }
+                }
+                public func encode(to encoder: Encoder) throws {
+                    func $__coding_transform<T, R>(_ value: T, _ transform: (T) throws -> R) throws -> R {
+                        return try transform(value)
+                    }
+                    var $__coding_container_root = encoder.container(keyedBy: $__coding_container_keys_root.self)
+                    do {
+                        let transformedValue = self.a
+                        try $__coding_container_root.encode(transformedValue, forKey: .ka)
+                    }
+                }
+            }
+            """#
+        )
+    }
     
     
 //    @Codable
-//    struct Test10 {
+//    struct TestE1 {
 //        @CodingField("path1", "a", default: 1)
 //        let a: Int = 1
 //    }
     
     @Test("let | initializer + macro default", .tags(.expansion.keyedCoding, .expansion.constantProperty, .expansion.initializerProperty, .expansion.macroDefaultValue))
-    func test10() async throws {
+    func testE1() async throws {
         assertMacroExpansion(
             source: """
             @Codable
@@ -526,7 +764,7 @@ extension CodingExpansionTest.CodingFieldTest {
             """,
             diagnostics: [
                 .init(
-                    message: "Default value cannot be specified on a constant with an initializer",
+                    message: .decorator.codingField.defaultValueOnConstantwithInitializer,
                     line: 3,
                     column: 41
                 )
@@ -536,7 +774,7 @@ extension CodingExpansionTest.CodingFieldTest {
     
     
 //    @Codable
-//    struct Test11 {
+//    struct TestE2 {
 //        @CodingField("path1", "b", "a")
 //        var a: Int
 //        @CodingField("path1", "b")
@@ -544,7 +782,7 @@ extension CodingExpansionTest.CodingFieldTest {
 //    }
     
     @Test("conflict coding path", .tags(.expansion.keyedCoding))
-    func test11() async throws {
+    func testE2() async throws {
         assertMacroExpansion(
             source: """
             @Codable
@@ -590,14 +828,14 @@ extension CodingExpansionTest.CodingFieldTest {
     
     
 //    @Codable
-//    struct Test12 {
+//    struct TestE3 {
 //        @CodingField
 //        @CodingField
 //        var a: Int
 //    }
     
     @Test("multiple CodingField", .tags(.expansion.keyedCoding))
-    func test12() async throws {
+    func testE3() async throws {
         assertMacroExpansion(
             source: """
             @Codable

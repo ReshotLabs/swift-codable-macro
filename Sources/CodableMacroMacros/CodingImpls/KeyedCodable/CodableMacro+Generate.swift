@@ -13,13 +13,8 @@ import SwiftDiagnostics
 
 
 
+/// MARK: CodingKey enums
 extension CodableMacro {
-    
-    struct EnumDeclSpec {
-        let name: TokenSyntax
-        let cases: [String]
-    }
-
 
     private static func generateSingleEnumDeclaration<Cases: Collection>(
         name: TokenSyntax, 
@@ -83,6 +78,37 @@ extension CodableMacro {
 
     }
 
+}
+
+
+
+/// MARK: Decode/Encode
+extension CodableMacro {
+
+    private static func initFieldsWithDefaultCodeBlockItems(
+        _ fieldsToInitOnError: [CodingFieldInfo], 
+        type: RequriementStrategy
+    ) throws -> [CodeBlockItemSyntax] {
+
+        let defaultValueKeyPath = switch type {
+            case .allowMismatch: \CodingFieldInfo.defaultValueOnMisMatch
+            case .allowMissing: \CodingFieldInfo.defaultValueOnMissing
+            case .allowAll: throw InternalError(message: "Unexpected `.allowAll` requirement strategy when generating default value assignment")
+            case .always: throw InternalError(message: "Unexpected `.always` requirement strategy when generating default value assignment")
+        } as WritableKeyPath<CodableMacro.CodingFieldInfo, ExprSyntax?>
+
+        return try fieldsToInitOnError.map { 
+            if let defaultValue = $0[keyPath: defaultValueKeyPath] {
+                "self.\($0.propertyInfo.name) = \(defaultValue)"
+            } else if $0.propertyInfo.initializer == nil, $0.propertyInfo.hasOptionalTypeDecl {
+                "self.\($0.propertyInfo.name) = nil"
+            } else {
+                throw .diagnostic(node: $0.propertyInfo.name, message: .codingMacro.codable.missingDefaultOrOptional)
+            }
+        }
+
+    }
+
 
     static func generateDecodeInitializer(
         from structure: CodingStructure,
@@ -91,33 +117,16 @@ extension CodableMacro {
         macroNode: AttributeSyntax
     ) throws -> DeclSyntax {
 
-        let containerCodingKeysPrefix = "$__coding_container_keys_" as TokenSyntax
-        let containerVarNamePrefix = "$__coding_container_" as TokenSyntax
-
         var containerStack: [TokenSyntax] = []
 
         func structureDfs(_ structure: CodingStructure) throws -> (items: [CodeBlockItemSyntax], fieldsWithDefault: [CodingFieldInfo]) {
 
             var codeBlockItems = [CodeBlockItemSyntax]()
-            var fieldsWithDefault = [CodingFieldInfo]()
-
-            var initFieldsWithDefaultCodeBlockItems: [CodeBlockItemSyntax] {
-                get throws {
-                    try fieldsWithDefault.map { 
-                        if let defaultValue = $0.defaultValue {
-                            "self.\($0.propertyInfo.name) = \(defaultValue)"
-                        } else if $0.propertyInfo.initializer == nil, $0.propertyInfo.hasOptionalTypeDecl {
-                            "self.\($0.propertyInfo.name) = nil"
-                        } else {
-                            throw .diagnostic(node: $0.propertyInfo.name, message: .codingMacro.codable.missingDefaultOrOptional)
-                        }
-                    }
-                }
-            }
+            var fieldsToInitOnError = [CodingFieldInfo]()
 
             switch structure {
 
-                case let .root(children, isRequired): do {
+                case let .root(children, requirementStrategy): do {
 
                     let containerName = "root" as TokenSyntax
 
@@ -126,23 +135,21 @@ extension CodableMacro {
 
                     let items = try children.values.flatMap { child in
                         let (childItems, childFieldsWithDefault) = try structureDfs(child)
-                        fieldsWithDefault.append(contentsOf: childFieldsWithDefault)
+                        fieldsToInitOnError.append(contentsOf: childFieldsWithDefault)
                         return childItems
                     }
-
                     guard !items.isEmpty else { break }
 
                     codeBlockItems = try generateRootDecodeItems(
-                        containerVarName: "\(containerVarNamePrefix)\(containerName)" as TokenSyntax, 
-                        containerCodingKeysName: "\(containerCodingKeysPrefix)\(containerName)" as TokenSyntax, 
-                        isRequired: isRequired, 
+                        containerName: containerName,
+                        requirementStrategy: requirementStrategy,
                         childDecodingItems: items, 
-                        fieldsWithDefaultInitItems: initFieldsWithDefaultCodeBlockItems
+                        fieldsToInitOnError: fieldsToInitOnError
                     )
 
                 }
 
-                case let .node(pathElement, children, isRequired): do {
+                case let .node(pathElement, children, requirementStrategy): do {
 
                     guard let parentContainerName = containerStack.last else {
                         throw .diagnostic(node: macroNode, message: .codingMacro.codable.unexpectedEmptyContainerStack)
@@ -154,20 +161,19 @@ extension CodableMacro {
 
                     let items = try children.values.flatMap { child in
                         let (childItems, childFieldsWithDefault) = try structureDfs(child)
-                        fieldsWithDefault.append(contentsOf: childFieldsWithDefault)
+                        fieldsToInitOnError.append(contentsOf: childFieldsWithDefault)
                         return childItems
                     }
 
                     guard !items.isEmpty else { break }
 
                     codeBlockItems = try generateContainerDecodeItems(
-                        parentContainerVarName: "\(containerVarNamePrefix)\(parentContainerName)" as TokenSyntax, 
-                        containerVarName: "\(containerVarNamePrefix)\(containerName)" as TokenSyntax, 
-                        containerCodingKeysName: "\(containerCodingKeysPrefix)\(containerName)" as TokenSyntax, 
+                        parentContainerName: parentContainerName,
+                        containerName: containerName,
                         pathElement: pathElement, 
-                        isRequired: isRequired, 
+                        requirementStrategy: requirementStrategy, 
                         childDecodingItems: items, 
-                        fieldsWithDefaultInitItems: initFieldsWithDefaultCodeBlockItems
+                        fieldsToInitOnError: fieldsToInitOnError
                     )
 
                 }
@@ -180,8 +186,11 @@ extension CodableMacro {
                     let parentContainerVarName = "\(containerVarNamePrefix)\(parentContainerName)" as TokenSyntax
                     let propertyInfo = field.propertyInfo
 
-                    if field.defaultValue != nil || (propertyInfo.initializer == nil && propertyInfo.hasOptionalTypeDecl) {
-                        fieldsWithDefault.append(field)
+                    if (
+                        field.defaultValueOnMisMatch != nil || field.defaultValueOnMissing != nil 
+                        || (propertyInfo.initializer == nil && propertyInfo.hasOptionalTypeDecl) 
+                    ) {
+                        fieldsToInitOnError.append(field)
                     }
 
                     guard propertyInfo.type != .constant || propertyInfo.initializer == nil else {
@@ -197,7 +206,7 @@ extension CodableMacro {
 
             }
 
-            return (codeBlockItems, fieldsWithDefault)
+            return (codeBlockItems, fieldsToInitOnError)
 
         }
 
@@ -221,9 +230,6 @@ extension CodableMacro {
         macroNode: AttributeSyntax
     ) throws -> DeclSyntax {
 
-        let containerCodingKeysPrefix = "$__coding_container_keys_" as TokenSyntax
-        let containerVarNamePrefix = "$__coding_container_" as TokenSyntax
-
         var containerStack: [TokenSyntax] = []
 
         func structureDfs(_ structure: CodingStructure) throws -> [CodeBlockItemSyntax] {
@@ -237,8 +243,7 @@ extension CodableMacro {
                     containerStack.append(containerName)
                     defer { containerStack.removeLast() }
                     items = try generateRootEncodeItems(
-                        containerVarName: "\(containerVarNamePrefix)\(containerName)" as TokenSyntax, 
-                        containerCodingKeysName: "\(containerCodingKeysPrefix)\(containerName)" as TokenSyntax, 
+                        containerName: containerName,
                         childDecodingItems: children.values.flatMap { try structureDfs($0) }
                     )
 
@@ -250,9 +255,8 @@ extension CodableMacro {
                     containerStack.append(containerName)
                     defer { containerStack.removeLast() }
                     items = try generateContainerEncodeItems(
-                        parentContainerVarName: "\(containerVarNamePrefix)\(parentContainerName)", 
-                        containerVarName: "\(containerVarNamePrefix)\(containerName)", 
-                        containerCodingKeysName: "\(containerCodingKeysPrefix)\(containerName)", 
+                        parentContainerName: parentContainerName,
+                        containerName: containerName,
                         pathElement: pathElement, 
                         childDecodingItems: children.values.flatMap { try structureDfs($0) }
                     )
@@ -286,31 +290,66 @@ extension CodableMacro {
 
 
 
+// MARK: Helpers for generating decode/encode blocks
 extension CodableMacro {
 
+    fileprivate static let containerCodingKeysPrefix = "$__coding_container_keys_" as TokenSyntax
+    fileprivate static let containerVarNamePrefix = "$__coding_container_" as TokenSyntax
+
+
+    private static func addCatchClauses(
+        to doStmt: inout DoStmtSyntax, 
+        fieldsWithDefault: [CodingFieldInfo], 
+        requirementStrategy: RequriementStrategy
+    ) throws {
+
+        if requirementStrategy.allowMismatch {
+            doStmt.catchClauses.append(
+                try CatchClauseSyntax(
+                    catchItems: [.init(pattern: ExpressionPatternSyntax(expression: "Swift.DecodingError.typeMismatch" as ExprSyntax))]
+                ) {
+                    try initFieldsWithDefaultCodeBlockItems(fieldsWithDefault, type: .allowMismatch)
+                }
+            )
+        }
+
+        if requirementStrategy.allowMissing {
+            doStmt.catchClauses.append(
+                try CatchClauseSyntax(
+                    catchItems: [.init(pattern: ExpressionPatternSyntax(expression: "Swift.DecodingError.keyNotFound" as ExprSyntax))]
+                ) {
+                    try initFieldsWithDefaultCodeBlockItems(fieldsWithDefault, type: .allowMissing)
+                }
+            )
+        }
+
+    }
+
+
     private static func generateRootDecodeItems(
-        containerVarName: TokenSyntax,
-        containerCodingKeysName: TokenSyntax,
-        isRequired: Bool,
+        containerName: TokenSyntax,
+        requirementStrategy: RequriementStrategy,
         childDecodingItems: [CodeBlockItemSyntax],
-        fieldsWithDefaultInitItems: [CodeBlockItemSyntax]
+        fieldsToInitOnError: [CodingFieldInfo]
     ) throws -> [CodeBlockItemSyntax] {
+
+        let containerVarName = "\(containerVarNamePrefix)\(containerName)" as TokenSyntax
+        let containerCodingKeysName = "\(containerCodingKeysPrefix)\(containerName)" as TokenSyntax
 
         var codeBlockItems = [CodeBlockItemSyntax]()
 
-        if isRequired {
-            codeBlockItems.append(
-                "let \(containerVarName) = try decoder.container(keyedBy: \(containerCodingKeysName).self)"
-            )
+        let decodeExpr = "let \(containerVarName) = try decoder.container(keyedBy: \(containerCodingKeysName).self)" as CodeBlockItemSyntax
+
+        if requirementStrategy == .always {
+            codeBlockItems.append(decodeExpr)
             codeBlockItems.append(contentsOf: childDecodingItems)
         } else {
-            let decodeExpr = "try? decoder.container(keyedBy: \(containerCodingKeysName).self)" as ExprSyntax
-            let decodeSubtreeExpr = try IfExprSyntax("if let \(containerVarName) = \(decodeExpr)") {
+            var expr = try DoStmtSyntax("do") {
+                decodeExpr
                 childDecodingItems
-            } else: {
-                fieldsWithDefaultInitItems
             }
-            codeBlockItems.append(.init(item: .expr(.init(decodeSubtreeExpr))))
+            try addCatchClauses(to: &expr, fieldsWithDefault: fieldsToInitOnError, requirementStrategy: requirementStrategy)
+            codeBlockItems.append(.init(item: .stmt(.init(expr))))
         }
 
         return codeBlockItems
@@ -319,39 +358,37 @@ extension CodableMacro {
 
 
     private static func generateContainerDecodeItems(
-        parentContainerVarName: TokenSyntax,
-        containerVarName: TokenSyntax,
-        containerCodingKeysName: TokenSyntax,
+        parentContainerName: TokenSyntax,
+        containerName: TokenSyntax,
         pathElement: String,
-        isRequired: Bool,
+        requirementStrategy: RequriementStrategy,
         childDecodingItems: [CodeBlockItemSyntax],
-        fieldsWithDefaultInitItems: [CodeBlockItemSyntax]
+        fieldsToInitOnError: [CodingFieldInfo]
     ) throws -> [CodeBlockItemSyntax] {
+
+        let parentContainerVarName = "\(containerVarNamePrefix)\(parentContainerName)" as TokenSyntax
+        let containerVarName = "\(containerVarNamePrefix)\(containerName)" as TokenSyntax
+        let containerCodingKeysName = "\(containerCodingKeysPrefix)\(containerName)" as TokenSyntax
 
         var codeBlockItems = [CodeBlockItemSyntax]()
 
-        if isRequired {
-            codeBlockItems.append("""
-                let \(containerVarName) = try \(parentContainerVarName).nestedContainer(
-                    keyedBy: \(containerCodingKeysName).self, 
-                    forKey: .k\(raw: pathElement)
-                )
-                """
+        let decodeExpr = """
+            let \(containerVarName) = try \(parentContainerVarName).nestedContainer(
+                keyedBy: \(containerCodingKeysName).self, 
+                forKey: .k\(raw: pathElement)
             )
+            """ as CodeBlockItemSyntax
+
+        if requirementStrategy == .always {
+            codeBlockItems.append(decodeExpr)
             codeBlockItems.append(contentsOf: childDecodingItems)
         } else {
-            let decodeExpr = """
-                try? \(parentContainerVarName).nestedContainer(
-                    keyedBy: \(containerCodingKeysName).self, 
-                    forKey: .k\(raw: pathElement)
-                )
-                """ as ExprSyntax
-            let decodeSubtreeExpr = try IfExprSyntax("if let \(containerVarName) = \(decodeExpr)") {
+            var expr = try DoStmtSyntax("do") {
+                decodeExpr
                 childDecodingItems
-            } else: {
-                fieldsWithDefaultInitItems
             }
-            codeBlockItems.append(.init(item: .expr(.init(decodeSubtreeExpr))))
+            try addCatchClauses(to: &expr, fieldsWithDefault: fieldsToInitOnError, requirementStrategy: requirementStrategy)
+            codeBlockItems.append(.init(item: .stmt(.init(expr))))
         }
 
         return codeBlockItems
@@ -360,12 +397,15 @@ extension CodableMacro {
 
 
     private static func generateContainerEncodeItems(
-        parentContainerVarName: TokenSyntax,
-        containerVarName: TokenSyntax,
-        containerCodingKeysName: TokenSyntax,
+        parentContainerName: TokenSyntax,
+        containerName: TokenSyntax,
         pathElement: String,
         childDecodingItems: [CodeBlockItemSyntax]
     ) throws -> [CodeBlockItemSyntax] {
+
+        let parentContainerVarName = "\(containerVarNamePrefix)\(parentContainerName)" as TokenSyntax
+        let containerVarName = "\(containerVarNamePrefix)\(containerName)" as TokenSyntax
+        let containerCodingKeysName = "\(containerCodingKeysPrefix)\(containerName)" as TokenSyntax
 
         var codeBlockItems = [CodeBlockItemSyntax]()
 
@@ -384,10 +424,11 @@ extension CodableMacro {
 
 
     private static func generateRootEncodeItems(
-        containerVarName: TokenSyntax,
-        containerCodingKeysName: TokenSyntax,
+        containerName: TokenSyntax,
         childDecodingItems: [CodeBlockItemSyntax]
     ) throws -> [CodeBlockItemSyntax] {
+        let containerVarName = "\(containerVarNamePrefix)\(containerName)" as TokenSyntax
+        let containerCodingKeysName = "\(containerCodingKeysPrefix)\(containerName)" as TokenSyntax
         var codeBlockItems = [CodeBlockItemSyntax]()
         codeBlockItems.append("var \(containerVarName) = encoder.container(keyedBy: \(containerCodingKeysName).self)")
         codeBlockItems.append(contentsOf: childDecodingItems)
@@ -397,7 +438,7 @@ extension CodableMacro {
 }
 
 
-
+// MARK: Helpers for generating decode/encode blocks
 extension CodableMacro.CodingFieldInfo {
 
     static var transformFunctionName: TokenSyntax { "$__coding_transform" }
@@ -423,11 +464,40 @@ extension CodableMacro.CodingFieldInfo {
 
 
     func makeDecodeBlock(containerVarName: TokenSyntax, pathElement: String) throws -> CodeBlockItemSyntax {
-        let doStmt = try DoStmtSyntax("do") {
+        var doStmt = try DoStmtSyntax("do") {
             try self.makeDecodeExpr(parentContainerVarName: containerVarName, pathElement: pathElement, resultVarName: "rawValue")
             try self.makeDecodeTransformExprs(sourceVarName: "rawValue", destVarName: "value")
             try self.makeValidateionExprs(varName: "value")
-            try self.makeAssignmentExpr(varName: "value")
+            "self.\(propertyInfo.name) = value"
+        } 
+        if self.requirementStrategy.allowMismatch {
+            doStmt.catchClauses.append(
+                CatchClauseSyntax(
+                    catchItems: [.init(pattern: ExpressionPatternSyntax(expression: "Swift.DecodingError.typeMismatch" as ExprSyntax))]
+                ) {
+                    if let defaultValue = self.defaultValueOnMisMatch {
+                        "self.\(propertyInfo.name) = \(defaultValue)"
+                    } else if self.propertyInfo.initializer == nil, self.propertyInfo.hasOptionalTypeDecl {
+                        "self.\(propertyInfo.name) = nil"
+                    }
+                }
+            )
+        }
+        if self.requirementStrategy.allowMissing {
+            doStmt.catchClauses.append(
+                CatchClauseSyntax(
+                    catchItems: [
+                        .init(pattern: ExpressionPatternSyntax(expression: "Swift.DecodingError.valueNotFound" as ExprSyntax, trailingTrivia: ", ")),
+                        .init(pattern: ExpressionPatternSyntax(expression: "Swift.DecodingError.keyNotFound" as ExprSyntax))
+                    ]
+                ) {
+                    if let defaultValue = self.defaultValueOnMissing {
+                        "self.\(propertyInfo.name) = \(defaultValue)"
+                    } else if self.propertyInfo.initializer == nil, self.propertyInfo.hasOptionalTypeDecl {
+                        "self.\(propertyInfo.name) = nil"
+                    }
+                }
+            )
         }
         return .init(item: .stmt(.init(doStmt)))
     }
@@ -454,21 +524,12 @@ extension CodableMacro.CodingFieldInfo {
         guard let typeExpression = propertyInfo.typeExpression else {
             throw .diagnostic(node: propertyInfo.name, message: .codingMacro.general.cannotInferType)
         }
-        return if self.isRequired {
-            """
+        return """
             let \(resultVarName) = try \(parentContainerVarName).decode(
                 \(self.decodeTransform?.decodeSourceType ?? typeExpression),
                 forKey: .k\(raw: pathElement)
             )
             """
-        } else {
-            """
-            let \(resultVarName) = try? \(parentContainerVarName).decode(
-                \(self.decodeTransform?.decodeSourceType ?? typeExpression),
-                forKey: .k\(raw: pathElement)
-            )
-            """
-        } as CodeBlockItemSyntax
     }
 
 
@@ -485,64 +546,23 @@ extension CodableMacro.CodingFieldInfo {
 
 
     func makeDecodeTransformExprs(sourceVarName: TokenSyntax, destVarName: TokenSyntax) throws -> [CodeBlockItemSyntax] {
-
-        switch (self.decodeTransform, self.isRequired) {
-            case let (.some(transformSpec), true):
-                transformSpec.transformExprs.enumerated().map { i, transform in
-                    let localSourceVarName = i == 0 ? sourceVarName : "value\(raw: i)" as TokenSyntax
-                    let localDestVarName = i == transformSpec.transformExprs.count - 1 ? destVarName : "value\(raw: i + 1)" as TokenSyntax
-                    return "let \(localDestVarName) = try \(Self.transformFunctionName)(\(localSourceVarName), \(transform))"
-                }
-            case let (.some(transformSpec), false):
-                transformSpec.transformExprs.enumerated().map { i, transform in
-                    let localSourceVarName = i == 0 ? sourceVarName : "value\(raw: i)" as TokenSyntax
-                    let localDestVarName = i == transformSpec.transformExprs.count - 1 ? destVarName : "value\(raw: i + 1)" as TokenSyntax
-                    return "let \(localDestVarName) = \(localSourceVarName).flatMap({ try? \(Self.transformFunctionName)($0, \(transform))})"
-                }
-            default:
-                ["let \(destVarName) = \(sourceVarName)"]
-        } as [CodeBlockItemSyntax]
-
+        if let transformSpec = self.decodeTransform {
+            transformSpec.transformExprs.enumerated().map { i, transform in
+                let localSourceVarName = i == 0 ? sourceVarName : "value\(raw: i)" as TokenSyntax
+                let localDestVarName = i == transformSpec.transformExprs.count - 1 ? destVarName : "value\(raw: i + 1)" as TokenSyntax
+                return "let \(localDestVarName) = try \(Self.transformFunctionName)(\(localSourceVarName), \(transform))"
+            }
+        } else {
+            ["let \(destVarName) = \(sourceVarName)"]
+        }
     }
 
     
     func makeValidateionExprs(varName: TokenSyntax) throws -> [CodeBlockItemSyntax] {
-
-        if self.validateExprs.isEmpty {
-            [CodeBlockItemSyntax]()
-        } else if self.isRequired {
-            self.validateExprs.map { expr in
-                let exprString = StringLiteralExprSyntax(content: IndentRemover().visit(expr).formatted().description)
-                return #"try \#(Self.validateFunctionName)("\#(propertyInfo.name)", \#(exprString), \#(varName), \#(expr))"#
-            } as [CodeBlockItemSyntax]
-        } else {
-            [
-                CodeBlockItemSyntax(item: .expr(.init(
-                    try IfExprSyntax("if let \(varName)") {
-                        self.validateExprs.map { expr in
-                            let exprString = StringLiteralExprSyntax(content: IndentRemover().visit(expr).formatted().description)
-                            return #"try \#(Self.validateFunctionName)("\#(propertyInfo.name)", \#(exprString), \#(varName), \#(expr))"#
-                        }
-                    }
-                )))
-            ]
+        self.validateExprs.map { expr in
+            let exprString = StringLiteralExprSyntax(content: IndentRemover().visit(expr).formatted().description)
+            return #"try \#(Self.validateFunctionName)("\#(propertyInfo.name)", \#(exprString), \#(varName), \#(expr))"#
         }
-
-    }
-
-    
-    func makeAssignmentExpr(varName: TokenSyntax) throws -> CodeBlockItemSyntax {
-        
-        if let defaultValue = self.defaultValue {
-            "self.\(propertyInfo.name) = \(varName) ?? \(defaultValue)"
-        } else if let initializer = propertyInfo.initializer {
-            "self.\(propertyInfo.name) = \(varName) ?? \(initializer)"
-        } else if propertyInfo.hasOptionalTypeDecl {
-            "self.\(propertyInfo.name) = \(varName) ?? nil"
-        } else {
-            "self.\(propertyInfo.name) = \(varName)"
-        }
-        
     }
 
 }

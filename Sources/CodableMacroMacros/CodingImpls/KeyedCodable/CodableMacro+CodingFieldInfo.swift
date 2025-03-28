@@ -14,18 +14,51 @@ import SwiftDiagnostics
 
 
 extension CodableMacro {
+
+    enum RequriementStrategy {
+
+        case always, allowMissing, allowMismatch, allowAll
+
+        var allowMismatch: Bool { self == .allowAll || self == .allowMismatch }
+        var allowMissing: Bool { self == .allowAll || self == .allowMissing }
+
+        static func | (lhs: RequriementStrategy, rhs: RequriementStrategy) -> RequriementStrategy {
+            switch (lhs, rhs) {
+                case (.always, _): .always
+                case (_, .always): .always
+                case (.allowMissing, .allowMismatch): .always
+                case (.allowMismatch, .allowMissing): .always
+                case (.allowAll, let other): other
+                case (let other, .allowAll): other
+                case (let strategy, _): strategy
+            }
+        }
+        
+    }
+    
     
     struct CodingFieldInfo: Sendable, Equatable {
         
         var propertyInfo: PropertyInfo
         var path: [String] = []
-        var defaultValue: ExprSyntax? = nil
+        // var defaultValue: ExprSyntax? = nil
+        var defaultValueOnMissing: ExprSyntax? = nil
+        var defaultValueOnMisMatch: ExprSyntax? = nil
         var isIgnored: Bool = false
         var decodeTransform: DecodeTransformSpec? = nil
         var encodeTransform: [ExprSyntax]? = nil
         var validateExprs: [ExprSyntax] = []
         
-        var isRequired: Bool { propertyInfo.isRequired && defaultValue == nil }
+        // var isRequired: Bool { propertyInfo.isRequired && defaultValue == nil }
+        var requirementStrategy: RequriementStrategy {
+            switch (propertyInfo.isRequired, defaultValueOnMisMatch, defaultValueOnMissing) {
+                case (true, .none, .none): .always
+                case (false, .none, .none): .allowAll
+                case (_, .some, .none): .allowMismatch
+                case (_, .none, .some): .allowMissing
+                case (_, .some, .some): .allowAll
+            }
+        }
         
     }
     
@@ -58,7 +91,8 @@ extension CodableMacro {
         guard
             infoList.contains(where: {
                 $0.path.count > 1                                           // has custom path
-                || $0.defaultValue != nil                                   // has custom macro level default value
+                || $0.defaultValueOnMisMatch != nil                         // has custom mismatch default value
+                || $0.defaultValueOnMissing != nil                         // has custom missing default value
                 || $0.path.first != $0.propertyInfo.name.trimmed.text       // has custom path
                 || $0.propertyInfo.initializer != nil                       // has initialized
                 || $0.propertyInfo.hasOptionalTypeDecl                      // is optional type
@@ -95,7 +129,7 @@ extension CodableMacro {
         
         // extract `path` and `defaultValue` from `@CodingField` macro
         guard
-            let (path, defaultValue) = try CodingFieldMacro.processProperty(
+            let (path, defaultValueOnMissing, defaultValueOnMisMatch) = try CodingFieldMacro.processProperty(
                 property,
                 macroNodes: attributes[.codingField, default: []]
             )
@@ -148,7 +182,8 @@ extension CodableMacro {
         return .init(
             propertyInfo: property,
             path: path,
-            defaultValue: defaultValue,
+            defaultValueOnMissing: defaultValueOnMissing,
+            defaultValueOnMisMatch: defaultValueOnMisMatch,
             decodeTransform: decodeTransformSpec,
             encodeTransform: encodeTransforms,
             validateExprs: validateExprs
