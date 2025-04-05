@@ -62,6 +62,7 @@ extension CodingExpansionTest.CodingIgnoreTest {
                 public init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
+                    \#(makeEmptyArrayFunctionDefinition())
                     let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
                         let rawValue = try $__coding_container_root.decode(
@@ -119,6 +120,7 @@ extension CodingExpansionTest.CodingIgnoreTest {
                 public init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
+                    \#(makeEmptyArrayFunctionDefinition())
                     let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
                         let rawValue = try $__coding_container_root.decode(

@@ -33,17 +33,7 @@ protocol CodingImplMacroProtocol: ExtensionMacro, MemberMacro {
 
 
 
-extension CodingImplMacroProtocol {
-    
-    static func shouldAutoInit<Seq: Sequence>(
-        declaration: some DeclGroupSyntax,
-        properties: Seq
-    ) -> Bool where Seq.Element == PropertyInfo {
-        declaration.is(ClassDeclSyntax.self)
-        && !properties.contains(where: { $0.isRequired })                                                   // all stored properties are initialized
-        && !declaration.memberBlock.members.contains(where: { $0.decl.is(InitializerDeclSyntax.self) })     // has no initializer
-    }
-    
+extension CodingImplMacroProtocol {  
     
     static func expansion(
         of node: AttributeSyntax,

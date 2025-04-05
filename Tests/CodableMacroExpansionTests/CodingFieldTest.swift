@@ -65,6 +65,7 @@ extension CodingExpansionTest.CodingFieldTest {
                 public init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
+                    \#(makeEmptyArrayFunctionDefinition())
                     let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                     let $__coding_container_root_path1 = try $__coding_container_root.nestedContainer(
                         keyedBy: $__coding_container_keys_root_path1.self,
@@ -140,6 +141,7 @@ extension CodingExpansionTest.CodingFieldTest {
                 public init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
+                    \#(makeEmptyArrayFunctionDefinition())
                     do {
                         let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                         do {
@@ -214,6 +216,7 @@ extension CodingExpansionTest.CodingFieldTest {
                 public init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
+                    \#(makeEmptyArrayFunctionDefinition())
                     do {
                         let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                         do {
@@ -296,6 +299,7 @@ extension CodingExpansionTest.CodingFieldTest {
                 public init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
+                    \#(makeEmptyArrayFunctionDefinition())
                     do {
                         let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                         do {
@@ -375,6 +379,7 @@ extension CodingExpansionTest.CodingFieldTest {
                 public init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
+                    \#(makeEmptyArrayFunctionDefinition())
                     do {
                         let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                         do {
@@ -466,6 +471,7 @@ extension CodingExpansionTest.CodingFieldTest {
                 public init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
+                    \#(makeEmptyArrayFunctionDefinition())
                     let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                     let $__coding_container_root_path = try $__coding_container_root.nestedContainer(
                         keyedBy: $__coding_container_keys_root_path.self,
@@ -503,7 +509,7 @@ extension CodingExpansionTest.CodingFieldTest {
         let a: Int = 1
     }
     
-    @Test("let | initializer")
+    @Test("let | initializer", .tags(.expansion.keyedCoding, .expansion.initializerProperty, .expansion.constantProperty))
     func test9() async throws {
         assertMacroExpansion(
             source: """
@@ -524,6 +530,7 @@ extension CodingExpansionTest.CodingFieldTest {
                 public init(from decoder: Decoder) throws {
                     \#(transformFunctionDefinition())
                     \#(validateFunctionDefinition())
+                    \#(makeEmptyArrayFunctionDefinition())
                 }
                 public func encode(to encoder: Encoder) throws {
                     \#(transformFunctionDefinition())
@@ -545,7 +552,7 @@ extension CodingExpansionTest.CodingFieldTest {
         var a: Int = 1
     }
 
-    @Test("var | missing default")
+    @Test("var | missing default", .tags(.expansion.keyedCoding, .expansion.mutableProperty, .expansion.macroDefaultValue))
     func test10() async throws {
         assertMacroExpansion(
             source: """
@@ -565,14 +572,9 @@ extension CodingExpansionTest.CodingFieldTest {
                     case ka = "a"
                 }
                 public init(from decoder: Decoder) throws {
-                    func $__coding_transform<T, R>(_ value: T, _ transform: (T) throws -> R) throws -> R {
-                        return try transform(value)
-                    }
-                    func $__coding_validate<T>(_ propertyName: String, _ validateExpr: String, _ value: T, _ validate: (T) throws -> Bool) throws {
-                        guard (try? validate(value)) == true else {
-                            throw CodingValidationError(type: "\(Self.self)", property: propertyName, validationExpr: validateExpr, value: "\(value as Any)")
-                        }
-                    }
+                    \#(transformFunctionDefinition())
+                    \#(validateFunctionDefinition())
+                    \#(makeEmptyArrayFunctionDefinition())
                     do {
                         let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                         do {
@@ -611,7 +613,7 @@ extension CodingExpansionTest.CodingFieldTest {
         var a: Int = 1
     }
 
-    @Test("var | mismatch default")
+    @Test("var | mismatch default", .tags(.expansion.keyedCoding, .expansion.mutableProperty, .expansion.macroDefaultValue))
     func test11() async throws {
         assertMacroExpansion(
             source: """
@@ -631,14 +633,9 @@ extension CodingExpansionTest.CodingFieldTest {
                     case ka = "a"
                 }
                 public init(from decoder: Decoder) throws {
-                    func $__coding_transform<T, R>(_ value: T, _ transform: (T) throws -> R) throws -> R {
-                        return try transform(value)
-                    }
-                    func $__coding_validate<T>(_ propertyName: String, _ validateExpr: String, _ value: T, _ validate: (T) throws -> Bool) throws {
-                        guard (try? validate(value)) == true else {
-                            throw CodingValidationError(type: "\(Self.self)", property: propertyName, validationExpr: validateExpr, value: "\(value as Any)")
-                        }
-                    }
+                    \#(transformFunctionDefinition())
+                    \#(validateFunctionDefinition())
+                    \#(makeEmptyArrayFunctionDefinition())
                     do {
                         let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                         do {
@@ -677,7 +674,7 @@ extension CodingExpansionTest.CodingFieldTest {
         var a: Int = 1
     }
 
-    @Test("var | missing default + mismatch default")
+    @Test("var | missing default + mismatch default", .tags(.expansion.keyedCoding, .expansion.mutableProperty, .expansion.macroDefaultValue))
     func test12() async throws {
         assertMacroExpansion(
             source: """
@@ -697,14 +694,9 @@ extension CodingExpansionTest.CodingFieldTest {
                     case ka = "a"
                 }
                 public init(from decoder: Decoder) throws {
-                    func $__coding_transform<T, R>(_ value: T, _ transform: (T) throws -> R) throws -> R {
-                        return try transform(value)
-                    }
-                    func $__coding_validate<T>(_ propertyName: String, _ validateExpr: String, _ value: T, _ validate: (T) throws -> Bool) throws {
-                        guard (try? validate(value)) == true else {
-                            throw CodingValidationError(type: "\(Self.self)", property: propertyName, validationExpr: validateExpr, value: "\(value as Any)")
-                        }
-                    }
+                    \#(transformFunctionDefinition())
+                    \#(validateFunctionDefinition())
+                    \#(makeEmptyArrayFunctionDefinition())
                     do {
                         let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                         do {

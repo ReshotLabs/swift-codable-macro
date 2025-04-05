@@ -41,15 +41,14 @@ extension CodableMacro {
         
         var propertyInfo: PropertyInfo
         var path: [String] = []
-        // var defaultValue: ExprSyntax? = nil
         var defaultValueOnMissing: ExprSyntax? = nil
         var defaultValueOnMisMatch: ExprSyntax? = nil
         var isIgnored: Bool = false
         var decodeTransform: DecodeTransformSpec? = nil
         var encodeTransform: [ExprSyntax]? = nil
         var validateExprs: [ExprSyntax] = []
+        var sequenceElementCodingFieldInfo: SequenceElementCodingFieldInfo? = nil
         
-        // var isRequired: Bool { propertyInfo.isRequired && defaultValue == nil }
         var requirementStrategy: RequriementStrategy {
             switch (propertyInfo.isRequired, defaultValueOnMisMatch, defaultValueOnMissing) {
                 case (true, .none, .none): .always
@@ -60,6 +59,28 @@ extension CodableMacro {
             }
         }
         
+    }
+
+
+    struct SequenceElementCodingFieldInfo: Sendable, Equatable, Hashable {
+
+        var propertyName: TokenSyntax
+        var path: [String]
+        var elementEncodedType: ExprSyntax
+        var defaultValueOnMissing: SequenceCodingFieldMacro.ErrorStrategy = .throwError
+        var defaultValueOnMismatch: SequenceCodingFieldMacro.ErrorStrategy = .throwError
+        var decodeTransformExpr: ExprSyntax? = nil 
+        var encodeTransformExpr: ExprSyntax? = nil
+
+        var requirementStrategy: RequriementStrategy {
+            switch (defaultValueOnMissing, defaultValueOnMismatch) {
+                case (.throwError, .throwError): .always
+                case (.throwError, _): .allowMismatch
+                case (_, .throwError): .allowMissing
+                case (_, _): .allowAll
+            }
+        }
+
     }
     
     
@@ -92,13 +113,14 @@ extension CodableMacro {
             infoList.contains(where: {
                 $0.path.count > 1                                           // has custom path
                 || $0.defaultValueOnMisMatch != nil                         // has custom mismatch default value
-                || $0.defaultValueOnMissing != nil                         // has custom missing default value
+                || $0.defaultValueOnMissing != nil                          // has custom missing default value
                 || $0.path.first != $0.propertyInfo.name.trimmed.text       // has custom path
                 || $0.propertyInfo.initializer != nil                       // has initialized
                 || $0.propertyInfo.hasOptionalTypeDecl                      // is optional type
                 || !$0.validateExprs.isEmpty                                // has validation
                 || $0.encodeTransform?.isEmpty == false                     // has encode transform
                 || $0.decodeTransform?.transformExprs.isEmpty == false      // has decode transform
+                || $0.sequenceElementCodingFieldInfo != nil                 // has sequence coding customization
             })
         else {
             // if no stored properties has any of the characteristics above, can auto-implement
@@ -128,12 +150,16 @@ extension CodableMacro {
         }
         
         // extract `path` and `defaultValue` from `@CodingField` macro
-        guard
-            let (path, defaultValueOnMissing, defaultValueOnMisMatch) = try CodingFieldMacro.processProperty(
-                property,
-                macroNodes: attributes[.codingField, default: []]
-            )
-        else { return nil }
+        let codingFieldSpec = try CodingFieldMacro.processProperty(
+            property,
+            macroNodes: attributes[.codingField, default: []]
+        )
+        // guard
+        //     let (path, defaultValueOnMissing, defaultValueOnMisMatch) = try CodingFieldMacro.processProperty(
+        //         property,
+        //         macroNodes: attributes[.codingField, default: []]
+        //     )
+        // else { return nil }
         
         let encodeTransformMacros = attributes[.encodeTransform, default: []]
         let decodeTransformMacros = attributes[.decodeTransform, default: []]
@@ -178,15 +204,36 @@ extension CodableMacro {
             property,
             macroNodes: attributes[.codingValidate, default: []]
         )
+
+        // extract sequence coding 
+        let codingSequenceFieldSpec = if let spec = try SequenceCodingFieldMacro.processProperty(
+            property,
+            macroNodes: attributes[.sequenceCodingField, default: []]
+        ) {
+            SequenceElementCodingFieldInfo(
+                propertyName: property.name,
+                path: spec.path, 
+                elementEncodedType: spec.elementEncodedType, 
+                defaultValueOnMissing: spec.defaultValueOnMissing, 
+                defaultValueOnMismatch: spec.defaultValueOnMismatch, 
+                decodeTransformExpr: spec.decodeTransformExpr,
+                encodeTransformExpr: spec.encodeTransformExpr
+            )
+        } else {
+            nil as SequenceElementCodingFieldInfo?
+        }
+
+        guard let codingFieldSpec else { return nil }
         
         return .init(
             propertyInfo: property,
-            path: path,
-            defaultValueOnMissing: defaultValueOnMissing,
-            defaultValueOnMisMatch: defaultValueOnMisMatch,
+            path: codingFieldSpec.path,
+            defaultValueOnMissing: codingFieldSpec.defaultValueOnMissing,
+            defaultValueOnMisMatch: codingFieldSpec.defaultValueOnMismatch,
             decodeTransform: decodeTransformSpec,
             encodeTransform: encodeTransforms,
-            validateExprs: validateExprs
+            validateExprs: validateExprs,
+            sequenceElementCodingFieldInfo: codingSequenceFieldSpec
         )
         
     }

@@ -24,6 +24,7 @@ let testMacros: [String: MacroSpec] = [
     "DecodeTransform": .init(type: DecodeTransformMacro.self),
     "CodingTransform": .init(type: CodingTransformMacro.self),
     "CodingValidate": .init(type: CodingValidateMacro.self),
+    "SequenceCodingField": .init(type: SequenceCodingFieldMacro.self),
     "SingleValueCodable": .init(type: SingleValueCodableMacro.self),
     "SingleValueCodableDelegate": .init(type: SingleValueCodableDelegateMacro.self),
 ]
@@ -60,6 +61,15 @@ class CodingExpansionTest {
     
     func validateFunction(_ propertyName: String, _ validateExpr: String, _ value: String, _ validate: String) -> String {
         "try $__coding_validate(\(propertyName), \(validateExpr), \(value), \(validate))"
+    }
+
+
+    func makeEmptyArrayFunctionDefinition(indent: Int = 2) -> String {
+        """
+        func $__coding_make_empty_array<T>(ofType type: T.Type) -> [T] {
+            return []
+        }
+        """.replacingOccurrences(of: "\n", with: "\n" + String(repeating: " ", count: indent * 4))
     }
     
     

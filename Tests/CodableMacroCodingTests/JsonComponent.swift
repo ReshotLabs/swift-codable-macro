@@ -14,7 +14,7 @@ indirect enum JsonComponent: Codable, Hashable {
     case string(String)
     case bool(Bool)
     case null
-    case array(Set<JsonComponent>)
+    case array(Array<JsonComponent>)
     case object([String: JsonComponent])
 }
 
@@ -34,7 +34,6 @@ extension JsonComponent {
                 guard index >= 0 && index < arr.count else {
                     return .null
                 }
-                let index = arr.index(arr.startIndex, offsetBy: index)
                 return arr[index]
             default:
                 return .null
@@ -137,6 +136,32 @@ extension JsonComponent:
         self = .int(value)
     }
     
+}
+
+
+extension JsonComponent: Equatable {
+
+    static func == (lhs: JsonComponent, rhs: JsonComponent) -> Bool {
+        switch (lhs, rhs) {
+            case (.int(let lhsVal), .int(let rhsVal)):
+                return lhsVal == rhsVal
+            case (.real(let lhsVal), .real(let rhsVal)):
+                return lhsVal == rhsVal
+            case (.string(let lhsVal), .string(let rhsVal)):
+                return lhsVal == rhsVal
+            case (.bool(let lhsVal), .bool(let rhsVal)):
+                return lhsVal == rhsVal
+            case (.null, .null):
+                return true
+            case (.array(let lhsArr), .array(let rhsArr)):
+                return Set(lhsArr) == Set(rhsArr)
+            case (.object(let lhsDict), .object(let rhsDict)):
+                return lhsDict == rhsDict
+            default:
+                return false
+        }
+    }
+
 }
 
 
@@ -301,24 +326,24 @@ extension JsonComponent {
         
         func decode(from container: inout UnkeyedDecodingContainer) throws -> JsonComponent {
             
-            var json = Set<JsonComponent>()
+            var json = Array<JsonComponent>()
             
             for _ in 0 ..< (container.count ?? 0) {
                 
                 if let intVal = try? container.decode(Int.self) {
-                    json.insert(.int(intVal))
+                    json.append(.int(intVal))
                 } else if let realVal = try? container.decode(Double.self) {
-                    json.insert(.real(realVal))
+                    json.append(.real(realVal))
                 } else if let boolVal = try? container.decode(Bool.self) {
-                    json.insert(.bool(boolVal))
+                    json.append(.bool(boolVal))
                 } else if (try? container.decodeNil()) == true {
-                    json.insert(.null)
+                    json.append(.null)
                 } else if let nestedContainer = try? container.nestedContainer(keyedBy: CodingKeys.self) {
-                    json.insert(try decode(from: nestedContainer))
+                    json.append(try decode(from: nestedContainer))
                 } else if var nestedContainer = try? container.nestedUnkeyedContainer() {
-                    json.insert(try decode(from: &nestedContainer))
+                    json.append(try decode(from: &nestedContainer))
                 } else if let stringVal = try? container.decode(String.self) {
-                    json.insert(.string(stringVal))
+                    json.append(.string(stringVal))
                 }
                 
             }

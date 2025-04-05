@@ -71,3 +71,27 @@ extension SingleValueCodableProtocol {
     public static var singleValueCodingDefaultValue: CodingValue? { nil }
     
 }
+
+
+
+
+public enum SequenceCodingFieldErrorStrategy<T> {
+    case throwError, ignore, value(T)
+}
+
+
+
+extension SequenceCodingFieldErrorStrategy: Sendable where T: Sendable {}
+
+
+
+public struct DummyDecodableType: Sendable, Decodable {}
+
+
+extension UnkeyedDecodingContainer {
+    public mutating func skip() throws {
+        if !isAtEnd {
+            _ = try decode(DummyDecodableType.self)
+        }
+    }
+}

@@ -184,6 +184,139 @@ public macro CodingField(_ path: String...) = #externalMacro(module: "CodableMac
 
 
 
+// MARK: SequenceCodingField
+
+
+@attached(peer)
+public macro SequenceCodingField<E: Codable>(
+    subPath: String..., 
+    elementEncodedType: E.Type
+) = #externalMacro(module: "CodableMacroMacros", type: "SequenceCodingFieldMacro")
+
+
+
+@attached(peer)
+public macro SequenceCodingField<E: Codable>(
+    subPath: String..., 
+    elementEncodedType: E.Type, 
+    default: SequenceCodingFieldErrorStrategy<E>
+) = #externalMacro(module: "CodableMacroMacros", type: "SequenceCodingFieldMacro")
+
+
+
+@attached(peer)
+public macro SequenceCodingField<E: Codable>(
+    subPath: String..., 
+    elementEncodedType: E.Type, 
+    onMissing: SequenceCodingFieldErrorStrategy<E> = .throwError, 
+    onMismatch: SequenceCodingFieldErrorStrategy<E> = .throwError
+) = #externalMacro(module: "CodableMacroMacros", type: "SequenceCodingFieldMacro")
+
+
+
+// @attached(peer)
+// public macro SequenceCodingField<E: Codable>(
+//     subPath: String..., 
+//     elementEncodedType: E.Type, 
+//     onMissing: SequenceCodingFieldErrorStrategy<E>
+// ) = #externalMacro(module: "CodableMacroMacros", type: "SequenceCodingFieldMacro")
+
+
+
+// @attached(peer)
+// public macro SequenceCodingField<E: Codable>(
+//     subPath: String..., 
+//     elementEncodedType: E.Type, 
+//     onMismatch: SequenceCodingFieldErrorStrategy<E>
+// ) = #externalMacro(module: "CodableMacroMacros", type: "SequenceCodingFieldMacro")
+
+
+
+@attached(peer)
+public macro SequenceCodingField<E: Codable, C, S: Sequence<E>>(
+    subPath: String..., 
+    elementEncodedType: E.Type, 
+    decodeTransform: ([E]) throws -> C,
+    encodeTransform: (C) throws -> S
+) = #externalMacro(module: "CodableMacroMacros", type: "SequenceCodingFieldMacro")
+
+
+
+@attached(peer)
+public macro SequenceCodingField<E: Codable, C>(
+    subPath: String..., 
+    elementEncodedType: E.Type, 
+    decodeTransform: ([E]) throws -> C
+) = #externalMacro(module: "CodableMacroMacros", type: "SequenceCodingFieldMacro")
+
+
+
+@attached(peer)
+public macro SequenceCodingField<E: Codable, C, S: Sequence<E>>(
+    subPath: String..., 
+    elementEncodedType: E.Type, 
+    default: SequenceCodingFieldErrorStrategy<E>,
+    decodeTransform: ([E]) throws -> C,
+    encodeTransform: (C) throws -> S
+) = #externalMacro(module: "CodableMacroMacros", type: "SequenceCodingFieldMacro")
+
+
+
+@attached(peer)
+public macro SequenceCodingField<E: Codable, C>(
+    subPath: String..., 
+    elementEncodedType: E.Type, 
+    default: SequenceCodingFieldErrorStrategy<E>,
+    decodeTransform: ([E]) throws -> C
+) = #externalMacro(module: "CodableMacroMacros", type: "SequenceCodingFieldMacro")
+
+
+
+@attached(peer)
+public macro SequenceCodingField<E: Codable, C, S: Sequence<E>>(
+    subPath: String..., 
+    elementEncodedType: E.Type, 
+    onMissing: SequenceCodingFieldErrorStrategy<E> = .throwError, 
+    onMismatch: SequenceCodingFieldErrorStrategy<E> = .throwError,
+    decodeTransform: ([E]) throws -> C,
+    encodeTransform: (C) throws -> S
+) = #externalMacro(module: "CodableMacroMacros", type: "SequenceCodingFieldMacro")
+
+
+
+@attached(peer)
+public macro SequenceCodingField<E: Codable, C>(
+    subPath: String..., 
+    elementEncodedType: E.Type, 
+    onMissing: SequenceCodingFieldErrorStrategy<E> = .throwError, 
+    onMismatch: SequenceCodingFieldErrorStrategy<E> = .throwError,
+    decodeTransform: ([E]) throws -> C
+) = #externalMacro(module: "CodableMacroMacros", type: "SequenceCodingFieldMacro")
+
+
+
+// @attached(peer)
+// public macro SequenceCodingField<E: Codable, C, S: Sequence<E>>(
+//     subPath: String..., 
+//     elementEncodedType: E.Type, 
+//     onMissing: SequenceCodingFieldErrorStrategy<E>,
+//     decodeTransform: ([E]) throws -> C,
+//     encodeTransform: (C) throws -> S
+// ) = #externalMacro(module: "CodableMacroMacros", type: "SequenceCodingFieldMacro")
+
+
+
+// @attached(peer)
+// public macro SequenceCodingField<E: Codable, C, S: Sequence<E>>(
+//     subPath: String..., 
+//     elementEncodedType: E.Type, 
+//     onMismatch: SequenceCodingFieldErrorStrategy<E>,
+//     decodeTransform: ([E]) throws -> C,
+//     encodeTransform: (C) throws -> S
+// ) = #externalMacro(module: "CodableMacroMacros", type: "SequenceCodingFieldMacro")
+
+
+
 /// Mark a stored property to be ignored when doing encoding and decoding
 ///
 /// - Attention: The stored property MUST be optional or have a initializer
