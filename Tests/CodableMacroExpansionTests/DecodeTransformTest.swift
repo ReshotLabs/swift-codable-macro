@@ -60,10 +60,7 @@ extension CodingExpansionTest.DecodeTransformTest {
                     \#(makeEmptyArrayFunctionDefinition())
                     let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
-                        let rawValue = try $__coding_container_root.decode(
-                            String.self,
-                            forKey: .ka
-                        )
+                        let rawValue = try $__coding_container_root.decode(String.self, forKey: .ka)
                         let value = try $__coding_transform(rawValue, {
                                 Int($0)!
                             })
@@ -115,10 +112,7 @@ extension CodingExpansionTest.DecodeTransformTest {
                     \#(makeEmptyArrayFunctionDefinition())
                     let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
-                        let rawValue = try $__coding_container_root.decode(
-                            String.self,
-                            forKey: .ka
-                        )
+                        let rawValue = try $__coding_container_root.decode(String.self, forKey: .ka)
                         let value = try $__coding_transform(rawValue, \.count)
                         self.a = value
                     }
@@ -172,10 +166,7 @@ extension CodingExpansionTest.DecodeTransformTest {
                     \#(makeEmptyArrayFunctionDefinition())
                     let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
-                        let rawValue = try $__coding_container_root.decode(
-                            String.self,
-                            forKey: .ka
-                        )
+                        let rawValue = try $__coding_container_root.decode(String.self, forKey: .ka)
                         let value = try $__coding_transform(rawValue, CodingExpansionTest.DecodeTransformTest.str2Int(_:))
                         self.a = value
                     }

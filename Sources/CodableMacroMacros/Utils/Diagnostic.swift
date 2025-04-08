@@ -82,6 +82,21 @@ extension Error where Self == DiagnosticsError {
 
 
 struct InternalError: LocalizedError {
+
     let message: String
-    var errorDescription: String? { message }
+    let file: String 
+    let line: Int 
+    let column: Int 
+    
+    var errorDescription: String? { 
+        "[swift-codable-macro] Internal Error: \(message) (\(file):\(line):\(column))"
+    }
+
+    init(message: String, file: String = #file, line: Int = #line, column: Int = #column) {
+        self.message = message
+        self.line = line
+        self.column = column
+        self.file = file
+    }
+
 }

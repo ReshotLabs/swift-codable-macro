@@ -13,17 +13,22 @@ import SwiftDiagnostics
 import OrderedCollections
 
 
-infix operator ==== : ComparisonPrecedence
+
+extension CodableMacro {
+
+    /// Represent the Encoding / Decoding structure as a tree
+    indirect enum CodingStructure: Sendable, Equatable {
+        case root(children: OrderedDictionary<String, CodingStructure>, requirementStrategy: CodableMacro.RequriementStrategy)
+        case node(pathElement: String, children: OrderedDictionary<String, CodingStructure>, requirementStrategy: CodableMacro.RequriementStrategy)
+        case leaf(pathElement: String, field: CodableMacro.CodingFieldInfo)
+        case sequenceLeaf(pathElement: String, fields: [CodableMacro.CodingFieldInfo], subTree: SequenceCodingSubStructure)
+    }
+
+}
 
 
-/// Represent the Encoding / Decoding structure as a tree
-indirect enum CodingStructure: Hashable, Equatable {
-    
-    case root(children: OrderedDictionary<String, CodingStructure>, requirementStrategy: CodableMacro.RequriementStrategy)
-    case node(pathElement: String, children: OrderedDictionary<String, CodingStructure>, requirementStrategy: CodableMacro.RequriementStrategy)
-    case leaf(pathElement: String, field: CodableMacro.CodingFieldInfo)
-    case sequenceLeaf(pathElement: String, fields: [CodableMacro.CodingFieldInfo], subTree: CodingSequenceSubStructure)
-    
+extension CodableMacro.CodingStructure {
+
     var pathElement: String? {
         switch self {
             case .root: nil
@@ -33,7 +38,6 @@ indirect enum CodingStructure: Hashable, Equatable {
         }
     }
     
-    
     var requirementStrategy: CodableMacro.RequriementStrategy {
         switch self {
             case let .root(_, strategy): strategy
@@ -42,99 +46,16 @@ indirect enum CodingStructure: Hashable, Equatable {
             case let .sequenceLeaf(_, fields, _): fields.reduce(.allowAll) { $0 | $1.requirementStrategy }
         }
     }
-    
-    
-    static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.pathElement == rhs.pathElement
-    }
-    
-    
-    static func ==== (lhs: Self, rhs: Self) -> Bool {
-        switch (lhs, rhs) {
-            case let (.root(childrenL, _), .root(childrenR, _)):
-                guard childrenL.count == childrenR.count else { return false }
-                return childrenL.allSatisfy { (pathElement, childL) in
-                    guard
-                        let childR = childrenR[pathElement]
-                    else { return false }
-                    return childL ==== childR
-                }
-            case let (.node(pathElementL, childrenL, requiredL), .node(pathElementR, childrenR, requiredR)):
-                guard
-                    pathElementL == pathElementR,
-                    childrenL.count == childrenR.count,
-                    requiredL == requiredR
-                else { return false }
-                return childrenL.allSatisfy { (pathElement, childL) in
-                    guard let childR = childrenR[pathElement] else { return false }
-                    return childL ==== childR
-                }
-            case let (.leaf(pathElementL, fieldL), .leaf(pathElementR, fieldR)):
-                return pathElementL == pathElementR && fieldL.propertyInfo.nameStr == fieldR.propertyInfo.nameStr
-            case let (.sequenceLeaf(pathElementL, fieldL, subTreeL), .sequenceLeaf(pathElementR, fieldR, subTreeR)):
-                return pathElementL == pathElementR 
-                       && fieldL == fieldR
-                       && subTreeL ==== subTreeR
-            default:
-                return false
-        }
-    }
-    
-    
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(self.pathElement)
-    }
-    
+
 }
 
 
 
-extension CodingStructure: CustomStringConvertible {
+extension CodableMacro.CodingStructure {
     
-    private func dfsAllPaths(of structure: CodingStructure, paths: inout [[String]]) {
-        switch structure {
-            case let .root(children, _):
-                for child in children.values {
-                    paths.append([])
-                    dfsAllPaths(of: child, paths: &paths)
-                }
-            case let .node(pathElement, children, _):
-                let path = paths[paths.endIndex - 1] + [pathElement.description]
-                paths[paths.endIndex - 1].append(pathElement.description)
-                for child in children.values {
-                    dfsAllPaths(of: child, paths: &paths)
-                    paths.append(path)
-                }
-                paths.removeLast()
-            case let .leaf(pathElement, _):
-                paths[paths.endIndex - 1].append(pathElement.description)
-            case let .sequenceLeaf(pathElement, _, _):
-                paths[paths.endIndex - 1].append(pathElement.description)
-        }
-    }
-    
-    var description: String {
-        var allPaths = [[String]]()
-        let structure = if case .root = self {
-            self
-        } else {
-            CodingStructure.root(children: [pathElement!: self], requirementStrategy: self.requirementStrategy)
-        }
-        dfsAllPaths(of: structure, paths: &allPaths)
-        return allPaths
-            .map { $0.description }
-            .joined(separator: "\n")
-    }
-    
-}
-
-
-
-extension CodingStructure {
-    
-    static func parse(_ codingFieldInfoList: [CodableMacro.CodingFieldInfo]) throws(DiagnosticsError) -> CodingStructure {
+    static func parse(_ codingFieldInfoList: [CodableMacro.CodingFieldInfo]) throws(DiagnosticsError) -> Self {
         
-        var root = CodingStructure.root(children: [:], requirementStrategy: .allowAll)
+        var root = Self.root(children: [:], requirementStrategy: .allowAll)
         
         for codingFieldInfo in codingFieldInfoList {
             try matchAndUpdate(&root, with: codingFieldInfo.path, field: codingFieldInfo)
@@ -146,7 +67,7 @@ extension CodingStructure {
     
     
     private static func matchAndUpdate<Path: Collection<String>>(
-        _ structure: inout CodingStructure,
+        _ structure: inout Self,
         with path: Path,
         field: CodableMacro.CodingFieldInfo
     ) throws (DiagnosticsError) {
@@ -160,18 +81,17 @@ extension CodingStructure {
                 // seeing a leaf means that a path conflict exist
                 throw .diagnostics(makePathConflictDiagnostics(property1: field.propertyInfo.name, property2: conflictField.propertyInfo.name))
 
-            case .sequenceLeaf(let pathElement, var fields, var subTree as CodingSequenceSubStructure?): do {
-                guard path.count == 0, let sequenceElementCodingFieldInfo = field.sequenceElementCodingFieldInfo else {
+            case .sequenceLeaf(let pathElement, var fields, var subTree as CodableMacro.SequenceCodingSubStructure?): do {
+                guard path.count == 0, let sequenceCodingFieldInfo = field.sequenceCodingFieldInfo else {
                     if let firstConflictField = fields.first?.propertyInfo.name {
                         throw .diagnostics(makePathConflictDiagnostics(property1: field.propertyInfo.name, property2: firstConflictField))
                     } else {
                         throw .diagnostic(node: field.propertyInfo.name, message: .codingMacro.codingStructureParsing.unknown)
                     }
                 }
-                try CodingSequenceSubStructure.matchAndUpdateSequenceSubStructure(
+                try CodableMacro.SequenceCodingSubStructure.matchAndUpdateSequenceSubStructure(
                     &subTree, 
-                    field: sequenceElementCodingFieldInfo, 
-                    fieldName: field.propertyInfo.name
+                    field: sequenceCodingFieldInfo
                 )
                 guard let subTree else { 
                     throw .diagnostic(node: field.propertyInfo.name, message: .codingMacro.codingStructureParsing.unknown) 
@@ -190,15 +110,13 @@ extension CodingStructure {
                 if var matchedChild = children[pathElementToMatch] {
                     try matchAndUpdate(&matchedChild, with: path.dropFirst(), field: field)
                     children[pathElementToMatch] = matchedChild
-                    structure = .root(children: children, requirementStrategy: requirementStrategy | field.requirementStrategy)
                 } else {
                     if isLeaf {
-                        if let sequenceElementCodingFieldInfo = field.sequenceElementCodingFieldInfo {
-                            var subTree = nil as CodingSequenceSubStructure?
-                            try CodingSequenceSubStructure.matchAndUpdateSequenceSubStructure(
+                        if let sequenceCodingFieldInfo = field.sequenceCodingFieldInfo {
+                            var subTree = nil as CodableMacro.SequenceCodingSubStructure?
+                            try CodableMacro.SequenceCodingSubStructure.matchAndUpdateSequenceSubStructure(
                                 &subTree, 
-                                field: sequenceElementCodingFieldInfo, 
-                                fieldName: field.propertyInfo.name
+                                field: sequenceCodingFieldInfo
                             )
                             guard let subTree else { 
                                 throw .diagnostic(node: field.propertyInfo.name, message: .codingMacro.codingStructureParsing.unknown) 
@@ -207,31 +125,32 @@ extension CodingStructure {
                         } else {
                             children[pathElementToMatch] = .leaf(pathElement: pathElementToMatch, field: field)
                         }
-                        structure = .root(children: children, requirementStrategy: requirementStrategy | field.requirementStrategy)
                     } else {
-                        var newNode = CodingStructure.node(pathElement: pathElementToMatch, children: [:], requirementStrategy: field.requirementStrategy)
+                        var newNode = Self.node(pathElement: pathElementToMatch, children: [:], requirementStrategy: field.requirementStrategy)
                         try matchAndUpdate(&newNode, with: path.dropFirst(), field: field)
                         children[pathElementToMatch] = newNode
-                        structure = .root(children: children, requirementStrategy: requirementStrategy | field.requirementStrategy)
                     }
                 }
+                structure = .root(children: children, requirementStrategy: requirementStrategy | field.requirementStrategy)
             }
-            case .node(let pathElement, var children, let requirementStrategy):
+
+            case .node(let pathElement, var children, let requirementStrategy): do {
                 guard let pathElementToMatch = path.first else {
                     guard let conflictedField = firstLeaf(in: structure) else {
                         throw .diagnostic(node: field.propertyInfo.name, message: .codingMacro.codingStructureParsing.unknown)
                     }
                     throw .diagnostics(makePathConflictDiagnostics(property1: field.propertyInfo.name, property2: conflictedField))
                 }
-                guard children[pathElementToMatch] != nil else {
-                    // no match found
+                if var matchedChild = children[pathElementToMatch] {
+                    try matchAndUpdate(&matchedChild, with: path.dropFirst(), field: field)
+                    children[pathElementToMatch] = matchedChild
+                } else {
                     if isLeaf {
-                        if let sequenceElementCodingFieldInfo = field.sequenceElementCodingFieldInfo {
-                            var subTree = nil as CodingSequenceSubStructure?
-                            try CodingSequenceSubStructure.matchAndUpdateSequenceSubStructure(
+                        if let sequenceCodingFieldInfo = field.sequenceCodingFieldInfo {
+                            var subTree = nil as CodableMacro.SequenceCodingSubStructure?
+                            try CodableMacro.SequenceCodingSubStructure.matchAndUpdateSequenceSubStructure(
                                 &subTree, 
-                                field: sequenceElementCodingFieldInfo, 
-                                fieldName: field.propertyInfo.name
+                                field: sequenceCodingFieldInfo
                             )
                             guard let subTree else { 
                                 throw .diagnostic(node: field.propertyInfo.name, message: .codingMacro.codingStructureParsing.unknown) 
@@ -240,25 +159,22 @@ extension CodingStructure {
                         } else {
                             children[pathElementToMatch] = .leaf(pathElement: pathElementToMatch, field: field)
                         }
-                        structure = .node(pathElement: pathElement, children: children, requirementStrategy: requirementStrategy | field.requirementStrategy)
                     } else {
-                        var newNode = CodingStructure.node(pathElement: pathElementToMatch, children: [:], requirementStrategy: field.requirementStrategy)
+                        var newNode = Self.node(pathElement: pathElementToMatch, children: [:], requirementStrategy: field.requirementStrategy)
                         try matchAndUpdate(&newNode, with: path.dropFirst(), field: field)
                         children[pathElementToMatch] = newNode
-                        structure = .node(pathElement: pathElement, children: children, requirementStrategy: requirementStrategy | field.requirementStrategy)
                     }
-                    break
                 }
-                try matchAndUpdate(&children[pathElementToMatch]!, with: path.dropFirst(), field: field)
                 structure = .node(pathElement: pathElement, children: children, requirementStrategy: requirementStrategy | field.requirementStrategy)
+            }
                 
         }
         
     }
     
     
-    static func firstLeaf(
-        in structure: CodingStructure
+    private static func firstLeaf(
+        in structure: Self
     ) -> TokenSyntax? {
         switch structure {
             case let .root(children, _):
@@ -283,11 +199,21 @@ extension CodingStructure {
 
 
 
-indirect enum CodingSequenceSubStructure: Hashable, Equatable {
+extension CodableMacro {
 
-    case root(children: OrderedDictionary<String, CodingSequenceSubStructure>, requirementStrategy: CodableMacro.RequriementStrategy)
-    case node(pathElement: String, children: OrderedDictionary<String, CodingSequenceSubStructure>, requirementStrategy: CodableMacro.RequriementStrategy)
-    case leaf(pathElement: String?, field: CodableMacro.SequenceElementCodingFieldInfo)
+    indirect enum SequenceCodingSubStructure: Sendable, Equatable {
+
+        case root(children: OrderedDictionary<String, SequenceCodingSubStructure>, requirementStrategy: CodableMacro.RequriementStrategy)
+        case node(pathElement: String, children: OrderedDictionary<String, SequenceCodingSubStructure>, requirementStrategy: CodableMacro.RequriementStrategy)
+        case leaf(pathElement: String?, sequenceField: CodableMacro.SequenceCodingFieldInfo)
+
+    }
+
+}
+
+
+
+extension CodableMacro.SequenceCodingSubStructure {
 
     var pathElement: String? {
         switch self {
@@ -305,60 +231,25 @@ indirect enum CodingSequenceSubStructure: Hashable, Equatable {
         }
     }
 
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(self.pathElement)
-    }
-
-    static func ==== (lhs: Self, rhs: Self) -> Bool {
-        switch (lhs, rhs) {
-            case let (.root(childrenL, strategyL), .root(childrenR, strategyR)): do {
-                guard  strategyL == strategyR, childrenL.count == childrenR.count else { 
-                    return false 
-                }
-                return childrenL.allSatisfy { (pathElement, childL) in
-                    guard let childR = childrenR[pathElement] else { return false }
-                    return childL ==== childR
-                }
-            }
-            case let (.node(pathElementL, childrenL, strategyL), .node(pathElementR, childrenR, strategyR)): do {
-                guard 
-                    pathElementL == pathElementR,
-                    strategyL == strategyR,
-                    childrenL.count == childrenR.count
-                else { return false }
-                return childrenL.allSatisfy { (pathElement, childL) in
-                    guard let childR = childrenR[pathElement] else { return false }
-                    return childL ==== childR
-                }
-            }
-            case let (.leaf(pathElementL, fieldL), .leaf(pathElementR, fieldR)): do {
-                return pathElementL == pathElementR && fieldL == fieldR
-            }
-            default:
-                return false
-        }
-    }
-
 }
 
 
 
-extension CodingSequenceSubStructure {
+extension CodableMacro.SequenceCodingSubStructure {
 
-    static func matchAndUpdateSequenceSubStructure(
-        _ structure: inout CodingSequenceSubStructure?,
-        field: CodableMacro.SequenceElementCodingFieldInfo,
-        fieldName: TokenSyntax
+    fileprivate static func matchAndUpdateSequenceSubStructure(
+        _ structure: inout Self?,
+        field: CodableMacro.SequenceCodingFieldInfo
     ) throws(DiagnosticsError) {
 
         guard !field.path.isEmpty else { 
             if let structureCopy = structure {
                 guard let conflictField = firstLeaf(in: structureCopy) else {
-                    throw .diagnostic(node: fieldName, message: .codingMacro.codingStructureParsing.unknown)
+                    throw .diagnostic(node: field.propertyName, message: .codingMacro.codingStructureParsing.unknown)
                 }
-                throw .diagnostics(makePathConflictDiagnostics(property1: fieldName, property2: conflictField))
+                throw .diagnostics(makePathConflictDiagnostics(property1: field.propertyName, property2: conflictField))
             } else  {
-                structure = .leaf(pathElement: nil, field: field)
+                structure = .leaf(pathElement: nil, sequenceField: field)
                 return 
             }
         }
@@ -371,13 +262,15 @@ extension CodingSequenceSubStructure {
 
 
     private static func matchAndUpdate<Path: Collection<String>>(
-        _ structure: inout CodingSequenceSubStructure,
+        _ structure: inout Self,
         paths: Path,
-        field: CodableMacro.SequenceElementCodingFieldInfo
+        field: CodableMacro.SequenceCodingFieldInfo
     ) throws(DiagnosticsError) {
 
         let isLeaf = (paths.count == 1)
-        guard let pathElementToMatch = paths.first else { return }
+        guard let pathElementToMatch = paths.first else {
+            throw .diagnostic(node: field.propertyName, message: .codingMacro.codingStructureParsing.unknown)
+        }
 
         switch structure {
 
@@ -400,20 +293,18 @@ extension CodingSequenceSubStructure {
                         // in this case, we need to continue matching
                         try matchAndUpdate(&matchedChild, paths: paths.dropFirst(), field: field)
                         children[pathElementToMatch] = matchedChild
-                        structure = .root(children: children, requirementStrategy: requirementStrategy | field.requirementStrategy)
                     }
                 } else {
                     // no match found
                     if isLeaf {
-                        children[pathElementToMatch] = .leaf(pathElement: pathElementToMatch, field: field)
-                        structure = .root(children: children, requirementStrategy: requirementStrategy | field.requirementStrategy)
+                        children[pathElementToMatch] = .leaf(pathElement: pathElementToMatch, sequenceField: field)
                     } else {
-                        var newNode = CodingSequenceSubStructure.node(pathElement: pathElementToMatch, children: [:], requirementStrategy: field.requirementStrategy)
+                        var newNode = Self.node(pathElement: pathElementToMatch, children: [:], requirementStrategy: field.requirementStrategy)
                         try matchAndUpdate(&newNode, paths: paths.dropFirst(), field: field)
                         children[pathElementToMatch] = newNode
-                        structure = .root(children: children, requirementStrategy: requirementStrategy | field.requirementStrategy)
                     }
                 }
+                structure = .root(children: children, requirementStrategy: requirementStrategy | field.requirementStrategy)
             }
 
             case .node(let pathElement, var children, let requirementStrategy): do {
@@ -431,20 +322,18 @@ extension CodingSequenceSubStructure {
                         // in this case, we need to continue matching
                         try matchAndUpdate(&matchedChild, paths: paths.dropFirst(), field: field)
                         children[pathElementToMatch] = matchedChild
-                        structure = .node(pathElement: pathElement, children: children, requirementStrategy: requirementStrategy | field.requirementStrategy)
                     }
                 } else {
                     // no match found
                     if isLeaf {
-                        children[pathElementToMatch] = .leaf(pathElement: pathElementToMatch, field: field)
-                        structure = .node(pathElement: pathElement, children: children, requirementStrategy: requirementStrategy | field.requirementStrategy)
+                        children[pathElementToMatch] = .leaf(pathElement: pathElementToMatch, sequenceField: field)
                     } else {
-                        var newNode = CodingSequenceSubStructure.node(pathElement: pathElementToMatch, children: [:], requirementStrategy: field.requirementStrategy)
+                        var newNode = Self.node(pathElement: pathElementToMatch, children: [:], requirementStrategy: field.requirementStrategy)
                         try matchAndUpdate(&newNode, paths: paths.dropFirst(), field: field)
                         children[pathElementToMatch] = newNode
-                        structure = .node(pathElement: pathElement, children: children, requirementStrategy: requirementStrategy | field.requirementStrategy)
                     }
                 }
+                structure = .node(pathElement: pathElement, children: children, requirementStrategy: requirementStrategy | field.requirementStrategy)
             }
 
         }
@@ -453,7 +342,7 @@ extension CodingSequenceSubStructure {
 
 
     private static func firstLeaf(
-        in structure: CodingSequenceSubStructure
+        in structure: Self
     ) -> TokenSyntax? {
         switch structure {
             case let .root(children, _), let .node(_, children, _):
@@ -507,31 +396,35 @@ fileprivate func makePathConflictDiagnostics(
 
 
 
-enum CodingStructureParsingError {
+extension CodableMacro {
+
+    enum CodingStructureParsingError {
         
-    static let pathConflict: CodingMacroDiagnosticMessage = .init(
-        id: "path_conflict",
-        message: "Property has path that conflict with that of another property"
-    )
-    
-    static func pathConflictDestination(source: TokenSyntax) -> CodingMacroDiagnosticMessage {
-        .init(
-            id: "path_conflict_destination",
-            message: "path of \"\(source.trimmed.text)\" conflicts with path of this property"
+        static let pathConflict: CodingMacroDiagnosticMessage = .init(
+            id: "path_conflict",
+            message: "Property has path that conflict with that of another property"
         )
+        
+        static func pathConflictDestination(source: TokenSyntax) -> CodingMacroDiagnosticMessage {
+            .init(
+                id: "path_conflict_destination",
+                message: "path of \"\(source.trimmed.text)\" conflicts with path of this property"
+            )
+        }
+        
+        static let unknown: CodingMacroDiagnosticMessage = .init(
+            id: "unknown",
+            message: "Internal Error: Unknown"
+        )
+        
     }
-    
-    static let unknown: CodingMacroDiagnosticMessage = .init(
-        id: "unknown",
-        message: "Internal Error: Unknown"
-    )
-    
+
 }
 
 
 
 extension CodingMacroDiagnosticMessageGroup {
-    static var codingStructureParsing: CodingStructureParsingError.Type {
-        CodingStructureParsingError.self
+    static var codingStructureParsing: CodableMacro.CodingStructureParsingError.Type {
+        CodableMacro.CodingStructureParsingError.self
     }
 }

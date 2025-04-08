@@ -47,7 +47,7 @@ extension CodableMacro {
         var decodeTransform: DecodeTransformSpec? = nil
         var encodeTransform: [ExprSyntax]? = nil
         var validateExprs: [ExprSyntax] = []
-        var sequenceElementCodingFieldInfo: SequenceElementCodingFieldInfo? = nil
+        var sequenceCodingFieldInfo: SequenceCodingFieldInfo? = nil
         
         var requirementStrategy: RequriementStrategy {
             switch (propertyInfo.isRequired, defaultValueOnMisMatch, defaultValueOnMissing) {
@@ -62,7 +62,7 @@ extension CodableMacro {
     }
 
 
-    struct SequenceElementCodingFieldInfo: Sendable, Equatable, Hashable {
+    struct SequenceCodingFieldInfo: Sendable, Equatable, Hashable {
 
         var propertyName: TokenSyntax
         var path: [String]
@@ -91,45 +91,10 @@ extension CodableMacro {
     
     
     static func extractCodingFieldInfoList(from properties: [PropertyInfo])
-    throws(DiagnosticsError) -> ([CodingFieldInfo], canAutoImplement: Bool) {
-        
-        let infoList = try properties
+    throws(DiagnosticsError) -> [CodingFieldInfo] {
+        try properties
             .map(extractCodingFieldInfo(from:))
             .compactMap(\.self)
-        
-        let notIgnoredInfoList = infoList.filter { !$0.isIgnored }
-        
-        if notIgnoredInfoList.count < infoList.count {
-            // there are some properties that are marked as ignored, cannot auto-implement
-            return (notIgnoredInfoList, false)
-        }
-        
-        if infoList.isEmpty {
-            // an empty list means no customization, can auto-implement
-            return (infoList, true)
-        }
-        
-        guard
-            infoList.contains(where: {
-                $0.path.count > 1                                           // has custom path
-                || $0.defaultValueOnMisMatch != nil                         // has custom mismatch default value
-                || $0.defaultValueOnMissing != nil                          // has custom missing default value
-                || $0.path.first != $0.propertyInfo.name.trimmed.text       // has custom path
-                || $0.propertyInfo.initializer != nil                       // has initialized
-                || $0.propertyInfo.hasOptionalTypeDecl                      // is optional type
-                || !$0.validateExprs.isEmpty                                // has validation
-                || $0.encodeTransform?.isEmpty == false                     // has encode transform
-                || $0.decodeTransform?.transformExprs.isEmpty == false      // has decode transform
-                || $0.sequenceElementCodingFieldInfo != nil                 // has sequence coding customization
-            })
-        else {
-            // if no stored properties has any of the characteristics above, can auto-implement
-            return (infoList, true)
-        }
-        
-        // found some forms of customization, cannot auto-implement
-        return (infoList, false)
-        
     }
     
     
@@ -154,12 +119,6 @@ extension CodableMacro {
             property,
             macroNodes: attributes[.codingField, default: []]
         )
-        // guard
-        //     let (path, defaultValueOnMissing, defaultValueOnMisMatch) = try CodingFieldMacro.processProperty(
-        //         property,
-        //         macroNodes: attributes[.codingField, default: []]
-        //     )
-        // else { return nil }
         
         let encodeTransformMacros = attributes[.encodeTransform, default: []]
         let decodeTransformMacros = attributes[.decodeTransform, default: []]
@@ -210,7 +169,7 @@ extension CodableMacro {
             property,
             macroNodes: attributes[.sequenceCodingField, default: []]
         ) {
-            SequenceElementCodingFieldInfo(
+            SequenceCodingFieldInfo(
                 propertyName: property.name,
                 path: spec.path, 
                 elementEncodedType: spec.elementEncodedType, 
@@ -220,7 +179,7 @@ extension CodableMacro {
                 encodeTransformExpr: spec.encodeTransformExpr
             )
         } else {
-            nil as SequenceElementCodingFieldInfo?
+            nil as SequenceCodingFieldInfo?
         }
 
         guard let codingFieldSpec else { return nil }
@@ -233,7 +192,7 @@ extension CodableMacro {
             decodeTransform: decodeTransformSpec,
             encodeTransform: encodeTransforms,
             validateExprs: validateExprs,
-            sequenceElementCodingFieldInfo: codingSequenceFieldSpec
+            sequenceCodingFieldInfo: codingSequenceFieldSpec
         )
         
     }

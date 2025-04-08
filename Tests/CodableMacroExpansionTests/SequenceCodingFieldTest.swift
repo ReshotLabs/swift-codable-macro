@@ -89,17 +89,11 @@ extension CodingExpansionTest.SequenceCodingFieldTest {
                                 forKey: .kinner
                             )
                             do {
-                                let rawValue = try $__coding_container_root_path_outer_root_inner.decode(
-                                    Int.self,
-                                    forKey: .ka
-                                )
+                                let rawValue = try $__coding_container_root_path_outer_root_inner.decode(Int.self, forKey: .ka)
                                 $__sequence_coding_temp_a.append(rawValue)
                             }
                             do {
-                                let rawValue = try $__coding_container_root_path_outer_root_inner.decode(
-                                    Int.self,
-                                    forKey: .kb
-                                )
+                                let rawValue = try $__coding_container_root_path_outer_root_inner.decode(Int.self, forKey: .kb)
                                 $__sequence_coding_temp_b.append(rawValue)
                             }
                         }
@@ -138,10 +132,7 @@ extension CodingExpansionTest.SequenceCodingFieldTest {
                                 keyedBy: $__coding_container_keys_root_path_outer_root_inner.self,
                                 forKey: .kinner
                             )
-                            try $__coding_container_root_path_outer_root_inner.encode(
-                                $__sequence_coding_element_a,
-                                forKey: .ka
-                            )
+                            try $__coding_container_root_path_outer_root_inner.encode($__sequence_coding_element_a, forKey: .ka)
                         }
                     }
                     do {
@@ -160,10 +151,7 @@ extension CodingExpansionTest.SequenceCodingFieldTest {
                                 keyedBy: $__coding_container_keys_root_path_outer_root_inner.self,
                                 forKey: .kinner
                             )
-                            try $__coding_container_root_path_outer_root_inner.encode(
-                                $__sequence_coding_element_b,
-                                forKey: .kb
-                            )
+                            try $__coding_container_root_path_outer_root_inner.encode($__sequence_coding_element_b, forKey: .kb)
                         }
                     }
                 }
@@ -322,10 +310,7 @@ extension CodingExpansionTest.SequenceCodingFieldTest {
                                             forKey: .kinner
                                         )
                                         do {
-                                            let rawValue = try $__coding_container_root_path_root_inner.decode(
-                                                Int.self,
-                                                forKey: .ka
-                                            )
+                                            let rawValue = try $__coding_container_root_path_root_inner.decode(Int.self, forKey: .ka)
                                             $__sequence_coding_temp_a.append(rawValue)
                                         } catch Swift.DecodingError.keyNotFound, Swift.DecodingError.valueNotFound {
                                             $__sequence_coding_temp_a.append(-1)
@@ -383,10 +368,7 @@ extension CodingExpansionTest.SequenceCodingFieldTest {
                                 keyedBy: $__coding_container_keys_root_path_root_inner.self,
                                 forKey: .kinner
                             )
-                            try $__coding_container_root_path_root_inner.encode(
-                                $__sequence_coding_element_a,
-                                forKey: .ka
-                            )
+                            try $__coding_container_root_path_root_inner.encode($__sequence_coding_element_a, forKey: .ka)
                         }
                     }
                 }
@@ -463,10 +445,7 @@ extension CodingExpansionTest.SequenceCodingFieldTest {
                                             forKey: .kinner
                                         )
                                         do {
-                                            let rawValue = try $__coding_container_root_path_root_inner.decode(
-                                                Int.self,
-                                                forKey: .ka
-                                            )
+                                            let rawValue = try $__coding_container_root_path_root_inner.decode(Int.self, forKey: .ka)
                                             $__sequence_coding_temp_a.append(rawValue)
                                         } catch Swift.DecodingError.keyNotFound, Swift.DecodingError.valueNotFound {
                                             $__sequence_coding_temp_a.append(1)
@@ -527,10 +506,7 @@ extension CodingExpansionTest.SequenceCodingFieldTest {
                                 keyedBy: $__coding_container_keys_root_path_root_inner.self,
                                 forKey: .kinner
                             )
-                            try $__coding_container_root_path_root_inner.encode(
-                                $__sequence_coding_element_a,
-                                forKey: .ka
-                            )
+                            try $__coding_container_root_path_root_inner.encode($__sequence_coding_element_a, forKey: .ka)
                         }
                     }
                 }

@@ -56,10 +56,7 @@ extension CodingExpansionTest.CodableInheritanceTest {
                     \#(makeEmptyArrayFunctionDefinition())
                     let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
-                        let rawValue = try $__coding_container_root.decode(
-                            Int.self,
-                            forKey: .kb
-                        )
+                        let rawValue = try $__coding_container_root.decode(Int.self, forKey: .kb)
                         let value = rawValue
                         self.b = value
                     }
@@ -118,10 +115,7 @@ extension CodingExpansionTest.CodableInheritanceTest {
                     do {
                         let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                         do {
-                            let rawValue = try $__coding_container_root.decode(
-                                Int.self,
-                                forKey: .kc
-                            )
+                            let rawValue = try $__coding_container_root.decode(Int.self, forKey: .kc)
                             let value = rawValue
                             self.c = value
                         } catch Swift.DecodingError.typeMismatch {

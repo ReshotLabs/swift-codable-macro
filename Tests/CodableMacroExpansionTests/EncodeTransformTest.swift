@@ -60,10 +60,7 @@ extension CodingExpansionTest.EncodeTransformTest {
                     \#(makeEmptyArrayFunctionDefinition())
                     let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
-                        let rawValue = try $__coding_container_root.decode(
-                            Int.self,
-                            forKey: .ka
-                        )
+                        let rawValue = try $__coding_container_root.decode(Int.self, forKey: .ka)
                         let value = rawValue
                         self.a = value
                     }
@@ -115,10 +112,7 @@ extension CodingExpansionTest.EncodeTransformTest {
                     \#(makeEmptyArrayFunctionDefinition())
                     let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
-                        let rawValue = try $__coding_container_root.decode(
-                            Int.self,
-                            forKey: .ka
-                        )
+                        let rawValue = try $__coding_container_root.decode(Int.self, forKey: .ka)
                         let value = rawValue
                         self.a = value
                     }
@@ -172,10 +166,7 @@ extension CodingExpansionTest.EncodeTransformTest {
                     \#(makeEmptyArrayFunctionDefinition())
                     let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
-                        let rawValue = try $__coding_container_root.decode(
-                            Int.self,
-                            forKey: .ka
-                        )
+                        let rawValue = try $__coding_container_root.decode(Int.self, forKey: .ka)
                         let value = rawValue
                         self.a = value
                     }

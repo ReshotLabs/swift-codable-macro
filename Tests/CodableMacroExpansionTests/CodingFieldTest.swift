@@ -76,10 +76,7 @@ extension CodingExpansionTest.CodingFieldTest {
                         forKey: .kpath2
                     )
                     do {
-                        let rawValue = try $__coding_container_root_path1_path2.decode(
-                            Int.self,
-                            forKey: .ka
-                        )
+                        let rawValue = try $__coding_container_root_path1_path2.decode(Int.self, forKey: .ka)
                         let value = rawValue
                         self.a = value
                     }
@@ -150,10 +147,7 @@ extension CodingExpansionTest.CodingFieldTest {
                                 forKey: .kpath1
                             )
                             do {
-                                let rawValue = try $__coding_container_root_path1.decode(
-                                    Int.self,
-                                    forKey: .ka
-                                )
+                                let rawValue = try $__coding_container_root_path1.decode(Int.self, forKey: .ka)
                                 let value = rawValue
                                 self.a = value
                             } catch Swift.DecodingError.typeMismatch {
@@ -225,10 +219,7 @@ extension CodingExpansionTest.CodingFieldTest {
                                 forKey: .kpath1
                             )
                             do {
-                                let rawValue = try $__coding_container_root_path1.decode(
-                                    Int?.self,
-                                    forKey: .ka
-                                )
+                                let rawValue = try $__coding_container_root_path1.decode(Int?.self, forKey: .ka)
                                 let value = rawValue
                                 self.a = value
                             } catch Swift.DecodingError.typeMismatch {
@@ -308,10 +299,7 @@ extension CodingExpansionTest.CodingFieldTest {
                                 forKey: .kpath1
                             )
                             do {
-                                let rawValue = try $__coding_container_root_path1.decode(
-                                    Int?.self,
-                                    forKey: .ka
-                                )
+                                let rawValue = try $__coding_container_root_path1.decode(Int?.self, forKey: .ka)
                                 let value = rawValue
                                 self.a = value
                             } catch Swift.DecodingError.typeMismatch {
@@ -388,10 +376,7 @@ extension CodingExpansionTest.CodingFieldTest {
                                 forKey: .kpath1
                             )
                             do {
-                                let rawValue = try $__coding_container_root_path1.decode(
-                                    Int.self,
-                                    forKey: .ka
-                                )
+                                let rawValue = try $__coding_container_root_path1.decode(Int.self, forKey: .ka)
                                 let value = rawValue
                                 self.a = value
                             } catch Swift.DecodingError.typeMismatch {
@@ -478,10 +463,7 @@ extension CodingExpansionTest.CodingFieldTest {
                         forKey: .kpath
                     )
                     do {
-                        let rawValue = try $__coding_container_root_path.decode(
-                            Int.self,
-                            forKey: .ka
-                        )
+                        let rawValue = try $__coding_container_root_path.decode(Int.self, forKey: .ka)
                         let value = rawValue
                         self.a = value
                     }
@@ -578,10 +560,7 @@ extension CodingExpansionTest.CodingFieldTest {
                     do {
                         let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                         do {
-                            let rawValue = try $__coding_container_root.decode(
-                                Int.self,
-                                forKey: .ka
-                            )
+                            let rawValue = try $__coding_container_root.decode(Int.self, forKey: .ka)
                             let value = rawValue
                             self.a = value
                         } catch Swift.DecodingError.valueNotFound, Swift.DecodingError.keyNotFound {
@@ -639,10 +618,7 @@ extension CodingExpansionTest.CodingFieldTest {
                     do {
                         let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                         do {
-                            let rawValue = try $__coding_container_root.decode(
-                                Int.self,
-                                forKey: .ka
-                            )
+                            let rawValue = try $__coding_container_root.decode(Int.self, forKey: .ka)
                             let value = rawValue
                             self.a = value
                         } catch Swift.DecodingError.typeMismatch {
@@ -700,10 +676,7 @@ extension CodingExpansionTest.CodingFieldTest {
                     do {
                         let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                         do {
-                            let rawValue = try $__coding_container_root.decode(
-                                Int.self,
-                                forKey: .ka
-                            )
+                            let rawValue = try $__coding_container_root.decode(Int.self, forKey: .ka)
                             let value = rawValue
                             self.a = value
                         } catch Swift.DecodingError.typeMismatch {

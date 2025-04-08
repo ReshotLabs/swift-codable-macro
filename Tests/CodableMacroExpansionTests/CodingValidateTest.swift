@@ -75,10 +75,7 @@ extension CodingExpansionTest.CodingValidateTest {
                     do {
                         let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                         do {
-                            let rawValue = try $__coding_container_root.decode(
-                                Int?.self,
-                                forKey: .ka
-                            )
+                            let rawValue = try $__coding_container_root.decode(Int?.self, forKey: .ka)
                             let value = rawValue
                             try $__coding_validate("a", #"{ value in\#("\\#n")    print("test")\#("\\#n")    return if let value {\#("\\#n")        value > 0\#("\\#n")    } else {\#("\\#n")        true\#("\\#n")    }\#("\\#n")}"#, value, { value in
                                         print("test")
@@ -147,10 +144,7 @@ extension CodingExpansionTest.CodingValidateTest {
                     \#(makeEmptyArrayFunctionDefinition())
                     let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
-                        let rawValue = try $__coding_container_root.decode(
-                            Int.self,
-                            forKey: .ka
-                        )
+                        let rawValue = try $__coding_container_root.decode(Int.self, forKey: .ka)
                         let value = rawValue
                         try $__coding_validate("a", "{\n    $0 > 0\n}", value, {
                                 $0 > 0

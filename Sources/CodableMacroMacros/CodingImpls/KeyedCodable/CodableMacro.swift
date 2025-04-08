@@ -50,7 +50,8 @@ struct CodableMacro: CodingImplMacroProtocol {
         let isClass = declGroupInfo.type == .class
         let isNonFinalClass = isClass && !declGroupInfo.modifiers.contains(where: { $0.name.tokenKind == .keyword(.final) })
         
-        let (codingFieldInfoList, canAutoCodable) = try extractCodingFieldInfoList(from: declGroupInfo.properties)
+        let codingFieldInfoList = try extractCodingFieldInfoList(from: declGroupInfo.properties)
+        let canAutoCodable = canAutoCodable(codingFieldInfoList)
         
         /// Whether an empty initializer should be created, only for class
         var shouldAutoInit: Bool {
@@ -65,8 +66,10 @@ struct CodableMacro: CodingImplMacroProtocol {
         // * target is non-final class (where auto implementation will fail on extension)
         // * there is no inherited Codable
         guard isNonFinalClass || inherit || !canAutoCodable else { return [] }
+
+        let codingFieldInfoListWithoutIgnored = codingFieldInfoList.filter { !$0.isIgnored }
         
-        guard !codingFieldInfoList.isEmpty else {
+        guard !codingFieldInfoListWithoutIgnored.isEmpty else {
             // If the info list is still empty here, simply create an empty decode initializer
             // and an empty encode function
             return if shouldAutoInit {
@@ -100,13 +103,13 @@ struct CodableMacro: CodingImplMacroProtocol {
         }
         
         // Analyse the stored properties and convert into a tree structure
-        let structure = try CodingStructure.parse(codingFieldInfoList)
+        let structure = try CodingStructure.parse(codingFieldInfoListWithoutIgnored)
         
         var decls = [DeclSyntax]()
         
         decls.append(contentsOf: try generateEnumDeclarations(from: structure, macroNode: node))
-        decls.append(try generateDecodeInitializer(from: structure, isClass: isClass, inherit: inherit, macroNode: node))
-        decls.append(try generateEncodeMethod(from: structure, inherit: inherit, macroNode: node))
+        decls.append(try generateDecodeInitializer(from: structure, isClass: isClass, inherit: inherit))
+        decls.append(try generateEncodeMethod(from: structure, inherit: inherit))
         
         if shouldAutoInit {
             decls.append("init() {}")
@@ -114,6 +117,30 @@ struct CodableMacro: CodingImplMacroProtocol {
         
         return decls
         
+    }
+
+
+    private static func canAutoCodable(_ codingFieldInfoList: [CodingFieldInfo]) -> Bool {
+
+        guard !codingFieldInfoList.isEmpty else {
+            // an empty list means no customization, can auto-implement
+            return true 
+        }
+
+        return !codingFieldInfoList.contains {
+            $0.isIgnored                                                // has ignored property
+            || $0.path.count > 1                                        // has custom path
+            || $0.defaultValueOnMisMatch != nil                         // has custom mismatch default value
+            || $0.defaultValueOnMissing != nil                          // has custom missing default value
+            || $0.path.first != $0.propertyInfo.name.trimmed.text       // has custom path
+            || $0.propertyInfo.initializer != nil                       // has initialized
+            || $0.propertyInfo.hasOptionalTypeDecl                      // is optional type
+            || !$0.validateExprs.isEmpty                                // has validation
+            || $0.encodeTransform?.isEmpty == false                     // has encode transform
+            || $0.decodeTransform?.transformExprs.isEmpty == false      // has decode transform
+            || $0.sequenceCodingFieldInfo != nil                        // has sequence coding customization
+        }
+
     }
     
     
@@ -145,11 +172,6 @@ extension CodableMacro {
         static let multipleCodingField: CodingMacroDiagnosticMessage = .init(
             id: "multiple_coding_field",
             message: "A stored property should have at most one CodingField macro"
-        )
-        
-        static let unexpectedEmptyContainerStack: CodingMacroDiagnosticMessage = .init(
-            id: "unexpected_empty_container_stack",
-            message: "Internal Error: unexpected empty container stack"
         )
         
         static let missingDefaultOrOptional: CodingMacroDiagnosticMessage = .init(

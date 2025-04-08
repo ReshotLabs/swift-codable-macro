@@ -70,10 +70,7 @@ extension CodingExpansionTest.CodingTransformTest {
                     \#(makeEmptyArrayFunctionDefinition())
                     let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                     do {
-                        let rawValue = try $__coding_container_root.decode(
-                            codableMacroStaticType(of: codingTransformPassThroughWithTypeInference(.doubleTypeTransform(option: .string))).TransformedType.self,
-                            forKey: .ka
-                        )
+                        let rawValue = try $__coding_container_root.decode(codableMacroStaticType(of: codingTransformPassThroughWithTypeInference(.doubleTypeTransform(option: .string))).TransformedType.self, forKey: .ka)
                         let value1 = try $__coding_transform(rawValue, codingTransformPassThroughWithTypeInference(.doubleTypeTransform(option: .string)).decodeTransform)
                         let value2 = try $__coding_transform(value1, codingTransformPassThroughWithTypeInference(IdenticalCodingTransform<Double>()).decodeTransform)
                         let value = try $__coding_transform(value2, codingTransformPassThroughWithTypeInference(.doubleDateTransform()).decodeTransform)
@@ -136,10 +133,7 @@ extension CodingExpansionTest.CodingTransformTest {
                     do {
                         let $__coding_container_root = try decoder.container(keyedBy: $__coding_container_keys_root.self)
                         do {
-                            let rawValue = try $__coding_container_root.decode(
-                                codableMacroStaticType(of: codingTransformPassThroughWithTypeInference(.doubleTypeTransform(option: .string))).TransformedType.self,
-                                forKey: .ka
-                            )
+                            let rawValue = try $__coding_container_root.decode(codableMacroStaticType(of: codingTransformPassThroughWithTypeInference(.doubleTypeTransform(option: .string))).TransformedType.self, forKey: .ka)
                             let value1 = try $__coding_transform(rawValue, codingTransformPassThroughWithTypeInference(.doubleTypeTransform(option: .string)).decodeTransform)
                             let value2 = try $__coding_transform(value1, codingTransformPassThroughWithTypeInference(IdenticalCodingTransform<Double>()).decodeTransform)
                             let value = try $__coding_transform(value2, codingTransformPassThroughWithTypeInference(.doubleDateTransform()).decodeTransform)
