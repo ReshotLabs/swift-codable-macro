@@ -46,7 +46,7 @@ extension CodableMacro {
 
                 case let .node(pathElement, children, _):
                     guard let parentContainerName = containerStack.last else {
-                        throw .diagnostic(node: macroNode, message: .codingMacro.codable.unexpectedEmptyContainerStack)
+                        throw InternalError(message: "unexpected empty container stack")
                     }
                     let containerName = "\(parentContainerName)_\(raw: pathElement)" as TokenSyntax
                     enumDecls.append(
@@ -60,7 +60,7 @@ extension CodableMacro {
 
                 case let .sequenceLeaf(pathElement, _, subTree):
                     guard let parentContainerName = containerStack.last else {
-                        throw .diagnostic(node: macroNode, message: .codingMacro.codable.unexpectedEmptyContainerStack)
+                        throw InternalError(message: "unexpected empty container stack")
                     }
                     let containerName = "\(parentContainerName)_\(raw: pathElement)" as TokenSyntax
                     containerStack.append(containerName)
@@ -78,7 +78,7 @@ extension CodableMacro {
             switch structure {
                 case let .root(children, _): do {
                     guard let parentContainerName = containerStack.last else {
-                        throw .diagnostic(node: macroNode, message: .codingMacro.codable.unexpectedEmptyContainerStack)
+                        throw InternalError(message: "unexpected empty container stack")
                     }
                     let containerName = "\(parentContainerName)_\(raw: "root")" as TokenSyntax
                     enumDecls.append(
@@ -92,7 +92,7 @@ extension CodableMacro {
                 }
                 case let .node(pathElement, children, _): do {
                     guard let parentContainerName = containerStack.last else {
-                        throw .diagnostic(node: macroNode, message: .codingMacro.codable.unexpectedEmptyContainerStack)
+                        throw InternalError(message: "unexpected empty container stack")
                     }
                     let containerName = "\(parentContainerName)_\(raw: pathElement)" as TokenSyntax
                     enumDecls.append(
