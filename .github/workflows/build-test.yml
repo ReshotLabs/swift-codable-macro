@@ -21,9 +21,9 @@ jobs:
       with:
           swift-version: ${{ matrix.swift }}
     - name: Build Release
-      run: swift build -c release -v
+      run: swift build 
     - name: Run Tests
-      run: swift test -v
+      run: swift test 
 
   build-macOS:
     name: Swift ${{ matrix.swift }} on ${{ matrix.os }}
@@ -39,6 +39,6 @@ jobs:
       with:
           swift-version: ${{ matrix.swift }}
     - name: Build Release
-      run: swift build -c release
+      run: swift build 
     - name: Run Tests
-      run: swift test -v
+      run: swift test 
