@@ -74,6 +74,15 @@ struct Person {
     )
     var birthday: Date
     
+    @CodingField("data", "meta", "known_programming_languages")
+    @SequenceCodingField(
+        subPath: "name", 
+        onMissing: .ignore, 
+        onMismatch: .value("Swift"),
+        decodeTransform: Set.init
+    )
+    var knownProgrammingLanguages: Set<String>
+    
     @CodingIgnore
 	var habit: String = "writing Swift Macro"
     
@@ -123,6 +132,10 @@ Specify a sequence of transformations when encoding / decoding a property. The t
 **CodingValidate(source:with:)**
 
 Specify a validation rules when decoding for a property. 
+
+**SequenceCodingField(subPath:elementEncodedType:onMissing:onMismatch:decodeTransform:encodeTransform)**
+
+Specify a custom behavior when decoding an encoded sequence (e.g.: JSON Array). Can specify sub path when decoding each element in the sequence and default behavior (ignore it or apply a default value) when an element cannot be decoded correctly.
 
 **SingleValueCodable**
 

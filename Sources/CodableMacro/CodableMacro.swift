@@ -2,6 +2,8 @@
 // https://docs.swift.org/swift-book
 
 
+// MARK: Codable
+
 
 /// Automatically make the marked `class` or `struct` to conform to [`Codable`]
 /// - Parameter inherit: Whether this class has an super class that has already conformed to [`Codable`]
@@ -67,6 +69,9 @@
 @attached(member, names: arbitrary)
 public macro Codable(inherit: Bool = false) = #externalMacro(module: "CodableMacroMacros", type: "CodableMacro")
 
+
+
+// MARK: CodingField
 
 
 /// Provide customization for a stored property when doing encoding and decoding
@@ -178,7 +183,7 @@ public macro CodingField<T>(_ path: String..., onMissing: T, onMismatch: T) = #e
 /// - Attention: Any two stored properties in a type MUST NOT have conflict coding path. Path `A`
 /// and path `B` are conflicted if `A` is exactly the same as `B` or `A` is a prefix of `B` or vice versa
 ///
-/// - Attention: Must be used together with ``Codable()``
+/// - Attention: Must be used together with ``Codable(inherit:)``
 @attached(peer)
 public macro CodingField(_ path: String...) = #externalMacro(module: "CodableMacroMacros", type: "CodingFieldMacro")
 
@@ -187,14 +192,19 @@ public macro CodingField(_ path: String...) = #externalMacro(module: "CodableMac
 // MARK: SequenceCodingField
 
 
-@attached(peer)
-public macro SequenceCodingField<E: Codable>(
-    subPath: String..., 
-    elementEncodedType: E.Type
-) = #externalMacro(module: "CodableMacroMacros", type: "SequenceCodingFieldMacro")
-
-
-
+/// Provide customization for a stored property whosed encoded form is a **Sequence** (e.g.: JSON Array)
+/// when doing encoding and decoding
+/// - Parameters:
+///   - subPath: The coding path for fetching / storing the value in each of the element in the
+///              encoded sequence
+///   - elementEncodedType: The type that is actually stored as each element in the encoded sequence
+///   - default: The default behaviour when an element that cannot be decoded corrected is met,
+///              no matter the error is missing or mismatch
+///
+/// Setting the `default` parameter is the same as setting both `onMissing` and `onMismatch`
+///
+/// - Seealso: More detailed explaination can be found in
+///          ``SequenceCodingField(subPath:elementEncodedType:onMissing:onMismatch:decodeTransform:encodeTransform:)``
 @attached(peer)
 public macro SequenceCodingField<E: Codable>(
     subPath: String..., 
@@ -204,6 +214,18 @@ public macro SequenceCodingField<E: Codable>(
 
 
 
+/// Provide customization for a stored property whosed encoded form is a **Sequence** (e.g.: JSON Array)
+/// when doing encoding and decoding
+/// - Parameters:
+///   - subPath: The coding path for fetching / storing the value in each of the element in the
+///              encoded sequence
+///   - elementEncodedType: The type that is actually stored as each element in the encoded sequence
+///   - onMissing: The default behaviour when an element with missing coding path or `null` value
+///                is met
+///   - onMismatch: The default behaviour when an element with wrong type is met.
+///
+/// - Seealso: More detailed explaination can be found in
+///          ``SequenceCodingField(subPath:elementEncodedType:onMissing:onMismatch:decodeTransform:encodeTransform:)``
 @attached(peer)
 public macro SequenceCodingField<E: Codable>(
     subPath: String..., 
@@ -214,43 +236,25 @@ public macro SequenceCodingField<E: Codable>(
 
 
 
-// @attached(peer)
-// public macro SequenceCodingField<E: Codable>(
-//     subPath: String..., 
-//     elementEncodedType: E.Type, 
-//     onMissing: SequenceCodingFieldErrorStrategy<E>
-// ) = #externalMacro(module: "CodableMacroMacros", type: "SequenceCodingFieldMacro")
-
-
-
-// @attached(peer)
-// public macro SequenceCodingField<E: Codable>(
-//     subPath: String..., 
-//     elementEncodedType: E.Type, 
-//     onMismatch: SequenceCodingFieldErrorStrategy<E>
-// ) = #externalMacro(module: "CodableMacroMacros", type: "SequenceCodingFieldMacro")
-
-
-
-@attached(peer)
-public macro SequenceCodingField<E: Codable, C, S: Sequence<E>>(
-    subPath: String..., 
-    elementEncodedType: E.Type, 
-    decodeTransform: ([E]) throws -> C,
-    encodeTransform: (C) throws -> S
-) = #externalMacro(module: "CodableMacroMacros", type: "SequenceCodingFieldMacro")
-
-
-
-@attached(peer)
-public macro SequenceCodingField<E: Codable, C>(
-    subPath: String..., 
-    elementEncodedType: E.Type, 
-    decodeTransform: ([E]) throws -> C
-) = #externalMacro(module: "CodableMacroMacros", type: "SequenceCodingFieldMacro")
-
-
-
+/// Provide customization for a stored property whosed encoded form is a **Sequence** (e.g.: JSON Array)
+/// when doing encoding and decoding
+/// - Parameters:
+///   - subPath: The coding path for fetching / storing the value in each of the element in the
+///              encoded sequence
+///   - elementEncodedType: The type that is actually stored as each element in the encoded sequence
+///   - default: The default behaviour when an element that cannot be decoded corrected is met,
+///              no matter the error is missing or mismatch
+///   - decodeTransform: Convert the decoded raw array into the actual type. See the
+///                      [Transformation and Element Encoded Type](#Transformation-and-Element-Encoded-Type)
+///                      section for more details
+///   - encodeTransform: Convert the value to be encoded into a sequence of elements for actual
+///                      encoding. See the [Transformation and Element Encoded Type](#Transformation-and-Element-Encoded-Type)
+///                      section for more details
+///
+/// Setting the `default` parameter is the same as setting both `onMissing` and `onMismatch`
+///
+/// - Seealso: More detailed explaination can be found in
+///          ``SequenceCodingField(subPath:elementEncodedType:onMissing:onMismatch:decodeTransform:encodeTransform:)``
 @attached(peer)
 public macro SequenceCodingField<E: Codable, C, S: Sequence<E>>(
     subPath: String..., 
@@ -262,6 +266,22 @@ public macro SequenceCodingField<E: Codable, C, S: Sequence<E>>(
 
 
 
+/// Provide customization for a stored property whosed encoded form is a **Sequence** (e.g.: JSON Array)
+/// when doing encoding and decoding
+/// - Parameters:
+///   - subPath: The coding path for fetching / storing the value in each of the element in the
+///              encoded sequence
+///   - elementEncodedType: The type that is actually stored as each element in the encoded sequence
+///   - default: The default behaviour when an element that cannot be decoded corrected is met,
+///              no matter the error is missing or mismatch
+///   - decodeTransform: Convert the decoded raw array into the actual type. See the
+///                      [Transformation and Element Encoded Type](#Transformation-and-Element-Encoded-Type)
+///                      section for more details
+///
+/// Setting the `default` parameter is the same as setting both `onMissing` and `onMismatch`
+///
+/// - Seealso: More detailed explaination can be found in
+///          ``SequenceCodingField(subPath:elementEncodedType:onMissing:onMismatch:decodeTransform:encodeTransform:)``
 @attached(peer)
 public macro SequenceCodingField<E: Codable, C>(
     subPath: String..., 
@@ -272,6 +292,100 @@ public macro SequenceCodingField<E: Codable, C>(
 
 
 
+/// Provide customization for a stored property whosed encoded form is a **Sequence** (e.g.: JSON Array)
+/// when doing encoding and decoding
+/// - Parameters:
+///   - subPath: The coding path for fetching / storing the value in each of the element in the
+///              encoded sequence
+///   - elementEncodedType: The type that is actually stored as each element in the encoded sequence
+///   - onMissing: The default behaviour when an element with missing coding path or `null` value
+///                is met
+///   - onMismatch: The default behaviour when an element with wrong type is met.
+///   - decodeTransform: Convert the decoded raw array into the actual type. See the
+///                      [Transformation and Element Encoded Type](#Transformation-and-Element-Encoded-Type)
+///                      section for more details
+///   - encodeTransform: Convert the value to be encoded into a sequence of elements for actual
+///                      encoding. See the [Transformation and Element Encoded Type](#Transformation-and-Element-Encoded-Type)
+///                      section for more details
+///
+/// ## Coding Path
+///
+/// This property decorator can be used together with ``CodingField(_:)``, where the `path` and the
+/// `subPath` will be used together. The `path` in ``CodingField(_:)`` is responsible for locating
+/// the sequence while the `subPath` is responsible for locating the data required inside each
+/// element in the sequence. For example:
+///
+/// ```swift
+/// @CodingField("path1", "a")
+/// @SequenceCodingField(subPath: "inner", "value", elementEncodedType: Int.self)
+/// var a: [Int]
+/// ```
+///
+/// The property above represent the following JSON structure
+///
+/// ```json
+/// {
+///     "path1": {
+///         "a": [
+///             {
+///                 "inner": { "value": 1 }
+///             },
+///             {
+///                 "inner": { "value": 2 }
+///             }
+///         ]
+///     }
+/// }
+/// ```
+///
+/// ## Default Behaviour
+///
+/// The `onMissing` and `onMismatch` parameters specify the bahaviour of the decoding process
+/// when an elements that cannot be properly decoded is met
+/// - `onMissing`: null value or missing coding path element
+/// - `onMismatch` incorrect type
+///
+/// The behaviour can be:
+/// * ``SequenceCodingFieldErrorStrategy/throwError``: Abort the decoding process and throw a
+///   [`DecodingError`] (the default value specified in ``CodingField(_:default:)`` or
+///   ``CodingField(_:onMissing:onMismatch:)`` still takes effect
+/// * ``SequenceCodingFieldErrorStrategy/ignore``: Skip the failed element and continue the
+///   decoding process
+/// * ``SequenceCodingFieldErrorStrategy/value(_:)``: Apply an default value and continue the
+///   decoding process
+///
+/// The default value for both of them are ``SequenceCodingFieldErrorStrategy/throwError``
+///
+/// ## Transformation and Element Encoded Type
+///
+/// When decoding, it always try to decode each elements into the type specified by the
+/// `elementEncodedType` and form an Array of that type. Then the `decodeTransform` closure will
+/// be invoked with this array for converting it into desired type.
+///
+/// This transformation will be called before any other transformation specified by
+/// ``DecodeTransform(source:target:with:)`` and ``CodingTransform(_:)``. If it is not provided,
+/// then it assume that the desired type is Array of `elementEncodedType`.
+///
+/// When encoding, the `encodeTransform` closure is first invoked to convert the value into a
+/// sequence of `elementEncodedType`. It does not have to be an Array, an [`Sequence`] is enough.
+///
+/// This transformation will be called after any other transformation specified by
+/// ``EncodeTransform(source:target:with:)`` and ``CodingTransform(_:)``. If it is not provided,
+/// then it assume that the value to be encoded is already an sequence of `elementEncodedType`
+///
+/// - Attention: This macro can ONLY be applied to stored properties and will raise compilation
+/// error if applied to the wrong target
+///
+/// - Attention: Just like the rule for ``CodingField(_:)``, any two stored properties in a type
+/// MUST NOT have conflict coding path. However, here the coding path will be the concatenated
+/// path from both ``CodingField(_:)`` and this macro.
+///
+/// - Attention: Must be used together with ``Codable(inherit:)``
+///
+/// - Seealso: ``CodingField(_:)``
+///
+/// [`DecodingError`]: https://developer.apple.com/documentation/swift/decodingerror
+/// [`Sequence`]: https://developer.apple.com/documentation/swift/sequence
 @attached(peer)
 public macro SequenceCodingField<E: Codable, C, S: Sequence<E>>(
     subPath: String..., 
@@ -284,6 +398,21 @@ public macro SequenceCodingField<E: Codable, C, S: Sequence<E>>(
 
 
 
+/// Provide customization for a stored property whosed encoded form is a **Sequence** (e.g.: JSON Array)
+/// when doing encoding and decoding
+/// - Parameters:
+///   - subPath: The coding path for fetching / storing the value in each of the element in the
+///              encoded sequence
+///   - elementEncodedType: The type that is actually stored as each element in the encoded sequence
+///   - onMissing: The default behaviour when an element with missing coding path or `null` value
+///                is met
+///   - onMismatch: The default behaviour when an element with wrong type is met.
+///   - decodeTransform: Convert the decoded raw array into the actual type. See the
+///                      [Transformation and Element Encoded Type](#Transformation-and-Element-Encoded-Type)
+///                      section for more details
+///
+/// - Seealso: More detailed explaination can be found in
+///            ``SequenceCodingField(subPath:elementEncodedType:onMissing:onMismatch:decodeTransform:encodeTransform:)``
 @attached(peer)
 public macro SequenceCodingField<E: Codable, C>(
     subPath: String..., 
@@ -295,26 +424,7 @@ public macro SequenceCodingField<E: Codable, C>(
 
 
 
-// @attached(peer)
-// public macro SequenceCodingField<E: Codable, C, S: Sequence<E>>(
-//     subPath: String..., 
-//     elementEncodedType: E.Type, 
-//     onMissing: SequenceCodingFieldErrorStrategy<E>,
-//     decodeTransform: ([E]) throws -> C,
-//     encodeTransform: (C) throws -> S
-// ) = #externalMacro(module: "CodableMacroMacros", type: "SequenceCodingFieldMacro")
-
-
-
-// @attached(peer)
-// public macro SequenceCodingField<E: Codable, C, S: Sequence<E>>(
-//     subPath: String..., 
-//     elementEncodedType: E.Type, 
-//     onMismatch: SequenceCodingFieldErrorStrategy<E>,
-//     decodeTransform: ([E]) throws -> C,
-//     encodeTransform: (C) throws -> S
-// ) = #externalMacro(module: "CodableMacroMacros", type: "SequenceCodingFieldMacro")
-
+// MARK: CodingIgnore
 
 
 /// Mark a stored property to be ignored when doing encoding and decoding
@@ -323,6 +433,9 @@ public macro SequenceCodingField<E: Codable, C>(
 @attached(peer)
 public macro CodingIgnore() = #externalMacro(module: "CodableMacroMacros", type: "CodingIgnoreMacro")
 
+
+
+// MARK: DecodeTransform
 
 
 /// Provide a transformation rule when decoding for a stored property
@@ -348,6 +461,10 @@ public macro DecodeTransform<Source: Decodable, Target>(
 ) = #externalMacro(module: "CodableMacroMacros", type: "DecodeTransformMacro")
 
 
+
+// MARK: EncodeTransform
+
+
 /// Provide a transformation rule when encoding a stored property
 ///
 /// First convert the value of the property using the transformation, then encode
@@ -366,6 +483,10 @@ public macro EncodeTransform<Source, Target: Encodable>(
     target targetType: Target.Type = Target.self,
     with transform: @escaping (Source) throws -> Target
 ) = #externalMacro(module: "CodableMacroMacros", type: "EncodeTransformMacro")
+
+
+
+// MARK: CodingTransform
 
 
 /// Provide custom transformers used for both encoding and decoding
@@ -402,6 +523,10 @@ public macro CodingTransform<each Transformer: EvenCodingTransformProtocol>(
 ) = #externalMacro(module: "CodableMacroMacros", type: "CodingTransformMacro")
 
 
+
+// MARK: CodingValidate
+
+
 /// Provide a validation rule when decoding for a stored property
 ///
 /// If the property is neigher optional nor has an default value, an error will be thrown,
@@ -414,6 +539,10 @@ public macro CodingValidate<Source: Decodable>(
     source sourceType: Source.Type,
     with validate: @escaping (Source) throws -> Bool
 ) = #externalMacro(module: "CodableMacroMacros", type: "CodingValidateMacro")
+
+
+
+// MARK: SingleValueCodable
 
 
 /// Automatically make the annotated `class` or `struct` to conform to [`Codable`] by converting
@@ -471,6 +600,10 @@ public macro CodingValidate<Source: Decodable>(
 @attached(member, names: arbitrary)
 @attached(extension, conformances: SingleValueCodableProtocol, names: arbitrary)
 public macro SingleValueCodable() = #externalMacro(module: "CodableMacroMacros", type: "SingleValueCodableMacro")
+
+
+
+// MARK: SingleValueCodableDelegate
 
 
 /// Annotate a stored property as the only property responsible for the encoding and decoding

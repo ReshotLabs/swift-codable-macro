@@ -1,5 +1,5 @@
 //
-//  Type.swift
+//  Helpers.swift
 //  swift-codable-macro
 //
 //  Created by SerikaPHB  on 2025/2/1.
@@ -75,20 +75,31 @@ extension SingleValueCodableProtocol {
 
 
 
+/// Behaviour for elements that cannot be decoded correctly in an encoded sequence (e.g.: JSON Array)
 public enum SequenceCodingFieldErrorStrategy<T> {
-    case throwError, ignore, value(T)
+    /// Throw [`DecodingError`]
+    ///
+    /// [`DecodingError`]: https://developer.apple.com/documentation/swift/decodingerror
+    case throwError
+    /// Skip this element and continue
+    case ignore
+    /// Apply and default value and continue
+    case value(T)
 }
 
 
 
 extension SequenceCodingFieldErrorStrategy: Sendable where T: Sendable {}
+extension SequenceCodingFieldErrorStrategy: Equatable where T: Equatable {}
 
 
 
+/// A type that can always be decoded sucessfully as long as the data itself is not corrupted
 public struct DummyDecodableType: Sendable, Decodable {}
 
 
 extension UnkeyedDecodingContainer {
+    /// Skip one element
     public mutating func skip() throws {
         if !isAtEnd {
             _ = try decode(DummyDecodableType.self)
