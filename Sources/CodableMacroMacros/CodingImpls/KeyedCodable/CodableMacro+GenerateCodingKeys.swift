@@ -8,7 +8,7 @@ import SwiftDiagnostics
 
 extension CodableMacro {
 
-    private static func generateSingleEnumDeclaration<Cases: Collection>(
+    private func generateSingleEnumDeclaration<Cases: Collection>(
         name: TokenSyntax, 
         cases: Cases
     ) -> DeclSyntax 
@@ -21,7 +21,7 @@ extension CodableMacro {
     }
 
 
-    static func generateEnumDeclarations(from structure: CodingStructure, macroNode: AttributeSyntax) throws -> [DeclSyntax] {
+    func generateEnumDeclarations(from structure: CodingStructure) throws -> [DeclSyntax] {
 
         let enumNamePrefix = "$__coding_container_keys_" as TokenSyntax
 

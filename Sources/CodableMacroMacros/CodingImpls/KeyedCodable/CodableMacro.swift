@@ -13,114 +13,99 @@ import SwiftDiagnostics
 
 
 
-struct CodableMacro: CodingImplMacroProtocol {
+final class CodableMacro: CodingMacroImplBase, CodingMacroImplProtocol {
     
     static let supportedAttachedTypes: Set<AttachedType> = [.class, .struct]
     
     static let macroArgumentsParsingRule: [ArgumentsParsingRule] = [
         .labeled("inherit", canIgnore: true)
     ]
-    
-    
-    static func makeExtensionHeader(
-        node: AttributeSyntax,
-        type: some TypeSyntaxProtocol,
-        declaration: some DeclGroupSyntax,
-        context: some MacroExpansionContext
-    ) throws -> SyntaxNodeString {
-        
-        let inherit = try extractInheritArgument(from: node.arguments)
-        let comformanceClaude = (inherit ? "" : ": Codable") as SyntaxNodeString
-        
-        return "extension \(type)\(comformanceClaude)"
-        
+
+
+    let inherit: Bool
+
+    /// Whether an empty initializer should be created, only for class
+    var shouldAutoInit: Bool {
+        declGroup.type == .class
+        && !inherit                                                 // no inherited Codable
+        && !declGroup.properties.contains(where: \.isRequired)  // all stored properties are initialized or optional
+        && !declGroup.hasInitializer                            // has no initializer
+    }
+
+
+    required init(macroNode: MacroInfo, declGroup: DeclGroupSyntaxInfo, context: any MacroExpansionContext) throws {
+        if let inheritExpr = macroNode.arguments[0].first?.expression {
+            guard let inheritBoolLiteralExpr = inheritExpr.as(BooleanLiteralExprSyntax.self) else {
+                throw .diagnostic(node: inheritExpr, message: .codingMacro.singleValueCodable.notBoolLiteralArgument)
+            }
+            inherit = inheritBoolLiteralExpr.literal.tokenKind == .keyword(.true)
+            if inherit && declGroup.type != .class {
+                throw .diagnostic(node: inheritExpr, message: .codingMacro.singleValueCodable.valueTypeInherit)
+            }
+        } else {
+            inherit = false
+        }
+        try super.init(macroNode: macroNode, declGroup: declGroup, context: context)
     }
     
     
-    static func makeDecls(
-        node: AttributeSyntax,
-        declaration: some DeclGroupSyntax,
-        context: some MacroExpansionContext
-    ) throws -> [DeclSyntax] {
+    func makeExtensionHeader() throws -> SyntaxNodeString {
+        let comformanceClaude = (inherit ? "" : ": Codable") as SyntaxNodeString
+        return "extension \(declGroup.name.trimmed)\(comformanceClaude)"
+    }
+    
+    
+    func makeDecls() throws -> [DeclSyntax] {
         
-        let inherit = try extractInheritArgument(from: node.arguments)
+        let isClass = declGroup.type == .class
+        let isNonFinalClass = isClass && !declGroup.modifiers.contains(where: { $0.name.tokenKind == .keyword(.final) })
         
-        let declGroupInfo = try DeclGroupSyntaxInfo.extract(from: declaration)
+        let codingFieldInfoList = try extractCodingFieldInfoList()
         
-        let isClass = declGroupInfo.type == .class
-        let isNonFinalClass = isClass && !declGroupInfo.modifiers.contains(where: { $0.name.tokenKind == .keyword(.final) })
-        
-        let codingFieldInfoList = try extractCodingFieldInfoList(from: declGroupInfo.properties)
-        let canAutoCodable = canAutoCodable(codingFieldInfoList)
-        
-        /// Whether an empty initializer should be created, only for class
-        var shouldAutoInit: Bool {
-            isClass
-            && !inherit                                                 // no inherited Codable
-            && !declGroupInfo.properties.contains(where: \.isRequired)  // all stored properties are initialized or optional
-            && !declGroupInfo.hasInitializer                            // has no initializer
-        }
-        
-        // use the auto implementation provided by Swift Compiler if:
-        // * no actual customization is found
+        // MUST provide implementation instead of using that provided by Swift Compiler if any of the following is true:
         // * target is non-final class (where auto implementation will fail on extension)
-        // * there is no inherited Codable
-        guard isNonFinalClass || inherit || !canAutoCodable else { return [] }
+        // * has inherited Codable
+        // * has any customization
+        guard isNonFinalClass || inherit || !canAutoCodable(codingFieldInfoList) else { return [] }
 
         let codingFieldInfoListWithoutIgnored = codingFieldInfoList.filter { !$0.isIgnored }
         
         guard !codingFieldInfoListWithoutIgnored.isEmpty else {
             // If the info list is still empty here, simply create an empty decode initializer
             // and an empty encode function
-            return if shouldAutoInit {
-                [
-                    "init() {}",
-                    """
-                    public required init(from decoder: Decoder) throws {
-                        \(raw: inherit ? "try super.init(from decoder)" : "")
-                    }
-                    """,
-                    """
-                    public \(raw: inherit ? "override " : "")func encode(to encoder: Encoder) throws {
-                        \(raw: inherit ? "try super.encode(to encoder)" : "")
-                    }
-                    """,
-                ]
-            } else {
-                [
-                    """
-                    public \(raw: isClass ? "required " : "")init(from decoder: Decoder) throws {
-                        \(raw: inherit ? "try super.init(from decoder)" : "")
-                    }
-                    """,
-                    """
-                    public \(raw: inherit ? "override " : "")func encode(to encoder: Encoder) throws {
-                        \(raw: inherit ? "try super.encode(to encoder)" : "")
-                    }
-                    """
-                ]
+            return buildDeclSyntaxList {
+                if shouldAutoInit {
+                    "init() {}"
+                }
+                """
+                public \(raw: isClass ? "required " : "")init(from decoder: Decoder) throws {
+                    \(raw: inherit ? "try super.init(from decoder)" : "")
+                }
+                """
+                """
+                public \(raw: inherit ? "override " : "")func encode(to encoder: Encoder) throws {
+                    \(raw: inherit ? "try super.encode(to encoder)" : "")
+                }
+                """
             }
         }
         
         // Analyse the stored properties and convert into a tree structure
         let structure = try CodingStructure.parse(codingFieldInfoListWithoutIgnored)
         
-        var decls = [DeclSyntax]()
-        
-        decls.append(contentsOf: try generateEnumDeclarations(from: structure, macroNode: node))
-        decls.append(try generateDecodeInitializer(from: structure, isClass: isClass, inherit: inherit))
-        decls.append(try generateEncodeMethod(from: structure, inherit: inherit))
-        
-        if shouldAutoInit {
-            decls.append("init() {}")
+        return try buildDeclSyntaxList {
+            try generateEnumDeclarations(from: structure)
+            try generateDecodeInitializer(from: structure)
+            try generateEncodeMethod(from: structure)
+            if shouldAutoInit {
+                "init() {}"
+            }
         }
-        
-        return decls
         
     }
 
 
-    private static func canAutoCodable(_ codingFieldInfoList: [CodingFieldInfo]) -> Bool {
+    private func canAutoCodable(_ codingFieldInfoList: [CodingFieldInfo]) -> Bool {
 
         guard !codingFieldInfoList.isEmpty else {
             // an empty list means no customization, can auto-implement
@@ -143,19 +128,6 @@ struct CodableMacro: CodingImplMacroProtocol {
 
     }
     
-    
-    static func extractInheritArgument(from arguments: AttributeSyntax.Arguments?) throws -> Bool {
-        guard let arguments else { return false }
-        let macroArguments = try arguments.grouped(with: macroArgumentsParsingRule)
-        guard let inheritExpr = macroArguments[0].first?.expression else {
-            return false
-        }
-        guard let inheritBoolLiteralExpr = inheritExpr.as(BooleanLiteralExprSyntax.self) else {
-            throw .diagnostic(node: arguments, message: .codingMacro.codable.notBoolLiteralArgument)
-        }
-        return inheritBoolLiteralExpr.literal.tokenKind == .keyword(.true)
-    }
-    
 }
 
 
@@ -164,22 +136,22 @@ extension CodableMacro {
         
     enum Error {
         
-        static let noIdentifierFound: CodingMacroDiagnosticMessage = .init(
+        static let noIdentifierFound: CodingMacroImplBase.Error = .init(
             id: "no_identifier",
             message: "The Codable macro can only be applied to class or struct declaration"
         )
         
-        static let multipleCodingField: CodingMacroDiagnosticMessage = .init(
+        static let multipleCodingField: CodingMacroImplBase.Error = .init(
             id: "multiple_coding_field",
             message: "A stored property should have at most one CodingField macro"
         )
         
-        static let missingDefaultOrOptional: CodingMacroDiagnosticMessage = .init(
+        static let missingDefaultOrOptional: CodingMacroImplBase.Error = .init(
             id: "missing_default_or_optional",
             message: "Internal Error: missing macro-level default or optional mark, which should have been filtered out"
         )
         
-        static let notBoolLiteralArgument: CodingMacroDiagnosticMessage = .init(
+        static let notBoolLiteralArgument: CodingMacroImplBase.Error = .init(
             id: "not_bool_literal_argument",
             message: "The `inherit` argument support only boolean literal (true or false)"
         )
@@ -189,6 +161,6 @@ extension CodableMacro {
 }
 
 
-extension CodingMacroDiagnosticMessageGroup {
+extension CodingMacroImplBase.ErrorGroup {
     static var codable: CodableMacro.Error.Type { CodableMacro.Error.self }
 }

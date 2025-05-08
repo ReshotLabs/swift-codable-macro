@@ -9,15 +9,11 @@ import SwiftDiagnostics
 // MARK: Standard Decode
 extension CodableMacro {
 
-    static func generateDecodeInitializer(
-        from structure: CodingStructure,
-        isClass: Bool,
-        inherit: Bool
-    ) throws -> DeclSyntax {
+    func generateDecodeInitializer(from structure: CodingStructure) throws -> DeclSyntax {
 
         var containerStack: [CodingContainerName] = []
 
-        func structureDfs(_ structure: CodingStructure) throws -> (items: [CodeBlockItemSyntax], fieldsWithDefault: [CodingFieldInfo]) {
+        func structureDfs(_ structure: CodingStructure) throws -> (items: [CodeBlockItemSyntax], fieldsToInitOnError: [CodingFieldInfo]) {
 
             var codeBlockItems = [CodeBlockItemSyntax]()
             var fieldsToInitOnError = [CodingFieldInfo]()
@@ -32,8 +28,8 @@ extension CodableMacro {
                     defer { containerStack.removeLast() }
 
                     let items = try children.values.flatMap { child in
-                        let (childItems, childFieldsWithDefault) = try structureDfs(child)
-                        fieldsToInitOnError.append(contentsOf: childFieldsWithDefault)
+                        let (childItems, childFieldsToInitOnError) = try structureDfs(child)
+                        fieldsToInitOnError.append(contentsOf: childFieldsToInitOnError)
                         return childItems
                     }
                     guard !items.isEmpty else { break }
@@ -134,6 +130,8 @@ extension CodableMacro {
 
         }
 
+        let isClass = declGroup.type == .class
+
         return .init(
             try InitializerDeclSyntax("public \(raw: isClass ? "required " : "")init(from decoder: Decoder) throws") {
                 GenerationItems.transformFunctionDecl
@@ -149,7 +147,7 @@ extension CodableMacro {
     }
 
 
-    private static func generateStandardRootDecodeItems(
+    private func generateStandardRootDecodeItems(
         container: CodingContainerName,
         requirementStrategy: RequriementStrategy,
         childDecodingItems: [CodeBlockItemSyntax],
@@ -157,7 +155,7 @@ extension CodableMacro {
     ) throws -> [CodeBlockItemSyntax] {
 
         return try generateStandardContainerDecodeItems(
-            decodeExpr: GenerationItems.decodeNestedContainerStmt(container: container),
+            decodeStmt: GenerationItems.decodeNestedContainerStmt(container: container),
             requirementStrategy: requirementStrategy,
             childDecodingItems: childDecodingItems,
             fieldsToInitOnError: fieldsToInitOnError
@@ -166,7 +164,7 @@ extension CodableMacro {
     }
 
 
-    private static func generateStandardContainerDecodeItems(
+    private func generateStandardContainerDecodeItems(
         parentContainer: CodingContainerName,
         pathElement: String,
         requirementStrategy: RequriementStrategy,
@@ -175,7 +173,7 @@ extension CodableMacro {
     ) throws -> [CodeBlockItemSyntax] {
 
         return try generateStandardContainerDecodeItems(
-            decodeExpr: GenerationItems.decodeNestedContainerStmt(
+            decodeStmt: GenerationItems.decodeNestedContainerStmt(
                 parentContainer: parentContainer, 
                 pathElement: pathElement
             ),
@@ -187,19 +185,19 @@ extension CodableMacro {
     }
 
 
-    private static func generateStandardContainerDecodeItems(
-        decodeExpr: CodeBlockItemSyntax,
+    private func generateStandardContainerDecodeItems(
+        decodeStmt: CodeBlockItemSyntax,
         requirementStrategy: RequriementStrategy,
         childDecodingItems: [CodeBlockItemSyntax],
         fieldsToInitOnError: [CodingFieldInfo]
     ) throws -> [CodeBlockItemSyntax] {
         var codeBlockItems = [CodeBlockItemSyntax]()
         if requirementStrategy == .always {
-            codeBlockItems.append(decodeExpr)
+            codeBlockItems.append(decodeStmt)
             codeBlockItems.append(contentsOf: childDecodingItems)
         } else {
             var expr = try DoStmtSyntax("do") {
-                decodeExpr
+                decodeStmt
                 childDecodingItems
             }
             try addStandardCatchClauses(to: &expr, fieldsWithDefault: fieldsToInitOnError, requirementStrategy: requirementStrategy)
@@ -209,7 +207,7 @@ extension CodableMacro {
     }
 
 
-    private static func generateStandardDecodeBlock(field: CodingFieldInfo, container: CodingContainerName, pathElement: String) throws -> CodeBlockItemSyntax {
+    private func generateStandardDecodeBlock(field: CodingFieldInfo, container: CodingContainerName, pathElement: String) throws -> CodeBlockItemSyntax {
 
         var typeExpression: ExprSyntax {
             get throws {
@@ -250,7 +248,7 @@ extension CodableMacro {
     }
 
 
-    private static func generateSequenceLeafDecodeBlock(
+    private func generateSequenceLeafDecodeBlock(
         fields: [CodingFieldInfo],
         parentContainer: CodingContainerName,
         pathElement: String,
@@ -301,7 +299,7 @@ extension CodableMacro {
     }
 
 
-    private static func addStandardCatchClauses(
+    private func addStandardCatchClauses(
         to doStmt: inout DoStmtSyntax, 
         fieldsWithDefault: [CodingFieldInfo], 
         requirementStrategy: RequriementStrategy
@@ -322,7 +320,7 @@ extension CodableMacro {
     }
 
 
-    private static func initFieldsWithDefaultCodeBlockItems(
+    private func initFieldsWithDefaultCodeBlockItems(
         _ fieldsToInitOnError: [CodingFieldInfo], 
         type: RequriementStrategy
     ) throws -> [CodeBlockItemSyntax] {
@@ -353,7 +351,7 @@ extension CodableMacro {
 // MARK: Sequence Element Decode
 extension CodableMacro {
 
-    fileprivate static func generateSequenceDecodeItems(
+    fileprivate func generateSequenceDecodeItems(
         from structure: SequenceCodingSubStructure,
         containerStack: inout [CodingContainerName]
     ) throws -> (items: [CodeBlockItemSyntax], fieldsWithDefault: [SequenceCodingFieldInfo]) {
@@ -435,7 +433,7 @@ extension CodableMacro {
     }
 
 
-    private static func generateSequenceElementRootDecodeItems(
+    private func generateSequenceElementRootDecodeItems(
         parentUnkeyedContainer: CodingContainerName,
         requirementStrategy: RequriementStrategy,
         childDecodingItems: [CodeBlockItemSyntax],
@@ -453,7 +451,7 @@ extension CodableMacro {
     }
 
 
-    private static func generateSequenceElementContainerDecodeItems(
+    private func generateSequenceElementContainerDecodeItems(
         parentContainer: CodingContainerName,
         pathElement: String,
         requirementStrategy: RequriementStrategy,
@@ -471,7 +469,7 @@ extension CodableMacro {
     }
 
 
-    private static func generateSequenceElementContainerDecodeItems(
+    private func generateSequenceElementContainerDecodeItems(
         decodeExpr: CodeBlockItemSyntax,
         requirementStrategy: RequriementStrategy,
         childDecodingItems: [CodeBlockItemSyntax],
@@ -499,7 +497,7 @@ extension CodableMacro {
     }
 
 
-    private static func generateSequenceElementDecodeBlock(
+    private func generateSequenceElementDecodeBlock(
         field: SequenceCodingFieldInfo,
         container: CodingContainerName,
         pathElement: String?
@@ -545,7 +543,7 @@ extension CodableMacro {
     }
 
 
-    private static func addSequenceElementCatchBlock(
+    private func addSequenceElementCatchBlock(
         to doStmt: inout DoStmtSyntax,
         fields: [SequenceCodingFieldInfo],
         requirementStrategy: RequriementStrategy,
@@ -590,7 +588,7 @@ extension CodableMacro {
 // MARK: Shared Helpers
 extension CodableMacro {
 
-    fileprivate static func makeDecodeTransformExprs(field: CodingFieldInfo, sourceVarName: TokenSyntax, destVarName: TokenSyntax) throws -> [CodeBlockItemSyntax] {
+    fileprivate func makeDecodeTransformExprs(field: CodingFieldInfo, sourceVarName: TokenSyntax, destVarName: TokenSyntax) throws -> [CodeBlockItemSyntax] {
         if let transformSpec = field.decodeTransform {
             transformSpec.transformExprs.enumerated().map { i, transform in
                 let localSourceVarName = i == 0 ? sourceVarName : "value\(raw: i)" as TokenSyntax
@@ -603,7 +601,7 @@ extension CodableMacro {
     }
 
 
-    fileprivate static func makeValidateionExprs(field: CodingFieldInfo, varName: TokenSyntax) throws -> [CodeBlockItemSyntax] {
+    fileprivate func makeValidateionExprs(field: CodingFieldInfo, varName: TokenSyntax) throws -> [CodeBlockItemSyntax] {
         field.validateExprs.map { expr in
             let exprString = StringLiteralExprSyntax(content: IndentRemover().visit(expr).formatted().description)
             return #"try \#(GenerationItems.validateFunctionName)("\#(field.propertyInfo.name)", \#(exprString), \#(varName), \#(expr))"#

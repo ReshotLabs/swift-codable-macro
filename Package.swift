@@ -60,6 +60,7 @@ let package = Package(
         .testTarget(
             name: "CodableMacroCodingTests",
             dependencies: [
+                "CodableMacroMacros",
                 "CodableMacro"
             ]
         )

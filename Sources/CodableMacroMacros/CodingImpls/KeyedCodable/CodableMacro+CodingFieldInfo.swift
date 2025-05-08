@@ -90,15 +90,14 @@ extension CodableMacro {
     }
     
     
-    static func extractCodingFieldInfoList(from properties: [PropertyInfo])
-    throws(DiagnosticsError) -> [CodingFieldInfo] {
-        try properties
+    func extractCodingFieldInfoList() throws(DiagnosticsError) -> [CodingFieldInfo] {
+        try declGroup.properties
             .map(extractCodingFieldInfo(from:))
             .compactMap(\.self)
     }
     
     
-    static func extractCodingFieldInfo(from property: PropertyInfo) throws(DiagnosticsError) -> CodingFieldInfo? {
+    private func extractCodingFieldInfo(from property: PropertyInfo) throws(DiagnosticsError) -> CodingFieldInfo? {
         
         // Find and group all the decorator macros supported
         let attributes = property.attributes

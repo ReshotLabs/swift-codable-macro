@@ -72,16 +72,15 @@ extension CodingTest.SingleValueCodableCodingTest {
 }
 
 
-
 extension CodingTest.SingleValueCodableCodingTest {
     
     @SingleValueCodable
     struct SomeType2: Equatable {
         var a: Int
-        static let singleValueCodingDefaultValue: Int? = 2
         init(a: Int) { self.a = a }
         init(from codingValue: Int) throws { self.a = codingValue }
         func singleValueEncode() throws -> Int { self.a }
+        static let singleValueCodingDefaultValue: SingleValueCodableDefaultValue<Int> = .value(2)
     }
     
     
@@ -133,7 +132,7 @@ extension CodingTest.SingleValueCodableCodingTest {
     @SingleValueCodable
     struct SomeType3: Equatable {
         var a: Int?
-        static let singleValueCodingDefaultValue: Int?? = .some(nil)
+        static let singleValueCodingDefaultValue: SingleValueCodableDefaultValue<Int?> = .value(nil)
         init(a: Int?) { self.a = a }
         init(from codingValue: Int?) throws { self.a = codingValue }
         func singleValueEncode() throws -> Int? { self.a }
@@ -369,7 +368,7 @@ extension CodingTest.SingleValueCodableCodingTest {
             ),
         ] as [(DecodeResult<SomeType7>, JsonComponent)]
     )
-    func deocde6(_ expectedInstance: DecodeResult<SomeType7>, _ json: JsonComponent) async throws {
+    func deocde7(_ expectedInstance: DecodeResult<SomeType7>, _ json: JsonComponent) async throws {
         try codingTestDecodeAssert(expectedInstance, json)
     }
     
@@ -383,8 +382,60 @@ extension CodingTest.SingleValueCodableCodingTest {
             )
         ] as [(SomeType7, JsonComponent)]
     )
-    func encode6(_ instance: SomeType7, _ expectedJson: JsonComponent) async throws {
+    func encode7(_ instance: SomeType7, _ expectedJson: JsonComponent) async throws {
         try codingTestEncodeAssert(instance, expectedJson)
     }
     
+}
+
+
+
+extension CodingTest.SingleValueCodableCodingTest {
+
+    @SingleValueCodable
+    struct SomeType8: Equatable {
+        @SingleValueCodableDelegate(default: 2)
+        var a: Int = 1
+    }
+
+
+    @Test(
+        "Decode with delegate + initializer + macro default",
+        arguments: [
+            (
+                .success(.init(a: 0)),
+                .int(0)
+            ),
+            (
+                .success(.init(a: 2)),
+                .string("0")
+            ),
+            (
+                .success(.init(a: 2)),
+                .object([:])
+            ),
+            (
+                .success(.init(a: 2)),
+                .object([ "a": 1 ])
+            ),
+        ] as [(DecodeResult<SomeType8>, JsonComponent)]
+    )
+    func decode8(_ expectedInstance: DecodeResult<SomeType8>, _ json: JsonComponent) async throws {
+        try codingTestDecodeAssert(expectedInstance, json)
+    }
+
+
+    @Test(
+        "Encode with delegate + initializer + macro default",
+        arguments: [
+            (
+                .init(a: 2),
+                .int(2)
+            )
+        ] as [(SomeType8, JsonComponent)]
+    )
+    func encode8(_ instance: SomeType8, _ expectedJson: JsonComponent) async throws {
+        try codingTestEncodeAssert(instance, expectedJson)
+    }
+
 }

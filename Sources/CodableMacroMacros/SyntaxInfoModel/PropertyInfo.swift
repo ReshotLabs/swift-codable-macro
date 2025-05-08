@@ -63,7 +63,7 @@ extension PropertyInfo {
         
         let initializer = declaration.bindings.first?.initializer?.value
         
-        let typeAnnotation = declaration.bindings.first?.typeAnnotation?.type.trimmed
+        let typeAnnotation = declaration.bindings.first?.typeAnnotation?.type
         
         let type: PropertyType
         
@@ -88,7 +88,7 @@ extension PropertyInfo {
             name: name,
             type: type,
             initializer: initializer,
-            dataType: typeAnnotation,
+            dataType: typeAnnotation?.trimmed,
             attributes: attributes
         )
         

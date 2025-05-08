@@ -15,10 +15,7 @@ import SwiftDiagnostics
 
 extension CodableMacro {
 
-    static func generateEncodeMethod(
-        from structure: CodingStructure,
-        inherit: Bool
-    ) throws -> DeclSyntax {
+    func generateEncodeMethod(from structure: CodingStructure) throws -> DeclSyntax {
 
         var containerStack: [CodingContainerName] = []
 
@@ -105,7 +102,7 @@ extension CodableMacro {
     }
 
 
-    static func generateSequenceEncodeItems(
+    func generateSequenceEncodeItems(
         sequenceElementCodingInfo: SequenceCodingFieldInfo,
         parentUnkeyedContainer: CodingContainerName
     ) throws -> [CodeBlockItemSyntax] {
@@ -148,7 +145,7 @@ extension CodableMacro {
 
 extension CodableMacro {
 
-    fileprivate static func generateContainerEncodeItems(
+    fileprivate func generateContainerEncodeItems(
         parentContainer: CodingContainerName,
         pathElement: String,
         childDecodingItems: [CodeBlockItemSyntax]
@@ -164,7 +161,7 @@ extension CodableMacro {
     }
 
 
-    fileprivate static func generateRootEncodeItems(
+    fileprivate func generateRootEncodeItems(
         container: CodingContainerName,
         childDecodingItems: [CodeBlockItemSyntax]
     ) throws -> [CodeBlockItemSyntax] {
@@ -175,7 +172,7 @@ extension CodableMacro {
     }
 
 
-    fileprivate static func generateEncodeBlock(field: CodingFieldInfo, container: CodingContainerName, pathElement: String) throws -> CodeBlockItemSyntax {
+    fileprivate func generateEncodeBlock(field: CodingFieldInfo, container: CodingContainerName, pathElement: String) throws -> CodeBlockItemSyntax {
         if field.propertyInfo.hasOptionalTypeDecl {
             let expr = try IfExprSyntax("if let value = self.\(field.propertyInfo.name)") {
                 try makeEncodeTransformExprs(field: field, sourceVarName: "value", destVarName: "transformedValue")
@@ -192,7 +189,7 @@ extension CodableMacro {
     }
 
 
-    fileprivate static func generateSequenceLeafEncodeItems(
+    fileprivate func generateSequenceLeafEncodeItems(
         parentContainer: CodingContainerName,
         pathElement: String,
         field: CodingFieldInfo,
@@ -241,7 +238,7 @@ extension CodableMacro {
 
 extension CodableMacro {
 
-    fileprivate static func makeEncodeTransformExprs(field: CodingFieldInfo, sourceVarName: TokenSyntax, destVarName: TokenSyntax) throws -> [CodeBlockItemSyntax] {
+    fileprivate func makeEncodeTransformExprs(field: CodingFieldInfo, sourceVarName: TokenSyntax, destVarName: TokenSyntax) throws -> [CodeBlockItemSyntax] {
         guard let transformExprs = field.encodeTransform else { 
             return ["let \(destVarName) = \(sourceVarName)"] 
         }

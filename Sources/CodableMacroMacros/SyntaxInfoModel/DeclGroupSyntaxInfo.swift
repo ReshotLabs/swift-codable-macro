@@ -18,7 +18,11 @@ struct DeclGroupSyntaxInfo: Sendable {
     let type: DeclType
     let properties: [PropertyInfo]
     let modifiers: DeclModifierListSyntax
-    let hasInitializer: Bool
+    let initializers: [InitializerDeclSyntax]
+
+    var hasInitializer: Bool {
+        initializers.isEmpty == false
+    }
     
     
     static func extract(from syntax: some DeclGroupSyntax) throws(DiagnosticsError) -> Self {
@@ -43,8 +47,8 @@ struct DeclGroupSyntaxInfo: Sendable {
                 .compactMap { $0.decl.as(VariableDeclSyntax.self) }
                 .map(PropertyInfo.extract(from:)),
             modifiers: syntax.modifiers,
-            hasInitializer: syntax.memberBlock.members
-                .contains { $0.decl.is(InitializerDeclSyntax.self) }
+            initializers: syntax.memberBlock.members
+                .compactMap { $0.decl.as(InitializerDeclSyntax.self) }
         )
     }
     

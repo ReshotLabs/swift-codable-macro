@@ -187,6 +187,11 @@ extension CodingExpansionTest.CodingFieldTest {
     
     @Test("var | optional", .tags(.expansion.keyedCoding, .expansion.mutableProperty, .expansion.optionalProperty))
     func test3() async throws {
+        await #expect(throws: Never.self) {
+            try await { () async throws -> Void in 
+
+            }()
+        }
         assertMacroExpansion(
             source: """
             @Codable

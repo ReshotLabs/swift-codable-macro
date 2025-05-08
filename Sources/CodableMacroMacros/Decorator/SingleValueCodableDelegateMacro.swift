@@ -14,12 +14,14 @@ import SwiftDiagnostics
 
 struct SingleValueCodableDelegateMacro: CodingDecoratorMacro {
     
-    static let macroArgumentsParsingRule: [ArgumentsParsingRule] = []
+    static let macroArgumentsParsingRule: [ArgumentsParsingRule] = [
+        .labeled("default", canIgnore: true)
+    ]
     
     static func processProperty(
         _ propertyInfo: PropertyInfo,
         macroNodes: [AttributeSyntax]
-    ) throws(DiagnosticsError) -> Void {
+    ) throws(DiagnosticsError) -> ExprSyntax? {
         
         guard propertyInfo.type != .computed || macroNodes.isEmpty else {
             throw .diagnostic(node: propertyInfo.name, message: .decorator.general.attachTypeError)
@@ -29,7 +31,17 @@ struct SingleValueCodableDelegateMacro: CodingDecoratorMacro {
             throw .diagnostic(node: propertyInfo.name, message: .decorator.general.duplicateMacro(name: "SingleValueCodableDelegate"))
         }
         
-        // no need to extract and information for now, may add something in the future
+        guard let macroNode = macroNodes.first else {
+            return nil 
+        }
+
+        let arguments = try macroNode.arguments?.grouped(with: macroArgumentsParsingRule)
+
+        guard let defaultValue = arguments?[0].first?.expression else {
+            return nil 
+        }
+
+        return defaultValue
         
     }
     

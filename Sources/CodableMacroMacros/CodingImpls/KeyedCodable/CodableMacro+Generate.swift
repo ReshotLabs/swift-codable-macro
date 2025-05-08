@@ -10,18 +10,18 @@ extension CodableMacro {
 
     enum GenerationItems {
 
-        static let containerCodingKeysPrefix = "$__coding_container_keys_" as TokenSyntax
-        static let containerVarNamePrefix = "$__coding_container_" as TokenSyntax
-        static let sequenceCodingTempVarNamePrefix = "$__sequence_coding_temp_" as TokenSyntax
-        static let sequenceCodingElementVarNamePrefix = "$__sequence_coding_element_" as TokenSyntax
+        static let containerCodingKeysPrefix: TokenSyntax = "$__coding_container_keys_"
+        static let containerVarNamePrefix: TokenSyntax = "$__coding_container_"
+        static let sequenceCodingTempVarNamePrefix: TokenSyntax = "$__sequence_coding_temp_"
+        static let sequenceCodingElementVarNamePrefix: TokenSyntax = "$__sequence_coding_element_"
 
         static let typeMismatchErrorExpr: ExprSyntax = "Swift.DecodingError.typeMismatch"
         static let keyNotFoundErrorExpr: ExprSyntax = "Swift.DecodingError.keyNotFound"
         static let valueNotFoundErrorExpr: ExprSyntax = "Swift.DecodingError.valueNotFound"
 
-        static var transformFunctionName: TokenSyntax { "$__coding_transform" }
-        static var validateFunctionName: TokenSyntax { "$__coding_validate" }
-        static var makeEmptyArrayFunctionName: TokenSyntax { "$__coding_make_empty_array" }
+        static let transformFunctionName: TokenSyntax = "$__coding_transform"
+        static let validateFunctionName: TokenSyntax = "$__coding_validate"
+        static let makeEmptyArrayFunctionName: TokenSyntax = "$__coding_make_empty_array"
 
         static var transformFunctionDecl: DeclSyntax {
             """

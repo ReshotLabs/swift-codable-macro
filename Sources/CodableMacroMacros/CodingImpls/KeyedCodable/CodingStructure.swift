@@ -400,19 +400,19 @@ extension CodableMacro {
 
     enum CodingStructureParsingError {
         
-        static let pathConflict: CodingMacroDiagnosticMessage = .init(
+        static let pathConflict: CodingMacroImplBase.Error = .init(
             id: "path_conflict",
             message: "Property has path that conflict with that of another property"
         )
         
-        static func pathConflictDestination(source: TokenSyntax) -> CodingMacroDiagnosticMessage {
+        static func pathConflictDestination(source: TokenSyntax) -> CodingMacroImplBase.Error {
             .init(
                 id: "path_conflict_destination",
                 message: "path of \"\(source.trimmed.text)\" conflicts with path of this property"
             )
         }
         
-        static let unknown: CodingMacroDiagnosticMessage = .init(
+        static let unknown: CodingMacroImplBase.Error = .init(
             id: "unknown",
             message: "Internal Error: Unknown"
         )
@@ -423,7 +423,7 @@ extension CodableMacro {
 
 
 
-extension CodingMacroDiagnosticMessageGroup {
+extension CodingMacroImplBase.ErrorGroup {
     static var codingStructureParsing: CodableMacro.CodingStructureParsingError.Type {
         CodableMacro.CodingStructureParsingError.self
     }

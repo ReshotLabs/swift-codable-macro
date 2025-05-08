@@ -40,8 +40,9 @@ public protocol SingleValueCodableProtocol: Codable {
     
     /// The type for actual encoding / decoding process
     associatedtype CodingValue: Codable
+    typealias DefaultValue = SingleValueCodableDefaultValue<CodingValue>
     
-    static var singleValueCodingDefaultValue: CodingValue? { get }
+    static var singleValueCodingDefaultValue: SingleValueCodableDefaultValue<CodingValue> { get }
     
     /// Convert the instance to an instance of another type for being encoded
     func singleValueEncode() throws -> CodingValue
@@ -56,11 +57,12 @@ public protocol SingleValueCodableProtocol: Codable {
 extension SingleValueCodableProtocol {
     
     public init(from decoder: any Decoder) throws {
-        if let defaultValue = Self.singleValueCodingDefaultValue {
-            let decodedValue = (try? CodingValue.init(from: decoder)) ?? defaultValue
-            try self.init(from: decodedValue)
-        } else {
-            try self.init(from: .init(from: decoder))
+        switch Self.singleValueCodingDefaultValue {
+            case .value(let defaultValue):
+                let decodedValue = (try? CodingValue(from: decoder)) ?? defaultValue
+                try self.init(from: decodedValue)
+            case .none:
+                try self.init(from: .init(from: decoder))
         }
     }
     
@@ -68,10 +70,49 @@ extension SingleValueCodableProtocol {
         try self.singleValueEncode().encode(to: encoder)
     }
     
-    public static var singleValueCodingDefaultValue: CodingValue? { nil }
+    public static var singleValueCodingDefaultValue: DefaultValue { .none }
     
 }
 
+
+
+public protocol InheritedSingleValueCodableProtocol: AnyObject {
+
+    /// The type for actual encoding / decoding process
+    associatedtype CodingValue: Codable
+    typealias DefaultValue = SingleValueCodableDefaultValue<CodingValue>
+    
+    static var singleValueCodingDefaultValue: SingleValueCodableDefaultValue<CodingValue> { get }
+    
+    /// Convert the instance to an instance of another type for being encoded
+    func singleValueEncode() throws -> CodingValue
+    
+    /// Create an instance of this type using an instance of another type being decoded
+    init(from codingValue: CodingValue, decoder: Decoder) throws
+
+}
+
+
+
+extension InheritedSingleValueCodableProtocol {
+    public static var singleValueCodingDefaultValue: SingleValueCodableDefaultValue<CodingValue> { .none }
+}
+
+
+
+/// Default value configuration for ``SingleValueCodableProtocol``
+/// 
+/// Work exactly the same as the `Optional` type in Swift, used just to avoid nested Optional 
+public enum SingleValueCodableDefaultValue<T> {
+    /// No default value 
+    case none 
+    /// Has default value
+    case value(T)
+}
+
+
+extension SingleValueCodableDefaultValue: Sendable where T: Sendable {}
+extension SingleValueCodableDefaultValue: Equatable where T: Equatable {}
 
 
 

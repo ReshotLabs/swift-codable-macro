@@ -598,8 +598,8 @@ public macro CodingValidate<Source: Decodable>(
 /// [`encode(to:)`]: https://developer.apple.com/documentation/swift/encodable/encode(to:)-7ibwv
 /// [`init(from:)`]: https://developer.apple.com/documentation/swift/decodable/init(from:)-8ezpn
 @attached(member, names: arbitrary)
-@attached(extension, conformances: SingleValueCodableProtocol, names: arbitrary)
-public macro SingleValueCodable() = #externalMacro(module: "CodableMacroMacros", type: "SingleValueCodableMacro")
+@attached(extension, conformances: InheritedSingleValueCodableProtocol, SingleValueCodableProtocol, names: arbitrary)
+public macro SingleValueCodable(inherit: Bool = false) = #externalMacro(module: "CodableMacroMacros", type: "SingleValueCodableMacro")
 
 
 
@@ -608,6 +608,16 @@ public macro SingleValueCodable() = #externalMacro(module: "CodableMacroMacros",
 
 /// Annotate a stored property as the only property responsible for the encoding and decoding
 /// process.
+///
+/// - Seealso: More detailed explaination can be found in ``SingleValueCodableDelegate(default:)``
+@attached(peer)
+public macro SingleValueCodableDelegate() = #externalMacro(module: "CodableMacroMacros", type: "SingleValueCodableDelegateMacro")
+
+
+
+/// Annotate a stored property as the only property responsible for the encoding and decoding
+/// process.
+/// - Parameter default: The default value to use when the decoding process fails
 ///
 /// The following two definitions are identical:
 /// ```swift
@@ -627,9 +637,9 @@ public macro SingleValueCodable() = #externalMacro(module: "CodableMacroMacros",
 ///         self.a = codingValue
 ///     }
 /// }
+/// ```
 ///
 /// - Attention: This macro can ONLY be applied to stored properties and will raise compilation
 /// error if applied to the wrong target
-/// ```
 @attached(peer)
-public macro SingleValueCodableDelegate() = #externalMacro(module: "CodableMacroMacros", type: "SingleValueCodableDelegateMacro")
+public macro SingleValueCodableDelegate<T>(default: T) = #externalMacro(module: "CodableMacroMacros", type: "SingleValueCodableDelegateMacro")
