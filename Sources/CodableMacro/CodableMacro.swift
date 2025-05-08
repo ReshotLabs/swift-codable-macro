@@ -547,6 +547,7 @@ public macro CodingValidate<Source: Decodable>(
 
 /// Automatically make the annotated `class` or `struct` to conform to [`Codable`] by converting
 /// instances from/to instances of another type.
+/// - Parameter inherit: Whether this class has an super class that has already conformed to [`Codable`]
 ///
 /// What this macro does is simply conform the type to ``SingleValueCodableProtocol``, which
 /// has already provided the implementation of [`encode(to:)`] and [`init(from:)`], but requires
@@ -555,6 +556,13 @@ public macro CodingValidate<Source: Decodable>(
 /// instance of another type that will actually be encoded.
 /// * ``SingleValueCodableProtocol/init(from:)``: Create an instance of this type using an
 /// instance of another type being decoded.
+/// 
+/// If `inherit` is set to `true`, then it will conform to ``InheritedSingleValueCodableProtocol``,
+/// which requires implementing:
+/// * ``InheritedSingleValueCodableProtocol/singleValueEncode()``: Convert the instance
+/// to an instance of another type that will actually be encoded.
+/// * ``InheritedSingleValueCodableProtocol/init(from:decoder:)``: Create an instance of this type using
+/// an instance of another type being decoded. The `decoder` parameter is used for calling `super.init(from:)`
 ///
 /// ```swift
 /// @SingleValueCodable

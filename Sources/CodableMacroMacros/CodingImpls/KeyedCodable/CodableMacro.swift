@@ -28,8 +28,8 @@ final class CodableMacro: CodingMacroImplBase, CodingMacroImplProtocol {
     var shouldAutoInit: Bool {
         declGroup.type == .class
         && !inherit                                                 // no inherited Codable
-        && !declGroup.properties.contains(where: \.isRequired)  // all stored properties are initialized or optional
-        && !declGroup.hasInitializer                            // has no initializer
+        && !declGroup.properties.contains(where: \.isRequired)      // all stored properties are initialized or optional
+        && !declGroup.hasInitializer                                // has no initializer
     }
 
 

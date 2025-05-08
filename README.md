@@ -2,6 +2,8 @@
 
 Provide Swift Macros for automatically generate customizable implementation for conforming `Codable` protocol. 
 
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2FStar-Lord-PHB%2Fswift-codable-macro%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/Star-Lord-PHB/swift-codable-macro) [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2FStar-Lord-PHB%2Fswift-codable-macro%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/Star-Lord-PHB/swift-codable-macro)
+
 ## Introduction 
 
 Swift Compiler already provides auto implementation when we conform a custom type to `Codable`. It is nice when you are in charge of defining the encoding / decoding format, but unfortunately, that is not always the case. When the format is defined by others, we might have to use wired property name or even implement `encode(to:)` and `init(:from)` ourselves. 
@@ -98,7 +100,7 @@ struct FilePath {
 
 ## Provided Macros
 
-**Codable**
+**Codable(inherit:)**
 
 Annotate a class or a struct for auto conforming to `Codable` protocol. It will look up all the stored properties in the type definition and generate the implementation base on any customization found. 
 
@@ -122,7 +124,7 @@ Specify a custom transformation when decoding for a property.  It will first try
 
 Specify a custom transformation when encoding a property. It will first convert the value using the provided transformation, then encoded the converted value. 
 
-**CodingTransform(_:)**
+**CodingTransform(_\:)**
 
 Specify a sequence of transformations when encoding / decoding a property. The transformations here should be instances of types that conform to `EvenCodingTransformProtocol`. 
 
@@ -137,7 +139,7 @@ Specify a validation rules when decoding for a property.
 
 Specify a custom behavior when decoding an encoded sequence (e.g.: JSON Array). Can specify sub path when decoding each element in the sequence and default behavior (ignore it or apply a default value) when an element cannot be decoded correctly.
 
-**SingleValueCodable**
+**SingleValueCodable(inherit:)**
 
 Annotate a Class or a struct for auto conforming to `Codable` protocol by a provided rule to convert an instance from/to an instance of another type that conforms to `Codable`. 
 
