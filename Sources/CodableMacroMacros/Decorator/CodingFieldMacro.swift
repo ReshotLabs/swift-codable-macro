@@ -26,7 +26,8 @@ struct CodingFieldMacro: CodingDecoratorMacro {
     
     static func processProperty(
         _ property: PropertyInfo,
-        macroNodes: [SwiftSyntax.AttributeSyntax]
+        macroNodes: [SwiftSyntax.AttributeSyntax],
+        context: some MacroExpansionContext
     ) throws(DiagnosticsError) -> (path: [String], defaultValueOnMissing: ExprSyntax?, defaultValueOnMismatch: ExprSyntax?)? {
         
         guard property.type != .computed else {

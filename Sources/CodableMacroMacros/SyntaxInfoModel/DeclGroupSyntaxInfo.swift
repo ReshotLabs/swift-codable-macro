@@ -16,9 +16,11 @@ struct DeclGroupSyntaxInfo: Sendable {
     
     let name: TokenSyntax
     let type: DeclType
+    let inheritance: [TypeSyntax]
     let properties: [PropertyInfo]
     let modifiers: DeclModifierListSyntax
     let initializers: [InitializerDeclSyntax]
+    let enumCases: [EnumCaseInfo]
 
     var hasInitializer: Bool {
         initializers.isEmpty == false
@@ -43,12 +45,17 @@ struct DeclGroupSyntaxInfo: Sendable {
         return .init(
             name: name,
             type: type,
+            inheritance: syntax.inheritanceClause?.inheritedTypes.map(\.type) ?? [],
             properties: try syntax.memberBlock.members
                 .compactMap { $0.decl.as(VariableDeclSyntax.self) }
                 .map(PropertyInfo.extract(from:)),
             modifiers: syntax.modifiers,
             initializers: syntax.memberBlock.members
-                .compactMap { $0.decl.as(InitializerDeclSyntax.self) }
+                .compactMap { $0.decl.as(InitializerDeclSyntax.self) },
+            enumCases: try syntax.memberBlock.members
+                .compactMap { $0.decl.as(EnumCaseDeclSyntax.self) }
+                .map(EnumCaseInfo.extract(from:))
+                .flatMap(\.self)
         )
     }
     

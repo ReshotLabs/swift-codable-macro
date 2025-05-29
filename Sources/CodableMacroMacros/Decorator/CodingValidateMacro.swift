@@ -23,7 +23,8 @@ struct CodingValidateMacro: CodingDecoratorMacro {
     
     static func processProperty(
         _ propertyInfo: PropertyInfo,
-        macroNodes: [AttributeSyntax]
+        macroNodes: [AttributeSyntax],
+        context: some MacroExpansionContext
     ) throws(DiagnosticsError) -> [ExprSyntax] {
         
         guard propertyInfo.type != .computed || macroNodes.isEmpty else {

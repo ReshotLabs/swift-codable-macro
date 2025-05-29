@@ -25,6 +25,34 @@ extension NoteMessage where Self == StringNoteMessage {
 
 
 
+struct InternalDiagnosticError: DiagnosticMessage {
+
+    private let _message: String
+    let diagnosticID: MessageID = .init(domain: "com.serika.coding_macro.internal", id: UUID().uuidString)
+
+    var severity: DiagnosticSeverity { .error }
+    var message: String {
+        "[Internal Error]: \(_message)"
+    }
+
+    init(message: String) {
+        self._message = message
+    }
+
+}
+
+
+
+extension DiagnosticMessage where Self == InternalDiagnosticError {
+
+    static var `internal`: Self.Type {
+        Self.self
+    }
+
+}
+
+
+
 extension Error where Self == DiagnosticsError {
     
     static func diagnostic(

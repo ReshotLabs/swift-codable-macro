@@ -20,7 +20,8 @@ struct CodingIgnoreMacro: CodingDecoratorMacro {
     
     static func processProperty(
         _ propertyInfo: PropertyInfo,
-        macroNodes: [AttributeSyntax]
+        macroNodes: [AttributeSyntax],
+        context: some MacroExpansionContext
     ) throws(DiagnosticsError) -> Void {
         
         guard !macroNodes.isEmpty else { return }

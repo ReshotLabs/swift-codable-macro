@@ -19,7 +19,8 @@ struct CodingTransformMacro: CodingDecoratorMacro {
     
     static func processProperty(
         _ propertyInfo: PropertyInfo,
-        macroNodes: [AttributeSyntax]
+        macroNodes: [AttributeSyntax],
+        context: some MacroExpansionContext
     ) throws(DiagnosticsError) -> Spec? {
         
         guard propertyInfo.type != .computed || macroNodes.isEmpty else {

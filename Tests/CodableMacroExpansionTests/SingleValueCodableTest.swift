@@ -140,7 +140,7 @@ extension CodingExpansionTest.SingleValueCodableTest {
                 public init(from codingValue: Int?) throws {
                     self.a = codingValue
                 }
-                public static var singleValueCodingDefaultValue: SingleValueCodableDefaultValue<Int?> {
+                public static var singleValueCodingDefaultValue: CodingDefaultValue<Int?> {
                     .value(nil)
                 }
             }
@@ -180,7 +180,7 @@ extension CodingExpansionTest.SingleValueCodableTest {
                 public init(from codingValue: Int) throws {
                     self.a = codingValue
                 }
-                public static var singleValueCodingDefaultValue: SingleValueCodableDefaultValue<Int> {
+                public static var singleValueCodingDefaultValue: CodingDefaultValue<Int> {
                     .value(1)
                 }
             }
@@ -219,7 +219,7 @@ extension CodingExpansionTest.SingleValueCodableTest {
                 }
                 public init(from codingValue: Int) throws {
                 }
-                public static var singleValueCodingDefaultValue: SingleValueCodableDefaultValue<Int> {
+                public static var singleValueCodingDefaultValue: CodingDefaultValue<Int> {
                     .value(1)
                 }
             }
@@ -259,7 +259,7 @@ extension CodingExpansionTest.SingleValueCodableTest {
                 public init(from codingValue: Int) throws {
                     self.a = codingValue
                 }
-                public static var singleValueCodingDefaultValue: SingleValueCodableDefaultValue<Int> {
+                public static var singleValueCodingDefaultValue: CodingDefaultValue<Int> {
                     .value(2)
                 }
             }

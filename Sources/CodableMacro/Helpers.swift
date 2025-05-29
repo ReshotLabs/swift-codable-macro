@@ -40,10 +40,10 @@ public protocol SingleValueCodableProtocol: Codable {
     
     /// The type for actual encoding / decoding process
     associatedtype CodingValue: Codable
-    typealias DefaultValue = SingleValueCodableDefaultValue<CodingValue>
+    typealias DefaultValue = CodingDefaultValue<CodingValue>
     
     /// The default value to use when decoding
-    static var singleValueCodingDefaultValue: SingleValueCodableDefaultValue<CodingValue> { get }
+    static var singleValueCodingDefaultValue: CodingDefaultValue<CodingValue> { get }
     
     /// Convert the instance to an instance of another type for being encoded
     func singleValueEncode() throws -> CodingValue
@@ -98,10 +98,10 @@ public protocol InheritedSingleValueCodableProtocol: AnyObject {
 
     /// The type for actual encoding / decoding process
     associatedtype CodingValue: Codable
-    typealias DefaultValue = SingleValueCodableDefaultValue<CodingValue>
+    typealias DefaultValue = CodingDefaultValue<CodingValue>
     
     /// The default value to use when decoding
-    static var singleValueCodingDefaultValue: SingleValueCodableDefaultValue<CodingValue> { get }
+    static var singleValueCodingDefaultValue: CodingDefaultValue<CodingValue> { get }
     
     /// Convert the instance to an instance of another type for being encoded
     func singleValueEncode() throws -> CodingValue
@@ -114,7 +114,7 @@ public protocol InheritedSingleValueCodableProtocol: AnyObject {
 
 
 extension InheritedSingleValueCodableProtocol {
-    public static var singleValueCodingDefaultValue: SingleValueCodableDefaultValue<CodingValue> { .none }
+    public static var singleValueCodingDefaultValue: CodingDefaultValue<CodingValue> { .none }
 }
 
 
@@ -122,7 +122,7 @@ extension InheritedSingleValueCodableProtocol {
 /// Default value configuration for ``SingleValueCodableProtocol``
 /// 
 /// Work exactly the same as the `Optional` type in Swift, used just to avoid nested Optional 
-public enum SingleValueCodableDefaultValue<T> {
+public enum CodingDefaultValue<T> {
     /// No default value 
     case none 
     /// Has default value
@@ -130,8 +130,8 @@ public enum SingleValueCodableDefaultValue<T> {
 }
 
 
-extension SingleValueCodableDefaultValue: Sendable where T: Sendable {}
-extension SingleValueCodableDefaultValue: Equatable where T: Equatable {}
+extension CodingDefaultValue: Sendable where T: Sendable {}
+extension CodingDefaultValue: Equatable where T: Equatable {}
 
 
 
@@ -154,8 +154,76 @@ extension SequenceCodingFieldErrorStrategy: Equatable where T: Equatable {}
 
 
 
+public protocol EnumCodableProtocol: Codable {
+    typealias DefaultValue = CodingDefaultValue<Self>
+    static var codingDefaultValue: DefaultValue { get }
+}
+
+
+extension EnumCodableProtocol {
+    public static var codingDefaultValue: DefaultValue { .none }
+}
+
+
+
+/// caseKey: used to identify the enum case. the name of the case or customed key 
+/// payload: the value of the enum case, can be associated value or raw value 
+public enum EnumCodableOption: Sendable {
+    /// { 
+    ///     caseKey: payload
+    /// }
+    case externalKeyed
+    /// {
+    ///     "type": caseKey,
+    ///     "payload": payload
+    /// }
+    case adjucentKeyed(typeKey: StaticString = "type", payloadKey: StaticString = "payload")
+    /// {
+    ///     "type": caseKey,
+    ///     payload         // MUST NOT be array or single value
+    /// }
+    case internalKeyed(typeKey: StaticString = "type")
+    /// payload             // MUST NOT specify type, payload only 
+    case unkeyed
+    /// payload             // MUST NOT specify any customization and MUST be RawRepresentable
+    case rawValueCoded
+}
+
+
+
+public struct EnumCaseCodingKey: Sendable, ExpressibleByStringLiteral, ExpressibleByIntegerLiteral, ExpressibleByFloatLiteral {
+    public init(stringLiteral value: StaticString) {}
+    public init(integerLiteral value: Int) {}
+    public init(floatLiteral value: Double) {}
+    public static var auto: Self { 0 }
+}
+
+
+
+public enum EnumCaseCodingEmptyPayloadOption: Sendable, Equatable {
+    case null
+    case emptyObject
+    case emptyArray
+    case nothing
+}
+
+
+
+public enum EnumCaseCodingPayload: Sendable, Equatable {
+    case singleValue 
+    case array
+    case object
+    public static func object(keys: StaticString...) -> Self {
+        return .object
+    }
+}
+
+
+
 /// A type that can always be decoded sucessfully as long as the data itself is not corrupted
-public struct DummyDecodableType: Sendable, Decodable {}
+public struct DummyDecodableType: Sendable, Codable {
+    public init() {}
+}
 
 
 extension UnkeyedDecodingContainer {

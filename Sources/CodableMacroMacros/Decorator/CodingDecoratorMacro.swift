@@ -16,12 +16,14 @@ import SwiftDiagnostics
 protocol CodingDecoratorMacro: PeerMacro {
     
     associatedtype CodingSpec
+    associatedtype DecoratorTargetInfo
     
     static var macroArgumentsParsingRule: [ArgumentsParsingRule] { get }
     
     static func processProperty(
-        _ propertyInfo: PropertyInfo,
-        macroNodes: [SwiftSyntax.AttributeSyntax]
+        _ propertyInfo: DecoratorTargetInfo,
+        macroNodes: [SwiftSyntax.AttributeSyntax],
+        context: some MacroExpansionContext
     ) throws(DiagnosticsError) -> CodingSpec
     
 }
@@ -35,9 +37,6 @@ extension CodingDecoratorMacro {
         providingPeersOf declaration: some DeclSyntaxProtocol,
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
-        guard declaration.is(VariableDeclSyntax.self) else {
-            throw .diagnostic(node: declaration, message: .decorator.general.attachTypeError)
-        }
         return []
     }
     
@@ -61,7 +60,7 @@ struct CodingDecoratorMacroDiagnosticMessage: DiagnosticMessage {
     }
     
     
-    init(id: String, message: String, severity: DiagnosticSeverity, isInternal: Bool = false) {
+    init(id: String, message: String, severity: DiagnosticSeverity = .error, isInternal: Bool = false) {
         self.id = id
         self.rawMessage = message
         self.severity = severity
@@ -158,6 +157,26 @@ enum GeneralCodingDecoratorMacroDiagnosticMessage {
             message: "\(decorators.joined(separator: ", ")) cannot be used together",
             severity: .error
         )
+    }
+
+    static func notLiteral() -> CodingDecoratorMacroDiagnosticMessage {
+        .init(
+            id: "not_literal",
+            message: "Expect a literal value",
+            severity: .error
+        )
+    }
+
+    static func notStaticStringLiteral() -> CodingDecoratorMacroDiagnosticMessage {
+        .init(
+            id: "not_static_string_literal",
+            message: "Expect a static string literal without interpolation",
+            severity: .error
+        )
+    }
+
+    static func notRawTypeExpr() -> CodingDecoratorMacroDiagnosticMessage {
+        .init(id: "not_raw_type_expr", message: "Expect <Type>.self format", severity: .error)
     }
     
 }

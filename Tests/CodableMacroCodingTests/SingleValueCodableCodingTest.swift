@@ -80,7 +80,7 @@ extension CodingTest.SingleValueCodableCodingTest {
         init(a: Int) { self.a = a }
         init(from codingValue: Int) throws { self.a = codingValue }
         func singleValueEncode() throws -> Int { self.a }
-        static let singleValueCodingDefaultValue: SingleValueCodableDefaultValue<Int> = .value(2)
+        static let singleValueCodingDefaultValue: CodingDefaultValue<Int> = .value(2)
     }
     
     
@@ -132,7 +132,7 @@ extension CodingTest.SingleValueCodableCodingTest {
     @SingleValueCodable
     struct SomeType3: Equatable {
         var a: Int?
-        static let singleValueCodingDefaultValue: SingleValueCodableDefaultValue<Int?> = .value(nil)
+        static let singleValueCodingDefaultValue: CodingDefaultValue<Int?> = .value(nil)
         init(a: Int?) { self.a = a }
         init(from codingValue: Int?) throws { self.a = codingValue }
         func singleValueEncode() throws -> Int? { self.a }

@@ -36,6 +36,14 @@ struct DeclListBuilder {
         return expression ?? []
     }
 
+    static func buildExpression(_ expression: (any ExprSyntaxProtocol)?) -> [any DeclSyntaxProtocol] {
+        return if let expression { ["\(expression)" as DeclSyntax] } else { [] }
+    }
+
+    static func buildExpression(_ expression: [any ExprSyntaxProtocol]?) -> [any DeclSyntaxProtocol] {
+        return expression?.map { "\($0)" as DeclSyntax } ?? []
+    }
+
 }
 
 

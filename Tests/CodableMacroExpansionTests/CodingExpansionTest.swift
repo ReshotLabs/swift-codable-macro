@@ -27,6 +27,8 @@ let testMacros: [String: MacroSpec] = [
     "SequenceCodingField": .init(type: SequenceCodingFieldMacro.self),
     "SingleValueCodable": .init(type: SingleValueCodableMacro.self),
     "SingleValueCodableDelegate": .init(type: SingleValueCodableDelegateMacro.self),
+    "EnumCodable": .init(type: EnumCodableMacro.self),
+    "EnumCaseCoding": .init(type: EnumCaseCodingMacro.self)
 ]
 #endif
 

@@ -29,7 +29,8 @@ struct EncodeTransformMacro: CodingDecoratorMacro {
     
     static func processProperty(
         _ propertyInfo: PropertyInfo,
-        macroNodes: [SwiftSyntax.AttributeSyntax]
+        macroNodes: [SwiftSyntax.AttributeSyntax],
+        context: some MacroExpansionContext
     ) throws(DiagnosticsError) -> ExprSyntax? {
         
         guard propertyInfo.type != .computed || macroNodes.isEmpty else {

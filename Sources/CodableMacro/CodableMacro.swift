@@ -651,3 +651,70 @@ public macro SingleValueCodableDelegate() = #externalMacro(module: "CodableMacro
 /// error if applied to the wrong target
 @attached(peer)
 public macro SingleValueCodableDelegate<T>(default: T) = #externalMacro(module: "CodableMacroMacros", type: "SingleValueCodableDelegateMacro")
+
+
+
+// MARK: EnumCodable
+
+
+@attached(extension, conformances: EnumCodableProtocol, names: arbitrary)
+@attached(member, names: arbitrary)
+public macro EnumCodable(option: EnumCodableOption) = #externalMacro(module: "CodableMacroMacros", type: "EnumCodableMacro")
+
+
+
+@attached(extension, conformances: EnumCodableProtocol, names: arbitrary)
+@attached(member, names: arbitrary)
+public macro EnumCodable() = #externalMacro(module: "CodableMacroMacros", type: "EnumCodableMacro")
+
+
+
+// MARK: EnumCaseCoding
+
+
+@attached(peer)
+public macro EnumCaseCoding(key: EnumCaseCodingKey = .auto, emptyPayloadOption: EnumCaseCodingEmptyPayloadOption) = #externalMacro(module: "CodableMacroMacros", type: "EnumCaseCodingMacro")
+
+
+@attached(peer)
+public macro EnumCaseCoding(unkeyedRawValuePayload: StaticString) = #externalMacro(module: "CodableMacroMacros", type: "EnumCaseCodingMacro")
+
+
+@attached(peer)
+public macro EnumCaseCoding<T>(unkeyedRawValuePayload: StaticString, type: T.Type) = #externalMacro(module: "CodableMacroMacros", type: "EnumCaseCodingMacro")
+where T: ExpressibleByStringLiteral, T: Codable, T: Equatable
+
+
+@available(macOS 13.3, iOS 16.4, watchOS 9.4, tvOS 16.4, *)
+@attached(peer)
+public macro EnumCaseCoding(unkeyedRawValuePayload: StaticBigInt) = #externalMacro(module: "CodableMacroMacros", type: "EnumCaseCodingMacro") 
+
+
+@attached(peer)
+public macro EnumCaseCoding(unkeyedRawValuePayload: Int) = #externalMacro(module: "CodableMacroMacros", type: "EnumCaseCodingMacro") 
+
+
+@attached(peer)
+public macro EnumCaseCoding<T>(unkeyedRawValuePayload: T.IntegerLiteralType, type: T.Type) = #externalMacro(module: "CodableMacroMacros", type: "EnumCaseCodingMacro") 
+where T: ExpressibleByIntegerLiteral, T: Codable, T: Equatable
+
+
+@attached(peer)
+public macro EnumCaseCoding(unkeyedRawValuePayload: Double) = #externalMacro(module: "CodableMacroMacros", type: "EnumCaseCodingMacro") 
+
+
+@attached(peer)
+public macro EnumCaseCoding<T>(unkeyedRawValuePayload: T.FloatLiteralType, type: T.Type) = #externalMacro(module: "CodableMacroMacros", type: "EnumCaseCodingMacro")
+where T: ExpressibleByFloatLiteral, T: Codable, T: Equatable
+
+
+@attached(peer)
+public macro EnumCaseCoding(unkeyedPayload: EnumCaseCodingPayload) = #externalMacro(module: "CodableMacroMacros", type: "EnumCaseCodingMacro")
+
+
+@attached(peer)
+public macro EnumCaseCoding(key: EnumCaseCodingKey = .auto, payload: EnumCaseCodingPayload) = #externalMacro(module: "CodableMacroMacros", type: "EnumCaseCodingMacro")
+
+
+@attached(peer)
+public macro EnumCaseCoding(key: EnumCaseCodingKey) = #externalMacro(module: "CodableMacroMacros", type: "EnumCaseCodingMacro")

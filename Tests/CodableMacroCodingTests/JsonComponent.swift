@@ -207,9 +207,9 @@ extension JsonComponent {
                     try encode(value, key: .init(stringValue: innerKey), to: &nestedContainer)
                 }
             case .array(let array):
-                var nestedContainer = encoder.container(keyedBy: CodingKeys.self)
-                for (innerIndex, value) in array.enumerated() {
-                    try encode(value, key: .init(intValue: innerIndex), to: &nestedContainer)
+                var nestedContainer = encoder.unkeyedContainer()
+                for value in array {
+                    try encode(value, to: &nestedContainer)
                 }
             case .int(let value):
                 var container = encoder.singleValueContainer()
@@ -241,8 +241,8 @@ extension JsonComponent {
                 }
             case .array(let array):
                 var nestedContainer = container.nestedUnkeyedContainer(forKey: key)
-                for (index, value) in array.enumerated() {
-                    try encode(value, key: .init(intValue: index), to: &nestedContainer)
+                for value in array {
+                    try encode(value, to: &nestedContainer)
                 }
             case .bool(let boolVal):
                 try container.encode(boolVal, forKey: key)
@@ -259,7 +259,7 @@ extension JsonComponent {
     }
     
     
-    private func encode(_ json: JsonComponent, key: CodingKeys, to container: inout UnkeyedEncodingContainer) throws {
+    private func encode(_ json: JsonComponent, to container: inout UnkeyedEncodingContainer) throws {
         
         switch json {
                 
@@ -270,8 +270,8 @@ extension JsonComponent {
                 }
             case .array(let array):
                 var nestedContainer = container.nestedUnkeyedContainer()
-                for (index, value) in array.enumerated() {
-                    try encode(value, key: .init(intValue: index), to: &nestedContainer)
+                for value in array {
+                    try encode(value, to: &nestedContainer)
                 }
             case .bool(let boolVal):
                 try container.encode(boolVal)

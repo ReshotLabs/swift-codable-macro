@@ -76,7 +76,8 @@ struct SequenceCodingFieldMacro: CodingDecoratorMacro {
 
     static func processProperty(
         _ propertyInfo: PropertyInfo, 
-        macroNodes: [AttributeSyntax]
+        macroNodes: [AttributeSyntax],
+        context: some MacroExpansionContext
     ) throws(DiagnosticsError) -> Spec? {
 
         guard !macroNodes.isEmpty else { return nil }

@@ -67,7 +67,7 @@ final class SingleValueCodableMacro: CodingMacroImplBase, CodingMacroImplProtoco
                     return DecoratorMacros(rawValue: name) == .singleValueCodableDelegate
                 }
                 guard !delegateAttributes.isEmpty else { return nil as (PropertyInfo, ExprSyntax?)? }
-                let defaultValue = try SingleValueCodableDelegateMacro.processProperty(propertyInfo, macroNodes: delegateAttributes)
+                let defaultValue = try SingleValueCodableDelegateMacro.processProperty(propertyInfo, macroNodes: delegateAttributes, context: context)
                 return (propertyInfo, defaultValue)
             }
         
@@ -236,7 +236,7 @@ extension SingleValueCodableMacro {
         }
 
         return """
-            public static var singleValueCodingDefaultValue: SingleValueCodableDefaultValue<\(codingValueType)> {
+            public static var singleValueCodingDefaultValue: CodingDefaultValue<\(codingValueType)> {
                 \(defaultValue)
             }
             """

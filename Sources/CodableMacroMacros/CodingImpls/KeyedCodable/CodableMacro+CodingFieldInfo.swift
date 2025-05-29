@@ -109,14 +109,15 @@ extension CodableMacro {
         
         if let ignoreMacros = attributes[.codingIgnore], !ignoreMacros.isEmpty {
             // found `@CodingIgnore`
-            try CodingIgnoreMacro.processProperty(property, macroNodes: ignoreMacros)
+            try CodingIgnoreMacro.processProperty(property, macroNodes: ignoreMacros, context: context)
             return .init(propertyInfo: property, isIgnored: true)
         }
         
         // extract `path` and `defaultValue` from `@CodingField` macro
         let codingFieldSpec = try CodingFieldMacro.processProperty(
             property,
-            macroNodes: attributes[.codingField, default: []]
+            macroNodes: attributes[.codingField, default: []],
+            context: context
         )
         
         let encodeTransformMacros = attributes[.encodeTransform, default: []]
@@ -140,17 +141,18 @@ extension CodableMacro {
         
         if let specs = try CodingTransformMacro.processProperty(
             property,
-            macroNodes: codingTransformMacros
+            macroNodes: codingTransformMacros,
+            context: context
         ) {
             decodeTransformSpec = .init(decodeSourceType: specs.decodeSourceType, transformExprs: specs.decodeTransforms)
             encodeTransforms = specs.encodeTransforms
         } else {
-            if let decodeSpec = try DecodeTransformMacro.processProperty(property, macroNodes: decodeTransformMacros) {
+            if let decodeSpec = try DecodeTransformMacro.processProperty(property, macroNodes: decodeTransformMacros, context: context) {
                 decodeTransformSpec = .init(decodeSourceType: decodeSpec.decodeSourceType, transformExprs: [decodeSpec.transforms])
             } else {
                 decodeTransformSpec = nil
             }
-            if let encodeTransform = try EncodeTransformMacro.processProperty(property, macroNodes: encodeTransformMacros) {
+            if let encodeTransform = try EncodeTransformMacro.processProperty(property, macroNodes: encodeTransformMacros, context: context) {
                 encodeTransforms = [encodeTransform]
             } else {
                 encodeTransforms = nil
@@ -160,13 +162,15 @@ extension CodableMacro {
         // extract validations
         let validateExprs = try CodingValidateMacro.processProperty(
             property,
-            macroNodes: attributes[.codingValidate, default: []]
+            macroNodes: attributes[.codingValidate, default: []],
+            context: context
         )
 
         // extract sequence coding 
         let codingSequenceFieldSpec = if let spec = try SequenceCodingFieldMacro.processProperty(
             property,
-            macroNodes: attributes[.sequenceCodingField, default: []]
+            macroNodes: attributes[.sequenceCodingField, default: []],
+            context: context
         ) {
             SequenceCodingFieldInfo(
                 propertyName: property.name,
