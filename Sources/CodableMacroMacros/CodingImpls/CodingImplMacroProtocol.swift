@@ -205,7 +205,7 @@ extension CodingMacroImplBase.ErrorGroup {
         static var missingExplicitType: CodingMacroImplBase.Error {
             .init(
                 id: "missing_explicit_type",
-                message: "Explicit type annotation is required for the property"
+                message: "Explicit type annotation is required"
             )
         }
         

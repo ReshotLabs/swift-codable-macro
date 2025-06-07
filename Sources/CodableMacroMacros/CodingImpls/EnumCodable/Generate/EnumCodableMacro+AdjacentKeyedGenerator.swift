@@ -7,7 +7,7 @@ extension EnumCodableMacro {
 
     struct AdjucentKeyedGenerator: Generator {
 
-        let enumCaseCodingSpecs: [EnumCaseKeyedCodingSpec]
+        let caseCodingInfoList: [KeyedCaseCodingSpec]
         let typeKey: TokenSyntax
         let payloadKey: TokenSyntax
 
@@ -24,7 +24,7 @@ extension EnumCodableMacro.AdjucentKeyedGenerator {
 
         try buildDeclSyntaxList {
 
-            if enumCaseCodingSpecs.contains(where: { $0.payload == .empty(.emptyObject) }) {
+            if caseCodingInfoList.contains(where: { $0.payload == .empty(.emptyObject) }) {
                 unconditionalCodingKeysDef
             }
             
@@ -32,7 +32,7 @@ extension EnumCodableMacro.AdjucentKeyedGenerator {
                 #"case k\#(typeKey) = "\#(typeKey)", k\#(payloadKey) = "\#(payloadKey)""#
             }
 
-            for enumCaseCodingSpec in enumCaseCodingSpecs {
+            for enumCaseCodingSpec in caseCodingInfoList {
 
                 if case let .content(.object(keys: objectPayloadKeys)) = enumCaseCodingSpec.payload {
 
@@ -57,8 +57,8 @@ extension EnumCodableMacro.AdjucentKeyedGenerator {
 
             "let container = try decoder.container(keyedBy: \(rootCodingKeyDefName).self)"
 
-            let specsWithStringKey = enumCaseCodingSpecs.filter { $0.key.kind == .string }
-            let specsWithNumberKey = enumCaseCodingSpecs.filter { $0.key.kind == .int || $0.key.kind == .float }
+            let specsWithStringKey = caseCodingInfoList.filter { $0.key.kind == .string }
+            let specsWithNumberKey = caseCodingInfoList.filter { $0.key.kind == .int || $0.key.kind == .float }
 
             if !specsWithStringKey.isEmpty {
                 try IfExprSyntax("if let type = try? container.decode(String.self, forKey: .k\(typeKey))") {
@@ -90,7 +90,7 @@ extension EnumCodableMacro.AdjucentKeyedGenerator {
 
             try SwitchExprSyntax("switch self") {
 
-                for spec in enumCaseCodingSpecs {
+                for spec in caseCodingInfoList {
 
                     switch spec.payload {
 
@@ -203,7 +203,7 @@ extension EnumCodableMacro.AdjucentKeyedGenerator {
 
     private func makeDecodeItemsForKeyedPayload(
         caseInfo: EnumCaseInfo,
-        payloadContent: PayloadContent,
+        payloadContent: EnumCodableMacro.PayloadContent,
         parentContainerVarName: TokenSyntax,
         key: ExprSyntax
     ) -> CodeBlockItemListSyntax {
@@ -236,7 +236,7 @@ extension EnumCodableMacro.AdjucentKeyedGenerator {
 
     private func makeDecodeItemsForEmptyPayload(
         caseInfo: EnumCaseInfo,
-        type: EmptyPayloadOption,
+        type: EnumCodableMacro.EmptyPayloadOption,
         parentContainerVarName: TokenSyntax,
         key: ExprSyntax
     ) throws -> CodeBlockItemListSyntax {

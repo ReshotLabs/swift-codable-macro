@@ -1036,8 +1036,8 @@ extension CodingExpansionTest.EnumCodableUnkeyedTest {
             diagnostics: [
                 .init(
                     message: .codingMacro.enumCodable.keyedSettingInUnkeyedEnumCoding(), 
-                    line: 4, 
-                    column: 10
+                    line: 3, 
+                    column: 21
                 )
             ]
         )
@@ -1069,8 +1069,8 @@ extension CodingExpansionTest.EnumCodableUnkeyedTest {
             diagnostics: [
                 .init(
                     message: .codingMacro.enumCodable.keyedSettingInUnkeyedEnumCoding(), 
-                    line: 4, 
-                    column: 10
+                    line: 3, 
+                    column: 21
                 )
             ]
         )
@@ -1102,8 +1102,8 @@ extension CodingExpansionTest.EnumCodableUnkeyedTest {
             diagnostics: [
                 .init(
                     message: .codingMacro.enumCodable.keyedSettingInUnkeyedEnumCoding(), 
-                    line: 4, 
-                    column: 10
+                    line: 3, 
+                    column: 21
                 )
             ]
         )

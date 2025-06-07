@@ -15,7 +15,7 @@ import SwiftDiagnostics
 
 protocol CodingDecoratorMacro: PeerMacro {
     
-    associatedtype CodingSpec
+    associatedtype CodingSetting
     associatedtype DecoratorTargetInfo
     
     static var macroArgumentsParsingRule: [ArgumentsParsingRule] { get }
@@ -24,7 +24,7 @@ protocol CodingDecoratorMacro: PeerMacro {
         _ propertyInfo: DecoratorTargetInfo,
         macroNodes: [SwiftSyntax.AttributeSyntax],
         context: some MacroExpansionContext
-    ) throws(DiagnosticsError) -> CodingSpec
+    ) throws(DiagnosticsError) -> CodingSetting
     
 }
 

@@ -654,8 +654,8 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
             diagnostics: [
                 .init(
                     message: .codingMacro.enumCodable.nonNothingEmptyPayloadOptionInInternalKeyedEnumConfig(), 
-                    line: 4, 
-                    column: 10
+                    line: 3, 
+                    column: 41
                 )
             ]
         )
@@ -687,8 +687,8 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
             diagnostics: [
                 .init(
                     message: .codingMacro.enumCodable.nonNothingEmptyPayloadOptionInInternalKeyedEnumConfig(), 
-                    line: 4, 
-                    column: 10
+                    line: 3, 
+                    column: 41
                 )
             ]
         )
@@ -720,8 +720,8 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
             diagnostics: [
                 .init(
                     message: .codingMacro.enumCodable.nonNothingEmptyPayloadOptionInInternalKeyedEnumConfig(), 
-                    line: 4, 
-                    column: 10
+                    line: 3, 
+                    column: 41
                 )
             ]
         )
@@ -753,8 +753,8 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
             diagnostics: [
                 .init(
                     message: .codingMacro.enumCodable.nonObjectPayloadInInternalKeyedEnumCoding(), 
-                    line: 4, 
-                    column: 10
+                    line: 3, 
+                    column: 30
                 )
             ]
         )
@@ -786,8 +786,8 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
             diagnostics: [
                 .init(
                     message: .codingMacro.enumCodable.nonObjectPayloadInInternalKeyedEnumCoding(), 
-                    line: 4, 
-                    column: 10
+                    line: 3, 
+                    column: 30
                 )
             ]
         )
@@ -914,8 +914,8 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
             diagnostics: [
                 .init(
                     message: .codingMacro.enumCodable.unkeyedSettingInKeyedEnumCoding(.internalKeyed()), 
-                    line: 4, 
-                    column: 10
+                    line: 3, 
+                    column: 21
                 )
             ]
         )

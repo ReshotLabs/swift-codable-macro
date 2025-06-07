@@ -1024,7 +1024,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
             """,
             diagnostics: [
                 .init(
-                    message: .decorator.enumCaseCoding.payloadContentSettingOnCaseWithoutAssociatedValue(), 
+                    message: .codingMacro.enumCodable.payloadContentSettingOnCaseWithoutAssociatedValue(), 
                     line: 3, 
                     column: 30
                 )
@@ -1057,7 +1057,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
             """,
             diagnostics: [
                 .init(
-                    message: .decorator.enumCaseCoding.payloadContentSettingOnCaseWithoutAssociatedValue(), 
+                    message: .codingMacro.enumCodable.payloadContentSettingOnCaseWithoutAssociatedValue(), 
                     line: 3, 
                     column: 30
                 )
@@ -1090,7 +1090,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
             """,
             diagnostics: [
                 .init(
-                    message: .decorator.enumCaseCoding.payloadContentSettingOnCaseWithoutAssociatedValue(), 
+                    message: .codingMacro.enumCodable.payloadContentSettingOnCaseWithoutAssociatedValue(), 
                     line: 3, 
                     column: 30
                 )
@@ -1123,7 +1123,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
             """,
             diagnostics: [
                 .init(
-                    message: .decorator.enumCaseCoding.emptyPayloadSettingOnCaseWithAssociatedValues(), 
+                    message: .codingMacro.enumCodable.emptyPayloadSettingOnCaseWithAssociatedValues(), 
                     line: 3, 
                     column: 41
                 )
@@ -1156,7 +1156,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
             """,
             diagnostics: [
                 .init(
-                    message: .decorator.enumCaseCoding.emptyPayloadSettingOnCaseWithAssociatedValues(), 
+                    message: .codingMacro.enumCodable.emptyPayloadSettingOnCaseWithAssociatedValues(), 
                     line: 3, 
                     column: 41
                 )
@@ -1189,7 +1189,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
             """,
             diagnostics: [
                 .init(
-                    message: .decorator.enumCaseCoding.emptyPayloadSettingOnCaseWithAssociatedValues(), 
+                    message: .codingMacro.enumCodable.emptyPayloadSettingOnCaseWithAssociatedValues(), 
                     line: 3, 
                     column: 41
                 )
@@ -1222,7 +1222,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
             """,
             diagnostics: [
                 .init(
-                    message: .decorator.enumCaseCoding.emptyPayloadSettingOnCaseWithAssociatedValues(), 
+                    message: .codingMacro.enumCodable.emptyPayloadSettingOnCaseWithAssociatedValues(), 
                     line: 3, 
                     column: 41
                 )
@@ -1255,7 +1255,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
             """,
             diagnostics: [
                 .init(
-                    message: .decorator.enumCaseCoding.mismatchedKeyCountForObjectPayload(expected: 2, actual: 1), 
+                    message: .codingMacro.enumCodable.mismatchedKeyCountForObjectPayload(expected: 2, actual: 1), 
                     line: 3, 
                     column: 30
                 )
@@ -1288,7 +1288,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
             """,
             diagnostics: [
                 .init(
-                    message: .decorator.enumCaseCoding.mismatchedKeyCountForObjectPayload(expected: 2, actual: 3), 
+                    message: .codingMacro.enumCodable.mismatchedKeyCountForObjectPayload(expected: 2, actual: 3), 
                     line: 3, 
                     column: 30
                 )
@@ -1355,8 +1355,8 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
             diagnostics: [
                 .init(
                     message: .codingMacro.enumCodable.unkeyedSettingInKeyedEnumCoding(.externalKeyed), 
-                    line: 4, 
-                    column: 10
+                    line: 3, 
+                    column: 21
                 )
             ]
         )

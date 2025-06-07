@@ -17,10 +17,8 @@ extension EnumCodableMacro {
 
 extension EnumCodableMacro.Generator {
 
-    typealias EnumCaseKeyedCodingSpec = EnumCodableMacro.EnumCaseKeyedCodingSpec
-    typealias EmptyPayloadOption = EnumCodableMacro.EmptyPayloadOption
-    typealias PayloadContent = EnumCodableMacro.PayloadContent
-    typealias EnumCaseUnkeyedCodingSpec = EnumCodableMacro.EnumCaseUnkeyedCodingSpec
+    typealias EnumCaseKeyedCodingSpec = EnumCodableMacro.KeyedCaseCodingSpec
+    typealias EnumCaseUnkeyedCodingSpec = EnumCodableMacro.UnkeyedCaseCodingSpec
 
     var unconditionalCodingKeysDefName: TokenSyntax { "$__unconditional_coding_keys" }
 
@@ -54,15 +52,6 @@ extension EnumCodableMacro.Generator {
                 }
             }
         }
-        // #"""
-        // switch Self.codingDefaultValue {
-        // case .value(let defaultValue): 
-        //     self = defaultValue
-        //     return
-        // case .none: 
-        //     throw DecodingError.typeMismatch(Self.self, .init(codingPath: [], debugDescription: "No matched case found"))
-        // }
-        // """#
     }
 
 
@@ -120,12 +109,12 @@ extension EnumCodableMacro.Generator {
     func makeDecodeItemsForObjectPayload(
         caseInfo: EnumCaseInfo,
         containerVarName: TokenSyntax,
-        keys: [TokenSyntax],
+        keys: [EnumCodableMacro.ObjectPayloadKey],
         decodedValueBaseVarName: TokenSyntax = "value"
     ) -> CodeBlockItemListSyntax {
         return .init {
             for (i, (associatedValue, key)) in zip(caseInfo.associatedValues, keys).enumerated() {
-                "let value\(raw: i) = try \(containerVarName).decode(\(associatedValue.type.trimmed).self, forKey: .k\(key))"
+                "let value\(raw: i) = try \(containerVarName).decode(\(associatedValue.type.trimmed).self, forKey: .k\(key.trimmed))"
             }
         }
     }

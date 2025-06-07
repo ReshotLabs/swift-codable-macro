@@ -1067,8 +1067,8 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
             diagnostics: [
                 .init(
                     message: .codingMacro.enumCodable.unkeyedSettingInKeyedEnumCoding(.adjucentKeyed()), 
-                    line: 4, 
-                    column: 10
+                    line: 3, 
+                    column: 21
                 )
             ]
         )

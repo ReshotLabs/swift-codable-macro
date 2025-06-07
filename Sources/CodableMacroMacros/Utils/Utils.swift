@@ -11,3 +11,13 @@ extension Optional {
     }
 
 }
+
+
+
+extension Collection {
+
+    var isNotEmpty: Bool {
+        !isEmpty
+    }
+
+}

@@ -7,23 +7,43 @@ import SwiftDiagnostics
 
 struct EnumCaseCodingMacro: CodingDecoratorMacro {
 
-    enum EnumCaseCodingSetting: Equatable, Hashable {
+    enum EnumCaseCustomCodingSetting: Hashable {
 
-        case keyedPayload(key: LiteralValue, payload: Payload?)
-        case unkeyedPayload(PayloadContent)
-        case unkeyedRawValue(type: ExprSyntax, value: LiteralValue)
+        case keyed(key: LiteralValue?, payload: Payload?, rawSyntax: AttributeSyntax.Arguments)
+        case unkeyed(UnkeyedPayload, rawSyntax: AttributeSyntax.Arguments)
 
         enum Payload: Hashable {
             case content(PayloadContent)
             case empty(EmptyPayloadOption)
+            var rawSyntax: ExprSyntax {
+                switch self {
+                    case .content(let content): content.rawSyntax
+                    case .empty(let emptyOption): emptyOption.rawSyntax
+                }
+            }
         }
 
-        enum PayloadContent: Equatable, Hashable {
-            case singleValue, array, object(keys: [TokenSyntax], isInferred: Bool)
+        enum PayloadContent: Hashable {
+            case singleValue(rawSyntax: ExprSyntax), array(rawSyntax: ExprSyntax), object(keys: [TokenSyntax]?, rawSyntax: ExprSyntax)
+            var rawSyntax: ExprSyntax {
+                switch self {
+                    case .singleValue(let rawSyntax), .array(let rawSyntax), .object(_, let rawSyntax): rawSyntax
+                }
+            }
         }
 
-        enum EmptyPayloadOption: Equatable, Hashable {
-            case null, emptyObject, emptyArray, nothing
+        enum EmptyPayloadOption: Hashable {
+            case null(rawSyntax: ExprSyntax), emptyObject(rawSyntax: ExprSyntax), emptyArray(rawSyntax: ExprSyntax), nothing(rawSyntax: ExprSyntax)
+            var rawSyntax: ExprSyntax {
+                switch self {
+                    case .null(let rawSyntax), .emptyObject(let rawSyntax), .emptyArray(let rawSyntax), .nothing(let rawSyntax): rawSyntax
+                }
+            }
+        }
+
+        enum UnkeyedPayload: Hashable {
+            case rawValue(type: ExprSyntax, value: LiteralValue)
+            case content(PayloadContent)
         }
 
     }
@@ -43,49 +63,37 @@ struct EnumCaseCodingMacro: CodingDecoratorMacro {
         _ enumCaseInfo: EnumCaseInfo, 
         macroNodes: [AttributeSyntax],
         context: some MacroExpansionContext
-    ) throws(DiagnosticsError) -> EnumCaseCodingSetting? {
+    ) throws(DiagnosticsError) -> EnumCaseCustomCodingSetting? {
 
-        guard macroNodes.count < 2 else {
-            throw .diagnostic(node: enumCaseInfo.name, message: .decorator.general.duplicateMacro(name: "EnumCaseCoding"))
-        }
-
-        guard 
-            let macroNode = macroNodes.first,
-            let macroRawArguments = macroNode.arguments
-        else {
-            return nil
-        }
-
-        let macroArguments = try macroRawArguments.grouped(with: macroArgumentsParsingRule)
-        
-        return try extractSetting(from: macroArguments, enumCaseInfo: enumCaseInfo, context: context)
+        return nil 
 
     }
 
 
-    private static func extractSetting(
-        from macroArguments: [[LabeledExprSyntax]], 
-        enumCaseInfo: EnumCaseInfo,
+    static func extractSetting(
+        macroNodes: [AttributeSyntax],
         context: some MacroExpansionContext
-    ) throws(DiagnosticsError) -> EnumCaseCodingSetting? {
+    ) throws(DiagnosticsError) -> EnumCaseCustomCodingSetting? {
+        guard macroNodes.count < 2 else {
+            let dianostics = macroNodes.map { Diagnostic(node: $0, message: .decorator.general.duplicateMacro(name: "EnumCaseCoding")) }
+            throw .diagnostics(dianostics)
+        }
+        guard let macroNode = macroNodes.first else { return nil }
+        guard let macroRawArguments = macroNode.arguments else { return nil }
+        return try extractSetting(from: macroRawArguments)
+    }
+
+
+    private static func extractSetting(from macroRawArguments: AttributeSyntax.Arguments) throws(DiagnosticsError) -> EnumCaseCustomCodingSetting? {
+
+        let macroArguments = try macroRawArguments.grouped(with: macroArgumentsParsingRule)
 
         if let rawValueArg = macroArguments[3].first {
             // @EnumCaseCoding(unKeyedRawValuePayload:type:)
 
-            guard enumCaseInfo.associatedValues.isEmpty else {
-                throw .diagnostic(
-                    node: enumCaseInfo.name, 
-                    message: .decorator.enumCaseCoding.rawValueSettingOnCaseWithAssociatedValues()
-                )   
-            }
-
             let type = try (macroArguments[4].first?.expression)
                 .flatMap { typeExpr throws(DiagnosticsError) in 
                     if let memberAccessExpr = typeExpr.as(MemberAccessExprSyntax.self), memberAccessExpr.declName.baseName.trimmed.text == "self" {
-                        // memberAccessExpr.base?.as(DeclReferenceExprSyntax.self)?.baseName
-                        // return (memberAccessExpr.base?.is(DeclReferenceExprSyntax.self) == true) 
-                        //     ? "\(raw: context.lexicalContext.map(\.trimmedDescription).joined(separator: ".")).\(memberAccessExpr.base)" 
-                        //     : memberAccessExpr.base
                         memberAccessExpr.base
                     } else {
                         throw .diagnostic(
@@ -108,25 +116,18 @@ struct EnumCaseCodingMacro: CodingDecoratorMacro {
                     }
                 }
 
-            return try .unkeyedRawValue(type: type, value: .init(from: rawValueArg.expression))
+            return try .unkeyed(.rawValue(type: type, value: .init(from: rawValueArg.expression)), rawSyntax: macroRawArguments)
 
         }
 
         if let unKeyedPayloadArg = macroArguments[5].first {
             // @EnumCaseCoding(unKeyedPayload:)
 
-            guard !enumCaseInfo.associatedValues.isEmpty else {
-                throw .diagnostic(
-                    node: unKeyedPayloadArg.expression, 
-                    message: .decorator.enumCaseCoding.unkeyedPayloadSettingOnCaseWithoutAssociatedValues()
-                )
-            }
-
-            return try .unkeyedPayload(extractPayloadContentSetting(from: unKeyedPayloadArg, caseInfo: enumCaseInfo))
+            return try .unkeyed(.content(extractPayloadContentSetting(from: unKeyedPayloadArg)), rawSyntax: macroRawArguments)
 
         }
 
-        let keyArg = try macroArguments[0].first.flatMap { (keyArg) throws(DiagnosticsError) in
+        let key = try macroArguments[0].first.flatMap { (keyArg) throws(DiagnosticsError) in
             if let key = keyArg.expression.as(MemberAccessExprSyntax.self), key.declName.baseName.trimmed.text == "auto" {
                 return nil 
             } else if let key = try? LiteralValue(from: keyArg.expression), key.kind != .bool {
@@ -136,8 +137,6 @@ struct EnumCaseCodingMacro: CodingDecoratorMacro {
             }
         } as LiteralValue?
 
-        let key = keyArg ?? .string(enumCaseInfo.name)
-
         if let emptyPayloadOptionArg = macroArguments[1].first {
             // @EnumCaseCoding(key:emptyPayloadOption:)
 
@@ -146,20 +145,13 @@ struct EnumCaseCodingMacro: CodingDecoratorMacro {
                     node: emptyPayloadOptionArg.expression, 
                     message: .decorator.enumCaseCoding.unsupportedEmptyPayloadOption(emptyPayloadOptionArg.expression)
                 )
-            }
-
-            guard enumCaseInfo.associatedValues.isEmpty else {
-                throw .diagnostic(
-                    node: emptyPayloadOptionArg.expression, 
-                    message: .decorator.enumCaseCoding.emptyPayloadSettingOnCaseWithAssociatedValues()
-                )
-            }   
+            }  
 
             return switch emptyPayloadOption.declName.baseName.trimmed.text {
-                case "null": .keyedPayload(key: key, payload: .empty(.null))
-                case "emptyObject": .keyedPayload(key: key, payload: .empty(.emptyObject))
-                case "emptyArray": .keyedPayload(key: key, payload: .empty(.emptyArray))
-                case "nothing": .keyedPayload(key: key, payload: .empty(.nothing))
+                case "null": .keyed(key: key, payload: .empty(.null(rawSyntax: .init(emptyPayloadOption))), rawSyntax: macroRawArguments)
+                case "emptyObject": .keyed(key: key, payload: .empty(.emptyObject(rawSyntax: .init(emptyPayloadOption))), rawSyntax: macroRawArguments)
+                case "emptyArray": .keyed(key: key, payload: .empty(.emptyArray(rawSyntax: .init(emptyPayloadOption))), rawSyntax: macroRawArguments)
+                case "nothing": .keyed(key: key, payload: .empty(.nothing(rawSyntax: .init(emptyPayloadOption))), rawSyntax: macroRawArguments)
                 default: throw .diagnostic(
                     node: emptyPayloadOption, 
                     message: .decorator.enumCaseCoding.unsupportedEmptyPayloadOption(emptyPayloadOption)
@@ -169,18 +161,11 @@ struct EnumCaseCodingMacro: CodingDecoratorMacro {
         } else if let payloadArg = macroArguments[2].first {
             // @EnumCaseCoding(key:payload:)
 
-            guard !enumCaseInfo.associatedValues.isEmpty else {
-                throw .diagnostic(
-                    node: payloadArg.expression, 
-                    message: .decorator.enumCaseCoding.payloadContentSettingOnCaseWithoutAssociatedValue()
-                )
-            }
+            return try .keyed(key: key, payload: .content(extractPayloadContentSetting(from: payloadArg)), rawSyntax: macroRawArguments)
 
-            return try .keyedPayload(key: key, payload: .content(extractPayloadContentSetting(from: payloadArg, caseInfo: enumCaseInfo)))
+        } else if key != nil {
 
-        } else if keyArg != nil {
-
-            return .keyedPayload(key: key, payload: nil)
+            return .keyed(key: key, payload: nil, rawSyntax: macroRawArguments)
 
         } else {
 
@@ -192,9 +177,8 @@ struct EnumCaseCodingMacro: CodingDecoratorMacro {
 
 
     private static func extractPayloadContentSetting(
-        from arg: LabeledExprSyntax, 
-        caseInfo: EnumCaseInfo
-    ) throws(DiagnosticsError) -> EnumCaseCodingSetting.PayloadContent {
+        from arg: LabeledExprSyntax
+    ) throws(DiagnosticsError) -> EnumCaseCustomCodingSetting.PayloadContent {
 
         if let payloadFunctionCallExpr = arg.expression.as(FunctionCallExprSyntax.self) {
 
@@ -204,15 +188,6 @@ struct EnumCaseCodingMacro: CodingDecoratorMacro {
                 throw .diagnostic(
                     node: payloadFunctionCallExpr, 
                     message: .decorator.enumCaseCoding.unsupportedPayloadContent(payloadFunctionCallExpr)
-                )
-            }
-            guard payloadFunctionCallExpr.arguments.count == caseInfo.associatedValues.count else {
-                throw .diagnostic(
-                    node: payloadFunctionCallExpr, 
-                    message: .decorator.enumCaseCoding.mismatchedKeyCountForObjectPayload(
-                        expected: caseInfo.associatedValues.count, 
-                        actual: payloadFunctionCallExpr.arguments.count
-                    )
                 )
             }
 
@@ -225,7 +200,8 @@ struct EnumCaseCodingMacro: CodingDecoratorMacro {
                     )
                 }
                 return segment.content
-            }
+            } as [TokenSyntax]
+
             let objectPayloadKeyStrs = objectPayloadKeys.map(\.trimmed.text)
             let duplicatedKeyStrs = Dictionary(
                 zip(objectPayloadKeyStrs, [Int](repeating: 1, count: objectPayloadKeyStrs.count)), 
@@ -239,29 +215,19 @@ struct EnumCaseCodingMacro: CodingDecoratorMacro {
                 )
             }
 
-            return .object(keys: objectPayloadKeys, isInferred: false)
+            return .object(keys: objectPayloadKeys, rawSyntax: .init(payloadFunctionCallExpr))
 
         } else if let payloadMemberAccessExpr = arg.expression.as(MemberAccessExprSyntax.self) {
 
             switch payloadMemberAccessExpr.declName.baseName.trimmed.text {
                 case "singleValue": do {
-                    guard caseInfo.associatedValues.count == 1 else {
-                        throw .diagnostic(
-                            node: payloadMemberAccessExpr, 
-                            message: .decorator.enumCaseCoding.mismatchedAssociatedValueForSingleValuePayload()
-                        )
-                    }
-                    return .singleValue
+                    return .singleValue(rawSyntax: .init(payloadMemberAccessExpr))
                 }
                 case "array": do {
-                    return .array
+                    return .array(rawSyntax: .init(payloadMemberAccessExpr))
                 }
                 case "object": do {
-                    return .object(
-                            keys: caseInfo.associatedValues.enumerated()
-                                .map { i, associatedValue in associatedValue.label.map { "\($0)" } ?? "_\(raw: i)" },
-                            isInferred: true
-                        )
+                    return .object(keys: nil, rawSyntax: .init(payloadMemberAccessExpr))
                 }
                 default: do {
                     throw .diagnostic(
@@ -295,30 +261,6 @@ struct EnumCaseCodingMacro: CodingDecoratorMacro {
 
         static func unsupportedEnumCaseKey(_ key: some ExprSyntaxProtocol) -> CodingDecoratorMacroDiagnosticMessage {
             .init(id: "unsupported_enum_case_key", message: "specified enum case key \(key.trimmed) is not supported")
-        }
-
-        static func rawValueSettingOnCaseWithAssociatedValues() -> CodingDecoratorMacroDiagnosticMessage {
-            .init(id: "raw_value_setting_on_case_with_associated_values", message: "Raw value setting is not supported on cases with associated values")
-        }
-
-        static func unkeyedPayloadSettingOnCaseWithoutAssociatedValues() -> CodingDecoratorMacroDiagnosticMessage {
-            .init(id: "unkeyed_payload_setting_on_case_without_associated_values", message: "Unkeyed payload setting is not supported on cases without associated values")
-        }
-
-        static func emptyPayloadSettingOnCaseWithAssociatedValues() -> CodingDecoratorMacroDiagnosticMessage {
-            .init(id: "empty_payload_setting_on_case_with_associated_values", message: "Empty payload setting is not supported on cases with associated values")
-        }
-
-        static func payloadContentSettingOnCaseWithoutAssociatedValue() -> CodingDecoratorMacroDiagnosticMessage {
-            .init(id: "payload_setting_on_case_without_associated_value", message: "Payload setting is not supported on cases without associated values")
-        }
-
-        static func mismatchedKeyCountForObjectPayload(expected: Int, actual: Int) -> CodingMacroImplBase.Error {
-            .init(id: "mismatched_key_count_for_object_payload", message: "This case has \(expected) associatedValues, but \(actual) keys where specified for its object payload")
-        }
-
-        static func mismatchedAssociatedValueForSingleValuePayload() -> CodingDecoratorMacroDiagnosticMessage {
-            .init(id: "mismatched_associated_value_for_single_value_payload", message: "Single value payload requires exactly one associated value")
         }
 
         static func duplicatedObjectPayloadKeys(_ keys: some Collection<String>) -> CodingDecoratorMacroDiagnosticMessage {
