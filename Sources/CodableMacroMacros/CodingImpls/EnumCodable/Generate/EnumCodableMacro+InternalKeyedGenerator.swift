@@ -7,7 +7,7 @@ extension EnumCodableMacro {
 
     struct InternalKeyedGenerator: Generator {
 
-        let caseCodingInfoList: [KeyedCaseCodingSpec]
+        let caseCodingSpecList: [KeyedCaseCodingSpec]
         let typeKey: TokenSyntax
 
     }
@@ -22,7 +22,7 @@ extension EnumCodableMacro.InternalKeyedGenerator {
         
         try buildDeclSyntaxList {
 
-            let allObjectPayloadKeys = caseCodingInfoList.reduce(into: Set<String>()) { acc, spec in
+            let allObjectPayloadKeys = caseCodingSpecList.reduce(into: Set<String>()) { acc, spec in
                 switch spec.payload {
                     case .content(.object(let keys)): acc.formUnion(keys.map(\.trimmedDescription))
                     default: break
@@ -47,8 +47,8 @@ extension EnumCodableMacro.InternalKeyedGenerator {
             
             "let container = try decoder.container(keyedBy: \(rootCodingKeyDefName).self)"
 
-            let specsWithStringKey = caseCodingInfoList.filter { $0.key.kind == .string }
-            let specsWithNumberKey = caseCodingInfoList.filter { $0.key.kind == .int || $0.key.kind == .float }
+            let specsWithStringKey = caseCodingSpecList.filter { $0.key.kind == .string }
+            let specsWithNumberKey = caseCodingSpecList.filter { $0.key.kind == .int || $0.key.kind == .float }
 
             if !specsWithStringKey.isEmpty {
                 try IfExprSyntax("if let type = try? container.decode(String.self, forKey: .k\(typeKey))") {
@@ -80,7 +80,7 @@ extension EnumCodableMacro.InternalKeyedGenerator {
 
             try SwitchExprSyntax("switch self") {
 
-                for spec in caseCodingInfoList {
+                for spec in caseCodingSpecList {
 
                     switch spec.payload {
                         case .empty: do {

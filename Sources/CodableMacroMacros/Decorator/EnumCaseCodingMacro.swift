@@ -59,20 +59,9 @@ struct EnumCaseCodingMacro: CodingDecoratorMacro {
     ]
 
 
-    static func processProperty(
-        _ enumCaseInfo: EnumCaseInfo, 
-        macroNodes: [AttributeSyntax],
-        context: some MacroExpansionContext
-    ) throws(DiagnosticsError) -> EnumCaseCustomCodingSetting? {
-
-        return nil 
-
-    }
-
-
     static func extractSetting(
-        macroNodes: [AttributeSyntax],
-        context: some MacroExpansionContext
+        from macroNodes: [AttributeSyntax],
+        in context: some MacroExpansionContext
     ) throws(DiagnosticsError) -> EnumCaseCustomCodingSetting? {
         guard macroNodes.count < 2 else {
             let dianostics = macroNodes.map { Diagnostic(node: $0, message: .decorator.general.duplicateMacro(name: "EnumCaseCoding")) }

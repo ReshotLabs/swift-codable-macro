@@ -16,6 +16,9 @@ import SwiftDiagnostics
 final class CodableMacro: CodingMacroImplBase, CodingMacroImplProtocol {
     
     static let supportedAttachedTypes: Set<AttachedType> = [.class, .struct]
+    static let supportedDecorators: Set<DecoratorMacros> = [
+        .codingField, .codingIgnore, .codingTransform, .decodeTransform, .encodeTransform, .codingValidate, .sequenceCodingField
+    ]
     
     static let macroArgumentsParsingRule: [ArgumentsParsingRule] = [
         .labeled("inherit", canIgnore: true)
@@ -60,18 +63,18 @@ final class CodableMacro: CodingMacroImplBase, CodingMacroImplProtocol {
         let isClass = declGroup.type == .class
         let isNonFinalClass = isClass && !declGroup.modifiers.contains(where: { $0.name.tokenKind == .keyword(.final) })
         
-        let codingFieldInfoList = try extractCodingFieldInfoList()
+        let propertyCodingSpecList = try extractPropertyCodingSpecList()
         
         // MUST provide implementation instead of using that provided by Swift Compiler if any of the following is true:
         // * target is non-final class (where auto implementation will fail on extension)
         // * has inherited Codable
         // * has any customization
-        guard isNonFinalClass || inherit || !canAutoCodable(codingFieldInfoList) else { return [] }
+        guard isNonFinalClass || inherit || !canAutoCodable(propertyCodingSpecList) else { return [] }
 
-        let codingFieldInfoListWithoutIgnored = codingFieldInfoList.filter { !$0.isIgnored }
+        let propertyCodingSpecListWithoutIgnored = propertyCodingSpecList.filter { !$0.isIgnored }
         
-        guard !codingFieldInfoListWithoutIgnored.isEmpty else {
-            // If the info list is still empty here, simply create an empty decode initializer
+        guard !propertyCodingSpecListWithoutIgnored.isEmpty else {
+            // If the spec list is still empty here, simply create an empty decode initializer
             // and an empty encode function
             return buildDeclSyntaxList {
                 if shouldAutoInit {
@@ -79,19 +82,19 @@ final class CodableMacro: CodingMacroImplBase, CodingMacroImplProtocol {
                 }
                 """
                 public \(raw: isClass ? "required " : "")init(from decoder: Decoder) throws {
-                    \(raw: inherit ? "try super.init(from decoder)" : "")
+                    \(raw: inherit ? "try super.init(from: decoder)" : "")
                 }
                 """
                 """
                 public \(raw: inherit ? "override " : "")func encode(to encoder: Encoder) throws {
-                    \(raw: inherit ? "try super.encode(to encoder)" : "")
+                    \(raw: inherit ? "try super.encode(to: encoder)" : "")
                 }
                 """
             }
         }
         
         // Analyse the stored properties and convert into a tree structure
-        let structure = try CodingStructure.parse(codingFieldInfoListWithoutIgnored)
+        let structure = try CodingStructure.parse(propertyCodingSpecListWithoutIgnored)
         
         return try buildDeclSyntaxList {
             try generateEnumDeclarations(from: structure)
@@ -105,7 +108,7 @@ final class CodableMacro: CodingMacroImplBase, CodingMacroImplProtocol {
     }
 
 
-    private func canAutoCodable(_ codingFieldInfoList: [CodingFieldInfo]) -> Bool {
+    private func canAutoCodable(_ codingFieldInfoList: [PropertyCodingSpec]) -> Bool {
 
         guard !codingFieldInfoList.isEmpty else {
             // an empty list means no customization, can auto-implement
@@ -154,6 +157,21 @@ extension CodableMacro {
         static let notBoolLiteralArgument: CodingMacroImplBase.Error = .init(
             id: "not_bool_literal_argument",
             message: "The `inherit` argument support only boolean literal (true or false)"
+        )
+
+        static let codingCustomizationOnNonStoredProperty: CodingMacroImplBase.Error = .init(
+            id: "coding_customization_on_non_stored_property",
+            message: "Coding customization can only be applied to stored properties"
+        )
+
+        static let propertyCannotBeIgnored: CodingMacroImplBase.Error = .init(
+            id: "property_cannot_be_ignored",
+            message: "Property can only be ignored if it is optional or has a default value."
+        )
+
+        static let defaultValueOnConstantwithInitializer: CodingMacroImplBase.Error = .init(
+            id: "default_value_on_constant_with_initializer",
+            message: "Default value on constant property with initializer is not allowed."
         )
         
     }

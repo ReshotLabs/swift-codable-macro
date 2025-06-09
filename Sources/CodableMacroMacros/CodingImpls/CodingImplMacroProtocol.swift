@@ -16,6 +16,7 @@ protocol CodingMacroImplProtocol: ExtensionMacro, MemberMacro {
     
     static var supportedAttachedTypes: Set<CodingMacroImplBase.AttachedType> { get }
     static var macroArgumentsParsingRule: [ArgumentsParsingRule] { get }
+    static var supportedDecorators: Set<DecoratorMacros> { get } 
 
     init(
         macroNode: AttributeSyntax,
@@ -85,6 +86,16 @@ extension CodingMacroImplProtocol {
                     try expander.makeDecls()
                 }
             ]
+        }
+    }
+
+
+    func gatherSupportedDecorators(in attributes: [AttributeSyntax]) -> [DecoratorMacros:[AttributeSyntax]] {
+        return attributes.reduce(into: [DecoratorMacros:[AttributeSyntax]]()) { result, attribute in
+            guard let name = attribute.attributeName.as(IdentifierTypeSyntax.self)?.name.trimmed.text else { return }
+            guard let decoratorMacro = DecoratorMacros(rawValue: name) else { return }
+            guard Self.supportedDecorators.contains(decoratorMacro) else { return }
+            result[decoratorMacro, default: []].append(attribute)
         }
     }
     
@@ -206,6 +217,14 @@ extension CodingMacroImplBase.ErrorGroup {
             .init(
                 id: "missing_explicit_type",
                 message: "Explicit type annotation is required"
+            )
+        }
+
+
+        static func conflictDecorators(_ decorator1: DecoratorMacros, _ decorator2: DecoratorMacros) -> CodingMacroImplBase.Error {
+            .init(
+                id: "conflict_decorators",
+                message: "Decorator \(decorator1.rawValue) and \(decorator2.rawValue) cannot be used together"
             )
         }
         

@@ -211,8 +211,13 @@ extension CodingExpansionTest.DecodeTransformTest {
             diagnostics: [
                 .init(
                     message: .decorator.general.duplicateMacro(name: "DecodeTransform"),
-                    line: 5,
-                    column: 9
+                    line: 3,
+                    column: 5
+                ),
+                .init(
+                    message: .decorator.general.duplicateMacro(name: "DecodeTransform"),
+                    line: 4,
+                    column: 5
                 )
             ]
         )

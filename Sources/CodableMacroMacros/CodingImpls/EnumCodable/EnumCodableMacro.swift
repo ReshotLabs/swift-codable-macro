@@ -9,6 +9,7 @@ import Foundation
 final class EnumCodableMacro: CodingMacroImplBase, CodingMacroImplProtocol {
 
     static let supportedAttachedTypes: Set<AttachedType> = [.enum]
+    static let supportedDecorators: Set<DecoratorMacros> = [.enumCaseCoding]
     static let macroArgumentsParsingRule: [ArgumentsParsingRule] = [
         .labeled("option", canIgnore: true)
     ]
@@ -51,18 +52,17 @@ final class EnumCodableMacro: CodingMacroImplBase, CodingMacroImplProtocol {
         }
 
         // extract user-defined custom coding setting for each enum case
-        let enumCaseCodingSettings = try declGroup.enumCases.map { enumCase in 
-            let enumCaseCodingMacroNodes = enumCase.attributes.filter { 
-                ($0.attributeName.as(IdentifierTypeSyntax.self)?.name.trimmed.text).flatMap(DecoratorMacros.init(rawValue:)) == .enumCaseCoding 
-            }
-            return (
-                caseInfo: enumCase,
-                setting: try EnumCaseCodingMacro.extractSetting(macroNodes: enumCaseCodingMacroNodes, context: context)
-            )
-        } as [EnumCaseRawCodingSetting]
-
-        // basic validation of the settings 
-        try validateSettings(enumCaseCodingSettings)
+        let enumCaseCodingSettings = declGroup.enumCases
+            .map { enumCase in 
+                let enumCaseCodingMacroNodes = enumCase.attributes.filter { 
+                    ($0.attributeName.as(IdentifierTypeSyntax.self)?.name.trimmed.text).flatMap(DecoratorMacros.init(rawValue:)) == .enumCaseCoding 
+                }
+                do throws(DiagnosticsError) {
+                    return try .success((enumCase, EnumCaseCodingMacro.extractSetting(from: enumCaseCodingMacroNodes, in: context)))
+                } catch {
+                    return .failure(error)
+                }
+            }.apply(validateSettings) as DiagnosticResultSequence<EnumCaseRawCodingSetting>
 
         // extract final enum case coding specifications 
         do {
@@ -71,22 +71,22 @@ final class EnumCodableMacro: CodingMacroImplBase, CodingMacroImplProtocol {
 
             switch enumCodableOption {
                 case .externalKeyed:
-                    let caseCodingInfoList = try extractCodingSpecForExternalKeyed(enumCaseCodingSettings)
-                    generator = ExternalKeyedGenerator(caseCodingInfoList: caseCodingInfoList)
+                    let caseCodingSpecList = try extractCodingSpecForExternalKeyed(enumCaseCodingSettings).throwDiagnosticsAsError()
+                    generator = ExternalKeyedGenerator(caseCodingSpecList: caseCodingSpecList)
                 case .adjucentKeyed(let typeKey, let payloadKey):
                     guard typeKey.text != payloadKey.text else {
                         throw .diagnostic(node: macroNode.rawSyntax, message: .codingMacro.enumCodable.conflictedTypeAndPayloadKeys())
                     }
-                    let caseCodingInfoList = try extractCodingSpecForAdjucentKeyed(enumCaseCodingSettings)
-                    generator = AdjucentKeyedGenerator(caseCodingInfoList: caseCodingInfoList, typeKey: typeKey, payloadKey: payloadKey)
+                    let caseCodingSpecList = try extractCodingSpecForAdjucentKeyed(enumCaseCodingSettings).throwDiagnosticsAsError()
+                    generator = AdjucentKeyedGenerator(caseCodingSpecList: caseCodingSpecList, typeKey: typeKey, payloadKey: payloadKey)
                 case .internalKeyed(let typeKey):
-                    let caseCodingInfoList = try extractCodingSpecForInternalKeyed(enumCaseCodingSettings, typeKey: typeKey)
-                    generator = InternalKeyedGenerator(caseCodingInfoList: caseCodingInfoList, typeKey: typeKey)
+                    let caseCodingSpecList = try extractCodingSpecForInternalKeyed(enumCaseCodingSettings, typeKey: typeKey).throwDiagnosticsAsError()
+                    generator = InternalKeyedGenerator(caseCodingSpecList: caseCodingSpecList, typeKey: typeKey)
                 case .unkeyed:
-                    let caseCodingInfoList = try extractCodingSpecForUnKeyed(enumCaseCodingSettings)
-                    generator = UnkeyedGenerator(caseCodingInfoList: caseCodingInfoList)
+                    let caseCodingSpecList = try extractCodingSpecForUnKeyed(enumCaseCodingSettings).throwDiagnosticsAsError()
+                    generator = UnkeyedGenerator(caseCodingSpecList: caseCodingSpecList)
                 case .rawValueCoded:
-                    try validateSettingsForRawValueCoded(enumCaseCodingSettings)
+                    _ = try validateSettingsForRawValueCoded(enumCaseCodingSettings).throwDiagnosticsAsError()
                     generator = RawValueCodedGenerator()
             }
 
@@ -106,17 +106,20 @@ final class EnumCodableMacro: CodingMacroImplBase, CodingMacroImplProtocol {
 
 extension EnumCodableMacro {
 
-    fileprivate func validateSettings(_ settings: [EnumCaseRawCodingSetting]) throws(DiagnosticsError) {
-        let diagnostics = settings.compactMap { rawSetting in
-            validateSingleSetting(rawSetting.setting, onTarget: rawSetting.caseInfo)
-        }
-        guard diagnostics.isEmpty else {
-            throw .diagnostics(diagnostics)
+    fileprivate func validateSettings(
+        _ rawSettings: DiagnosticResultSequence<EnumCaseRawCodingSetting>
+    ) -> DiagnosticResultSequence<EnumCaseRawCodingSetting> {
+        return rawSettings.mapResult { caseInfo, setting in
+            if let diagnostic = validateSetting(setting, onTarget: caseInfo) {
+                return .failure(.diagnostics([diagnostic]))
+            } else {
+                return .success((caseInfo, setting))
+            } 
         }
     }
 
 
-    private func validateSingleSetting(
+    private func validateSetting(
         _ setting: EnumCaseCodingMacro.EnumCaseCustomCodingSetting?, 
         onTarget caseInfo: EnumCaseInfo
     ) -> Diagnostic? {

@@ -27,18 +27,13 @@ struct EncodeTransformMacro: CodingDecoratorMacro {
     ]
     
     
-    static func processProperty(
-        _ propertyInfo: PropertyInfo,
-        macroNodes: [SwiftSyntax.AttributeSyntax],
-        context: some MacroExpansionContext
+    static func extractSetting(
+        from macroNodes: [SwiftSyntax.AttributeSyntax],
+        in context: some MacroExpansionContext
     ) throws(DiagnosticsError) -> ExprSyntax? {
         
-        guard propertyInfo.type != .computed || macroNodes.isEmpty else {
-            throw .diagnostic(node: propertyInfo.name, message: .decorator.general.attachTypeError)
-        }
-        
-        guard macroNodes.count <= 1 else {
-            throw .diagnostic(node: propertyInfo.name, message: .decorator.general.duplicateMacro(name: "EncodeTransform"))
+        guard macroNodes.count < 2 else {
+            throw .diagnostics(macroNodes.map { .init(node: $0, message: .decorator.general.duplicateMacro(name: "EncodeTransform")) })
         }
         
         guard let macroNode = macroNodes.first else { return nil }

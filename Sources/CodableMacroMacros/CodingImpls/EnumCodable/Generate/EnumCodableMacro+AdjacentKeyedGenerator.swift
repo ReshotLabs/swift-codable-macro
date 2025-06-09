@@ -7,7 +7,7 @@ extension EnumCodableMacro {
 
     struct AdjucentKeyedGenerator: Generator {
 
-        let caseCodingInfoList: [KeyedCaseCodingSpec]
+        let caseCodingSpecList: [KeyedCaseCodingSpec]
         let typeKey: TokenSyntax
         let payloadKey: TokenSyntax
 
@@ -24,7 +24,7 @@ extension EnumCodableMacro.AdjucentKeyedGenerator {
 
         try buildDeclSyntaxList {
 
-            if caseCodingInfoList.contains(where: { $0.payload == .empty(.emptyObject) }) {
+            if caseCodingSpecList.contains(where: { $0.payload == .empty(.emptyObject) }) {
                 unconditionalCodingKeysDef
             }
             
@@ -32,7 +32,7 @@ extension EnumCodableMacro.AdjucentKeyedGenerator {
                 #"case k\#(typeKey) = "\#(typeKey)", k\#(payloadKey) = "\#(payloadKey)""#
             }
 
-            for enumCaseCodingSpec in caseCodingInfoList {
+            for enumCaseCodingSpec in caseCodingSpecList {
 
                 if case let .content(.object(keys: objectPayloadKeys)) = enumCaseCodingSpec.payload {
 
@@ -57,8 +57,8 @@ extension EnumCodableMacro.AdjucentKeyedGenerator {
 
             "let container = try decoder.container(keyedBy: \(rootCodingKeyDefName).self)"
 
-            let specsWithStringKey = caseCodingInfoList.filter { $0.key.kind == .string }
-            let specsWithNumberKey = caseCodingInfoList.filter { $0.key.kind == .int || $0.key.kind == .float }
+            let specsWithStringKey = caseCodingSpecList.filter { $0.key.kind == .string }
+            let specsWithNumberKey = caseCodingSpecList.filter { $0.key.kind == .int || $0.key.kind == .float }
 
             if !specsWithStringKey.isEmpty {
                 try IfExprSyntax("if let type = try? container.decode(String.self, forKey: .k\(typeKey))") {
@@ -90,7 +90,7 @@ extension EnumCodableMacro.AdjucentKeyedGenerator {
 
             try SwitchExprSyntax("switch self") {
 
-                for spec in caseCodingInfoList {
+                for spec in caseCodingSpecList {
 
                     switch spec.payload {
 

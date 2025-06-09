@@ -24,44 +24,33 @@ struct CodingFieldMacro: CodingDecoratorMacro {
     ]
     
     
-    static func processProperty(
-        _ property: PropertyInfo,
-        macroNodes: [SwiftSyntax.AttributeSyntax],
-        context: some MacroExpansionContext
-    ) throws(DiagnosticsError) -> (path: [String], defaultValueOnMissing: ExprSyntax?, defaultValueOnMismatch: ExprSyntax?)? {
-        
-        guard property.type != .computed else {
-            if macroNodes.isEmpty {
-                return nil
-            } else {
-                throw .diagnostic(node: property.name, message: .decorator.general.attachTypeError)
-            }
-        }
+    static func extractSetting(
+        from macroNodes: [SwiftSyntax.AttributeSyntax],
+        in context: some MacroExpansionContext
+    ) throws(DiagnosticsError) -> (path: [String]?, defaultValueOnMissing: ExprSyntax?, defaultValueOnMismatch: ExprSyntax?)? {
         
         guard macroNodes.count < 2 else {
-            throw .diagnostic(node: property.name, message: .decorator.general.duplicateMacro(name: "CodingField"))
+            throw .diagnostics(macroNodes.map { .init(node: $0, message: .decorator.general.duplicateMacro(name: "CodingField")) })
         }
-        
-        guard let macroNode = macroNodes.first else {
-            return ([property.name.trimmed.text], nil, nil)
-        }
+
+        guard let macroNode = macroNodes.first else { return nil }
         
         guard
             let macroRawArguments = macroNode.arguments?.as(LabeledExprListSyntax.self),
             macroRawArguments.isEmpty == false
         else {
-            return ([property.name.trimmed.text], nil, nil)
+            return (nil, nil, nil)
         }
         
         let (pathElements, defaultValueOnMissing, defaultValueOnMismatch) = try extractPathAndDefault(from: macroRawArguments)
         
-        if let defaultValue = defaultValueOnMissing ?? defaultValueOnMismatch, 
-           property.initializer != nil, property.type == .constant 
-        {
-            throw .diagnostic(node: defaultValue, message: .decorator.codingField.defaultValueOnConstantwithInitializer)
-        }
+        // if let defaultValue = defaultValueOnMissing ?? defaultValueOnMismatch, 
+        //    property.initializer != nil, property.type == .constant 
+        // {
+        //     throw .diagnostic(node: defaultValue, message: .decorator.codingField.defaultValueOnConstantwithInitializer)
+        // }
         
-        return (pathElements ?? [property.name.trimmed.text], defaultValueOnMissing, defaultValueOnMismatch)
+        return (pathElements, defaultValueOnMissing, defaultValueOnMismatch)
         
     }
     

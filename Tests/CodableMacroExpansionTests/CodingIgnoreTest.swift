@@ -168,9 +168,9 @@ extension CodingExpansionTest.CodingIgnoreTest {
             """,
             diagnostics: [
                 .init(
-                    message: "The property can only be ignored when it has a default value or is optional",
-                    line: 6,
-                    column: 9
+                    message: .codingMacro.codable.propertyCannotBeIgnored,
+                    line: 5,
+                    column: 5 
                 )
             ]
         )

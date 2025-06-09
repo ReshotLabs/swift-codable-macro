@@ -162,13 +162,13 @@ extension CodingExpansionTest.CodingTransformTest {
     
     
 //    @Codable
-//    struct Test3 {
+//    struct TestE1 {
 //        @CodingTransform
 //        var a: Int
 //    }
     
     @Test("no argument list")
-    func test3() async throws {
+    func testE1() async throws {
         assertMacroExpansion(
             source: """
             @Codable
@@ -194,13 +194,13 @@ extension CodingExpansionTest.CodingTransformTest {
     
     
 //    @Codable
-//    struct Test4 {
+//    struct TestE2 {
 //        @CodingTransform()
 //        var a: Int
 //    }
     
     @Test("no argument")
-    func test4() async throws {
+    func testE2() async throws {
         assertMacroExpansion(
             source: """
             @Codable
@@ -220,6 +220,41 @@ extension CodingExpansionTest.CodingTransformTest {
                     line: 3,
                     column: 22
                 )
+            ]
+        )
+    }
+
+
+    // @Codable
+    // struct TestE3 {
+    //     @CodingTransform(
+    //         .intTypeTransform(option: .string)
+    //     )
+    //     @DecodeTransform(source: String.self, with: { Int($0)! })
+    //     var a: Int
+    // }
+
+    @Test("conflicted with DecodeTransform")
+    func testE3() async throws {
+        assertMacroExpansion(
+            source: """
+            @Codable
+            struct Test {
+                @CodingTransform(
+                    .intTypeTransform(option: .string)
+                )
+                @DecodeTransform(source: String.self, with: { Int($0)! })
+                var a: Int
+            }
+            """, 
+            expandedSource: """
+            struct Test {
+                var a: Int
+            }
+            """,
+            diagnostics: [
+                .init(message: .codingMacro.general.conflictDecorators(.codingTransform, .decodeTransform), line: 3, column: 5),
+                .init(message: .codingMacro.general.conflictDecorators(.codingTransform, .decodeTransform), line: 6, column: 5)
             ]
         )
     }

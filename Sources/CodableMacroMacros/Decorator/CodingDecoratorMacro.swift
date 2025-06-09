@@ -16,14 +16,12 @@ import SwiftDiagnostics
 protocol CodingDecoratorMacro: PeerMacro {
     
     associatedtype CodingSetting
-    associatedtype DecoratorTargetInfo
     
     static var macroArgumentsParsingRule: [ArgumentsParsingRule] { get }
     
-    static func processProperty(
-        _ propertyInfo: DecoratorTargetInfo,
-        macroNodes: [SwiftSyntax.AttributeSyntax],
-        context: some MacroExpansionContext
+    static func extractSetting(
+        from macroNodes: [SwiftSyntax.AttributeSyntax],
+        in context: some MacroExpansionContext
     ) throws(DiagnosticsError) -> CodingSetting
     
 }

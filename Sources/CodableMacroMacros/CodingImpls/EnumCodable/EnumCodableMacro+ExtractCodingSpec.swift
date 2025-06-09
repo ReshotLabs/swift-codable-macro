@@ -6,10 +6,10 @@ import SwiftSyntaxBuilder
 extension EnumCodableMacro {
 
     func extractCodingSpecForExternalKeyed(
-        _ enumCaseCodingSettings: [EnumCaseRawCodingSetting]
-    ) throws(DiagnosticsError) -> [KeyedCaseCodingSpec] {
+        _ enumCaseCodingSettings: DiagnosticResultSequence<EnumCaseRawCodingSetting>
+    ) throws(DiagnosticsError) -> DiagnosticResultSequence<KeyedCaseCodingSpec> {
 
-        let infoList = try enumCaseCodingSettings.map { caseInfo, setting throws(DiagnosticsError) in
+        return enumCaseCodingSettings.mapResult { caseInfo, setting in
 
             var defaultPayload: Payload {
                 if caseInfo.associatedValues.isEmpty {
@@ -23,44 +23,40 @@ extension EnumCodableMacro {
 
             switch setting {
                 case .none: 
-                    return .init(enumCaseInfo: caseInfo, key: .string(caseInfo.name), payload: defaultPayload)
+                    return .success(.init(enumCaseInfo: caseInfo, key: .string(caseInfo.name), payload: defaultPayload))
                 case .some(.keyed(let key, let payload, _)):
                     let key = key ?? .string(caseInfo.name)
                     guard key.kind == .string else {
-                        throw .diagnostic(
+                        return .failure(.diagnostic(
                             node: key.token, 
                             message: .codingMacro.enumCodable.nonStringCaseKeyInExternalKeyedEnumCoding(key.token)
-                        )
+                        ))
                     }
                     switch payload {
                         case .none:
-                            return .init(enumCaseInfo: caseInfo, key: key, payload: defaultPayload)
+                            return .success(.init(enumCaseInfo: caseInfo, key: key, payload: defaultPayload))
                         case .some(.content(.object(.none, _))):
-                            return .init(enumCaseInfo: caseInfo, key: key, payload: .content(.object(inferingKeysFrom: caseInfo.associatedValues)))
+                            return .success(.init(enumCaseInfo: caseInfo, key: key, payload: .content(.object(inferingKeysFrom: caseInfo.associatedValues))))
                         case .some(let payload):
-                            return .init(enumCaseInfo: caseInfo, key: key, payload: .init(payload))
+                            return .success(.init(enumCaseInfo: caseInfo, key: key, payload: .init(payload)))
                     }
                 case .some(.unkeyed(_, let rawSyntax)):
-                    throw .diagnostic(
+                    return .failure(.diagnostic(
                         node: rawSyntax, 
                         message: .codingMacro.enumCodable.unkeyedSettingInKeyedEnumCoding(enumCodableOption)
-                    )
+                    ))
             }
 
-        } as [KeyedCaseCodingSpec]
-
-        try requireNoDuplicatedKeys(in: infoList)
-
-        return infoList
+        }.apply(requireNoDuplicatedKeys)
 
     }
 
 
     func extractCodingSpecForAdjucentKeyed(
-        _ enumCaseCodingSettings: [EnumCaseRawCodingSetting]
-    ) throws(DiagnosticsError) -> [KeyedCaseCodingSpec] {
+        _ enumCaseCodingSettings: DiagnosticResultSequence<EnumCaseRawCodingSetting>
+    ) -> DiagnosticResultSequence<KeyedCaseCodingSpec> {
         
-        let infoList = try enumCaseCodingSettings.map { caseInfo, setting throws(DiagnosticsError) in
+        return enumCaseCodingSettings.mapResult { caseInfo, setting in
 
             var defaultPayload: Payload {
                 if caseInfo.associatedValues.isEmpty {
@@ -74,43 +70,39 @@ extension EnumCodableMacro {
 
             switch setting {
                 case .none: 
-                    return .init(enumCaseInfo: caseInfo, key: .string(caseInfo.name), payload: defaultPayload)
+                    return .success(.init(enumCaseInfo: caseInfo, key: .string(caseInfo.name), payload: defaultPayload))
                 case .some(.keyed(let key, .none, _)):
-                    return .init(enumCaseInfo: caseInfo, key: key ?? .string(caseInfo.name), payload: defaultPayload)
+                    return .success(.init(enumCaseInfo: caseInfo, key: key ?? .string(caseInfo.name), payload: defaultPayload))
                 case .some(.keyed(let key, .content(.object(.none, _)), _)):
-                    return .init(
+                    return .success(.init(
                         enumCaseInfo: caseInfo, 
                         key: key ?? .string(caseInfo.name), 
                         payload: .content(.object(inferingKeysFrom: caseInfo.associatedValues))
-                    )
+                    ))
                 case .some(.keyed(let key, .some(let payload), _)): 
-                    return .init(enumCaseInfo: caseInfo, key: key ?? .string(caseInfo.name), payload: .init(payload))
+                    return .success(.init(enumCaseInfo: caseInfo, key: key ?? .string(caseInfo.name), payload: .init(payload)))
                 case .some(.unkeyed(_, let rawSyntax)):
-                    throw .diagnostic(
+                    return .failure(.diagnostic(
                         node: rawSyntax, 
                         message: .codingMacro.enumCodable.unkeyedSettingInKeyedEnumCoding(enumCodableOption)
-                    )
+                    ))
             }
 
-        } as [KeyedCaseCodingSpec]
-
-        try requireNoDuplicatedKeys(in: infoList)
-
-        return infoList
+        }.apply(requireNoDuplicatedKeys)
 
     }
 
 
     func extractCodingSpecForInternalKeyed(
-        _ enumCaseCodingSettings: [EnumCaseRawCodingSetting],
+        _ enumCaseCodingSettings: DiagnosticResultSequence<EnumCaseRawCodingSetting>,
         typeKey: TokenSyntax
-    ) throws(DiagnosticsError) -> [KeyedCaseCodingSpec] {
+    ) -> DiagnosticResultSequence<KeyedCaseCodingSpec> {
         
-        let infoList = try enumCaseCodingSettings.map { caseInfo, setting throws(DiagnosticsError) in
+        return enumCaseCodingSettings.mapResult { caseInfo, setting in
 
             func requireNoConflictWithTypeKey(
                 in objectPayloadKeys: [ObjectPayloadKey]
-            ) throws(DiagnosticsError) {
+            ) -> DiagnosticsError? {
                 for key in objectPayloadKeys where key.trimmed.text == typeKey.trimmed.text {
                     let provider: Syntax
                     switch key {
@@ -118,126 +110,127 @@ extension EnumCodableMacro {
                         case .indexed(let indexToken): 
                             let index = indexToken.index
                             guard index < caseInfo.associatedValues.count else {
-                                throw .diagnostic(
+                                return .diagnostic(
                                     node: caseInfo.name, 
                                     message: .internal.init(message: "Unexpected object key with index \(index), which is out of bounds for associated values of case \(caseInfo.name.trimmed)")
                                 )
                             }
                             provider = Syntax(caseInfo.associatedValues[index].type)
                     }
-                    throw .diagnostic(node: provider,message: .codingMacro.enumCodable.objectKeyConflictedWithTypeKey())
+                    return .diagnostic(node: provider,message: .codingMacro.enumCodable.objectKeyConflictedWithTypeKey())
                 }
+                return nil 
             }
 
-            var defaultPayload: Payload {
-                get throws(DiagnosticsError) {
-                    if caseInfo.associatedValues.isEmpty {
-                        return .empty(.nothing)
+            var defaultPayload: DiagnosticResult<Payload> {
+                if caseInfo.associatedValues.isEmpty {
+                    return .success(.empty(.nothing))
+                } else {
+                    let objectPayloadKeys = ObjectPayloadKey.infer(from: caseInfo.associatedValues)
+                    if let error = requireNoConflictWithTypeKey(in: objectPayloadKeys) {
+                        return .failure(error)
                     } else {
-                        let objectPayloadKeys = ObjectPayloadKey.infer(from: caseInfo.associatedValues)
-                        try requireNoConflictWithTypeKey(in: objectPayloadKeys)
-                        return .content(.object(keys: objectPayloadKeys))
+                        return .success(.content(.object(keys: objectPayloadKeys)))
                     }
                 }
             }
 
             switch setting {
                 case .none: 
-                    return .init(enumCaseInfo: caseInfo, key: .string(caseInfo.name), payload: try defaultPayload) 
+                    return defaultPayload.map { payload in
+                        .init(enumCaseInfo: caseInfo, key: .string(caseInfo.name), payload: payload)
+                    }
                 case .some(.keyed(let key, .none, _)):
-                    return .init(enumCaseInfo: caseInfo, key: key ?? .string(caseInfo.name), payload: try defaultPayload) 
+                    return defaultPayload.map { payload in
+                        .init(enumCaseInfo: caseInfo, key: key ?? .string(caseInfo.name), payload: payload)
+                    }
                 case .some(.keyed(let key, .empty(.nothing), _)): 
-                    return .init(
+                    return .success(.init(
                         enumCaseInfo: caseInfo, 
                         key: key ?? .string(caseInfo.name), 
                         payload: .empty(.nothing)
-                    )
+                    ))
                 case .some(.keyed(let key, .content(.object(let objectPayloadKeys, _)), _)): 
                     let objectPayloadKeys = objectPayloadKeys?.map { .named($0) } ?? ObjectPayloadKey.infer(from: caseInfo.associatedValues)
-                    try requireNoConflictWithTypeKey(in: objectPayloadKeys)
-                    return .init(
+                    if let error = requireNoConflictWithTypeKey(in: objectPayloadKeys) {
+                        return .failure(error)
+                    }
+                    return .success(.init(
                         enumCaseInfo: caseInfo, 
                         key: key ?? .string(caseInfo.name), 
                         payload: .content(.object(keys: objectPayloadKeys))
-                    )
+                    ))
                 case .some(.keyed(_, .empty(let emptyPayloadOption), _)):
-                    throw .diagnostic(
+                    return .failure(.diagnostic(
                         node: emptyPayloadOption.rawSyntax, 
                         message: .codingMacro.enumCodable.nonNothingEmptyPayloadOptionInInternalKeyedEnumConfig()
-                    )
+                    ))
                 case .some(.keyed(_, .content(let payloadContent), _)):
-                    throw .diagnostic(
+                    return .failure(.diagnostic(
                         node: payloadContent.rawSyntax, 
                         message: .codingMacro.enumCodable.nonObjectPayloadInInternalKeyedEnumCoding()
-                    )
+                    ))
                 case .some(.unkeyed(_, let rawSyntax)):
-                    throw .diagnostic(
+                    return .failure(.diagnostic(
                         node: rawSyntax, 
                         message: .codingMacro.enumCodable.unkeyedSettingInKeyedEnumCoding(enumCodableOption)
-                    )
+                    ))
             }
 
-        } as [KeyedCaseCodingSpec]
-
-        try requireNoDuplicatedKeys(in: infoList)
-
-        return infoList
+        }.apply(requireNoDuplicatedKeys)
 
     }
 
 
     func extractCodingSpecForUnKeyed(
-        _ enumCaseCodingSettings: [EnumCaseRawCodingSetting]
-    ) throws(DiagnosticsError) -> [UnkeyedCaseCodingSpec] {
+        _ enumCaseCodingSettings: DiagnosticResultSequence<EnumCaseRawCodingSetting>
+    ) throws(DiagnosticsError) -> DiagnosticResultSequence<UnkeyedCaseCodingSpec> {
 
         let (infferedRawValues, infferedRawValueType) = extractEnumCaseInferredRawValues()
 
-        var specs = [UnkeyedCaseCodingSpec]()
+        return zip(enumCaseCodingSettings, infferedRawValues).map { rawCodingSettingResult, infferedRawValue in 
 
-        for ((caseInfo, setting), infferedRawValue) in zip(enumCaseCodingSettings, infferedRawValues) {
+            rawCodingSettingResult.flatMap { caseInfo, setting in
 
-            switch setting {
-                case .none: 
-                    if caseInfo.associatedValues.isEmpty {
-                        specs.append(.init(enumCaseInfo: caseInfo, payload: .rawValue(type: infferedRawValueType, value: infferedRawValue)))
-                    } else if caseInfo.associatedValues.count == 1 {
-                        specs.append(.init(enumCaseInfo: caseInfo, payload: .content(.singleValue)))
-                    } else {
-                        specs.append(.init(enumCaseInfo: caseInfo, payload: .content(.object(inferingKeysFrom: caseInfo.associatedValues))))
-                    }
-                case .some(.unkeyed(.rawValue(let type, let value), _)):
-                    specs.append(.init(enumCaseInfo: caseInfo, payload: .rawValue(type: type, value: value)))
-                case .some(.unkeyed(.content(.object(.none, _)), _)):
-                    specs.append(.init(enumCaseInfo: caseInfo, payload: .content(.object(inferingKeysFrom: caseInfo.associatedValues))))
-                case .some(.unkeyed(.content(let payloadContent), _)):
-                    specs.append(.init(enumCaseInfo: caseInfo, payload: .content(.init(payloadContent))))
-                case .some(.keyed(_, _, let rawSynax)): 
-                    throw .diagnostic(
-                        node: rawSynax, 
-                        message: .codingMacro.enumCodable.keyedSettingInUnkeyedEnumCoding()
-                    )
+                switch setting {
+                    case .none: 
+                        if caseInfo.associatedValues.isEmpty {
+                            return .success(.init(enumCaseInfo: caseInfo, payload: .rawValue(type: infferedRawValueType, value: infferedRawValue)))
+                        } else if caseInfo.associatedValues.count == 1 {
+                            return .success(.init(enumCaseInfo: caseInfo, payload: .content(.singleValue)))
+                        } else {
+                            return .success(.init(enumCaseInfo: caseInfo, payload: .content(.object(inferingKeysFrom: caseInfo.associatedValues))))
+                        }
+                    case .some(.unkeyed(.rawValue(let type, let value), _)):
+                        return .success(.init(enumCaseInfo: caseInfo, payload: .rawValue(type: type, value: value)))
+                    case .some(.unkeyed(.content(.object(.none, _)), _)):
+                        return .success(.init(enumCaseInfo: caseInfo, payload: .content(.object(inferingKeysFrom: caseInfo.associatedValues))))
+                    case .some(.unkeyed(.content(let payloadContent), _)):
+                        return .success(.init(enumCaseInfo: caseInfo, payload: .content(.init(payloadContent))))
+                    case .some(.keyed(_, _, let rawSynax)): 
+                        return .failure(.diagnostic(
+                            node: rawSynax, 
+                            message: .codingMacro.enumCodable.keyedSettingInUnkeyedEnumCoding()
+                        ))
+                }
+
             }
 
-        }
-
-        try requireNoDuplicatedRawValues(in: specs)
-        
-        return specs
+        }.apply(requireNoDuplicatedRawValues)
 
     }
 
 
     func validateSettingsForRawValueCoded(
-        _ enumCaseCodingSettings: [EnumCaseRawCodingSetting]
-    ) throws(DiagnosticsError) {
+        _ enumCaseCodingSettings: DiagnosticResultSequence<EnumCaseRawCodingSetting>
+    ) -> DiagnosticResultSequence<EnumCaseRawCodingSetting> {
 
-        let diagnostics = enumCaseCodingSettings.compactMap { caseInfo, setting in
-            guard setting != nil else { return nil as Diagnostic? }
-            return Diagnostic(node: caseInfo.name, message: .codingMacro.enumCodable.unexpectedCustomizationInRawValueEnumCoding())
-        }
-
-        guard diagnostics.isEmpty else {
-            throw .diagnostics(diagnostics)
+        return enumCaseCodingSettings.mapResult { caseInfo, setting in
+            if setting != nil {
+                .failure(.diagnostic(node: caseInfo.name, message: .codingMacro.enumCodable.unexpectedCustomizationInRawValueEnumCoding()))
+            } else {
+                .success((caseInfo, setting))
+            }
         }
 
     }
@@ -248,57 +241,73 @@ extension EnumCodableMacro {
 
 extension EnumCodableMacro {
 
-    private func requireNoDuplicatedKeys(in enumCaseCodingSpecs: [KeyedCaseCodingSpec]) throws(DiagnosticsError) {
+    private func requireNoDuplicatedKeys(
+        in enumCaseCodingSpecs: DiagnosticResultSequence<KeyedCaseCodingSpec>
+    ) -> DiagnosticResultSequence<KeyedCaseCodingSpec> {
 
-        let duplicateKeyDianostics = enumCaseCodingSpecs
-            .reduce(into: [LiteralValue.ResolvedValue:Set<KeyedCaseCodingSpec>]()) { acc, spec in
-                acc[spec.key.resolvedValue, default: []].insert(spec)
-            }
-            .compactMap { _, specs in 
-                guard specs.count > 1 else { return nil as [Diagnostic]? }
-                return specs.map { spec in 
-                    Diagnostic(
-                        node: spec.key.token, 
-                        message: .codingMacro.enumCodable.duplicatedCaseKey(
-                            with: specs.subtracting([spec]).map(\.enumCaseInfo.name)
-                        )
-                    )
+        let keyDuplicationInfo = enumCaseCodingSpecs
+            .reduce(into: [LiteralValue.ResolvedValue:[KeyedCaseCodingSpec]]()) { acc, specResult in
+                if case .success(let spec) = specResult {
+                    acc[spec.key.resolvedValue, default: []].append(spec)
                 }
             }
-            .flatMap(\.self)
+            .values
+            .filter { $0.count > 1 }
+            .reduce(into: [KeyedCaseCodingSpec:[TokenSyntax]]()) { acc, conflictedSpecs in
+                for (i, spec) in conflictedSpecs.enumerated() {
+                    var otherSpecs = conflictedSpecs
+                    otherSpecs.remove(at: i)
+                    acc[spec, default: []].append(contentsOf: otherSpecs.map(\.enumCaseInfo.name))
+                }
+            }
 
-        guard duplicateKeyDianostics.isEmpty else {
-            throw .diagnostics(duplicateKeyDianostics)
-        }
+        return enumCaseCodingSpecs.mapResult { spec in
+            
+            if let conflictedSpecCaseNames = keyDuplicationInfo[spec] {
+                return .failure(.diagnostic(
+                    node: spec.key.token, 
+                    message: .codingMacro.enumCodable.duplicatedCaseKey(with: conflictedSpecCaseNames)
+                ))
+            } else {
+                return .success(spec)
+            }
+
+        } 
 
     }
 
 
-    private func requireNoDuplicatedRawValues(in enumCaseUnkeyedCodingSpecs: [UnkeyedCaseCodingSpec]) throws(DiagnosticsError) {
+    private func requireNoDuplicatedRawValues(
+        in enumCaseUnkeyedCodingSpecs: DiagnosticResultSequence<UnkeyedCaseCodingSpec>
+    ) -> DiagnosticResultSequence<UnkeyedCaseCodingSpec> {
 
-        let duplicateRawValueDianostics = enumCaseUnkeyedCodingSpecs
-            .reduce(into: [String:[LiteralValue.ResolvedValue:Set<UnkeyedCaseCodingSpec>]]()) { acc, spec in 
+        let rawValueDuplicationInfo = enumCaseUnkeyedCodingSpecs
+            .reduce(into: [String:[LiteralValue.ResolvedValue:[UnkeyedCaseCodingSpec]]]()) { acc, spec in 
+                guard case .success(let spec) = spec else { return }
                 guard case .rawValue(let type, let value) = spec.payload else { return }
-                acc[type.trimmedDescription, default: [:]][value.resolvedValue, default: []].insert(spec)
+                acc[type.trimmedDescription, default: [:]][value.resolvedValue, default: []].append(spec)
             }
-            .compactMap { _, rawValueCounts in
-                rawValueCounts.compactMap { _, specs in
-                    guard specs.count > 1 else { return nil as [Diagnostic]? }
-                    return specs.compactMap { spec in 
-                        guard case .rawValue(_, let value) = spec.payload else { return nil }
-                        return Diagnostic(
-                            node: context.isInSource(value.token) ? value.token : spec.enumCaseInfo.name, 
-                            message: .codingMacro.enumCodable.duplicatedUnkeyedRawValuePayload(
-                                with: specs.subtracting([spec]).map(\.enumCaseInfo.name)
-                            )
-                        )
-                    }
-                }.flatMap(\.self)
+            .values
+            .flatMap(\.values)
+            .filter { $0.count > 1 }
+            .reduce(into: [UnkeyedCaseCodingSpec:[TokenSyntax]]()) { acc, conflictedSpecs in
+                for (i, spec) in conflictedSpecs.enumerated() {
+                    var otherSpecs = conflictedSpecs
+                    otherSpecs.remove(at: i)
+                    acc[spec, default: []].append(contentsOf: otherSpecs.map(\.enumCaseInfo.name))
+                }
             }
-            .flatMap(\.self)
-        
-        guard duplicateRawValueDianostics.isEmpty else {
-            throw .diagnostics(duplicateRawValueDianostics)
+
+        return enumCaseUnkeyedCodingSpecs.mapResult { spec in
+            guard case .rawValue(_, let value) = spec.payload else { return .success(spec) }
+            if let conflictedSpecCaseNames = rawValueDuplicationInfo[spec] {
+                return .failure(.diagnostic(
+                    node: context.isInSource(value.token) ? value.token : spec.enumCaseInfo.name, 
+                    message: .codingMacro.enumCodable.duplicatedUnkeyedRawValuePayload(with: conflictedSpecCaseNames)
+                ))
+            } else {
+                return .success(spec)
+            }
         }
 
     }

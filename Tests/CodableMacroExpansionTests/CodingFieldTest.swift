@@ -734,7 +734,7 @@ extension CodingExpansionTest.CodingFieldTest {
             """,
             diagnostics: [
                 .init(
-                    message: .decorator.codingField.defaultValueOnConstantwithInitializer,
+                    message: .codingMacro.codable.defaultValueOnConstantwithInitializer,
                     line: 3,
                     column: 41
                 )
@@ -799,9 +799,9 @@ extension CodingExpansionTest.CodingFieldTest {
     
 //    @Codable
 //    struct TestE3 {
-//        @CodingField
-//        @CodingField
-//        var a: Int
+//         @CodingField
+//         @CodingField
+//         var a: Int
 //    }
     
     @Test("multiple CodingField", .tags(.expansion.keyedCoding))
@@ -822,9 +822,14 @@ extension CodingExpansionTest.CodingFieldTest {
             """,
             diagnostics: [
                 .init(
-                    message: "A stored property should have at most one CodingField macro",
-                    line: 5,
-                    column: 9
+                    message: .decorator.general.duplicateMacro(name: "CodingField"),
+                    line: 3,
+                    column: 5
+                ),
+                .init(
+                    message: .decorator.general.duplicateMacro(name: "CodingField"),
+                    line: 4,
+                    column: 5
                 )
             ]
         )

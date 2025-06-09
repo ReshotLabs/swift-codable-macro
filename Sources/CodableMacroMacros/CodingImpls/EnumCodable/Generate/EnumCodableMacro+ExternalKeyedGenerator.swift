@@ -5,7 +5,7 @@ import SwiftSyntaxBuilder
 extension EnumCodableMacro {
 
     struct ExternalKeyedGenerator: Generator {
-        let caseCodingInfoList: [KeyedCaseCodingSpec]
+        let caseCodingSpecList: [KeyedCaseCodingSpec]
     }
 
 }
@@ -18,11 +18,11 @@ extension EnumCodableMacro.ExternalKeyedGenerator {
 
         return try buildDeclSyntaxList {
 
-            if caseCodingInfoList.contains(where: { $0.payload == .empty(.emptyObject) }) {
+            if caseCodingSpecList.contains(where: { $0.payload == .empty(.emptyObject) }) {
                 unconditionalCodingKeysDef
             }
 
-            let keys = caseCodingInfoList
+            let keys = caseCodingSpecList
                 .filter { $0.payload != .empty(.nothing) }
                 .compactMap(\.key.token)
 
@@ -34,7 +34,7 @@ extension EnumCodableMacro.ExternalKeyedGenerator {
                 }
             }
 
-            for enumCaseCodingSpec in caseCodingInfoList {
+            for enumCaseCodingSpec in caseCodingSpecList {
 
                 if case let .content(.object(keys: objectPayloadKeys)) = enumCaseCodingSpec.payload {
 
@@ -57,8 +57,8 @@ extension EnumCodableMacro.ExternalKeyedGenerator {
 
         return try .init("public init(from decoder: Decoder) throws") {
 
-            let specsWithNoPayload = caseCodingInfoList.filter { $0.payload == .empty(.nothing) }
-            let specsWithPayload = caseCodingInfoList.filter { $0.payload != .empty(.nothing) }
+            let specsWithNoPayload = caseCodingSpecList.filter { $0.payload == .empty(.nothing) }
+            let specsWithPayload = caseCodingSpecList.filter { $0.payload != .empty(.nothing) }
 
             if !specsWithNoPayload.isEmpty {
 
@@ -98,7 +98,7 @@ extension EnumCodableMacro.ExternalKeyedGenerator {
 
                     try SwitchExprSyntax("switch caseKey") {
 
-                        for spec in caseCodingInfoList where spec.payload != .empty(.nothing) {
+                        for spec in caseCodingSpecList where spec.payload != .empty(.nothing) {
                             
                             switch spec.payload {
                                 case .empty(.nothing): do {
@@ -147,7 +147,7 @@ extension EnumCodableMacro.ExternalKeyedGenerator {
             
             try SwitchExprSyntax("switch self") {
 
-                for spec in caseCodingInfoList {
+                for spec in caseCodingSpecList {
 
                     switch spec.payload {
 

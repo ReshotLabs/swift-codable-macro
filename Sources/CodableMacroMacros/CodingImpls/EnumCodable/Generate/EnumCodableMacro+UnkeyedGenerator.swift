@@ -7,7 +7,7 @@ extension EnumCodableMacro {
 
     struct UnkeyedGenerator: Generator {
 
-        let caseCodingInfoList: [UnkeyedCaseCodingSpec]
+        let caseCodingSpecList: [UnkeyedCaseCodingSpec]
 
     }
 
@@ -21,7 +21,7 @@ extension EnumCodableMacro.UnkeyedGenerator {
 
         try buildDeclSyntaxList {
 
-            let allObjectPayloadKeys = caseCodingInfoList.reduce(into: Set<String>()) { acc, spec in
+            let allObjectPayloadKeys = caseCodingSpecList.reduce(into: Set<String>()) { acc, spec in
                 switch spec.payload {
                     case .content(.object(let keys)): acc.formUnion(keys.map(\.trimmedDescription))
                     default: break
@@ -43,10 +43,10 @@ extension EnumCodableMacro.UnkeyedGenerator {
         
         return try .init("public init(from decoder: Decoder) throws") {
 
-            let specsWithObjectPayload = caseCodingInfoList.filter { if case .content(.object) = $0.payload { true } else { false } }
-            let specsWithArrayPayload = caseCodingInfoList.filter { if case .content(.array) = $0.payload { true } else { false } }
-            let specsWithSingleValuePayload = caseCodingInfoList.filter { if case .content(.singleValue) = $0.payload { true } else { false } }
-            let specsWithRawValuePayload = caseCodingInfoList.filter { if case .rawValue = $0.payload { true } else { false } }
+            let specsWithObjectPayload = caseCodingSpecList.filter { if case .content(.object) = $0.payload { true } else { false } }
+            let specsWithArrayPayload = caseCodingSpecList.filter { if case .content(.array) = $0.payload { true } else { false } }
+            let specsWithSingleValuePayload = caseCodingSpecList.filter { if case .content(.singleValue) = $0.payload { true } else { false } }
+            let specsWithRawValuePayload = caseCodingSpecList.filter { if case .rawValue = $0.payload { true } else { false } }
 
             if !specsWithSingleValuePayload.isEmpty || !specsWithRawValuePayload.isEmpty {
 
@@ -168,7 +168,7 @@ extension EnumCodableMacro.UnkeyedGenerator {
 
             try SwitchExprSyntax("switch self") {
 
-                for spec in caseCodingInfoList {
+                for spec in caseCodingSpecList {
 
                     let valueBindingList = (0 ..< spec.enumCaseInfo.associatedValues.count).map { "value\($0)" }
                     let valueBindingListStr = valueBindingList.joined(separator: ", ")

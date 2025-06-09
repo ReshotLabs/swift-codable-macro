@@ -21,15 +21,10 @@ struct CodingValidateMacro: CodingDecoratorMacro {
     ]
     
     
-    static func processProperty(
-        _ propertyInfo: PropertyInfo,
-        macroNodes: [AttributeSyntax],
-        context: some MacroExpansionContext
+    static func extractSetting(
+        from macroNodes: [AttributeSyntax],
+        in context: some MacroExpansionContext
     ) throws(DiagnosticsError) -> [ExprSyntax] {
-        
-        guard propertyInfo.type != .computed || macroNodes.isEmpty else {
-            throw .diagnostic(node: propertyInfo.name, message: .decorator.general.attachTypeError)
-        }
         
         return try macroNodes.map { (attribute) throws(DiagnosticsError) in
             

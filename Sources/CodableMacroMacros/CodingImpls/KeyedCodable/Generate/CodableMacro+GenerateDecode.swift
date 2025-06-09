@@ -13,10 +13,10 @@ extension CodableMacro {
 
         var containerStack: [CodingContainerName] = []
 
-        func structureDfs(_ structure: CodingStructure) throws -> (items: [CodeBlockItemSyntax], fieldsToInitOnError: [CodingFieldInfo]) {
+        func structureDfs(_ structure: CodingStructure) throws -> (items: [CodeBlockItemSyntax], fieldsToInitOnError: [PropertyCodingSpec]) {
 
             var codeBlockItems = [CodeBlockItemSyntax]()
-            var fieldsToInitOnError = [CodingFieldInfo]()
+            var fieldsToInitOnError = [PropertyCodingSpec]()
 
             switch structure {
 
@@ -71,18 +71,18 @@ extension CodableMacro {
 
                 }
 
-                case let .leaf(pathElement, field): do {
+                case let .leaf(pathElement, spec): do {
 
                     guard let parentContainer = containerStack.last else {
                         throw InternalError(message: "unexpected empty container stack")
                     }
-                    let propertyInfo = field.propertyInfo
+                    let propertyInfo = spec.propertyInfo
 
                     if (
-                        field.defaultValueOnMisMatch != nil || field.defaultValueOnMissing != nil 
+                        spec.defaultValueOnMisMatch != nil || spec.defaultValueOnMissing != nil 
                         || (propertyInfo.initializer == nil && propertyInfo.hasOptionalTypeDecl) 
                     ) {
-                        fieldsToInitOnError.append(field)
+                        fieldsToInitOnError.append(spec)
                     }
 
                     guard propertyInfo.type != .constant || propertyInfo.initializer == nil else {
@@ -91,12 +91,12 @@ extension CodableMacro {
                     }
 
                     codeBlockItems.append(
-                        try generateStandardDecodeBlock(field: field, container: parentContainer, pathElement: pathElement)
+                        try generateStandardDecodeBlock(spec: spec, container: parentContainer, pathElement: pathElement)
                     )
 
                 }
 
-                case let .sequenceLeaf(pathElement, fields, subTree): do {
+                case let .sequenceLeaf(pathElement, specs, subTree): do {
                     
                     guard let parentContainer = containerStack.last else {
                         throw InternalError(message: "unexpected empty container stack")
@@ -104,7 +104,7 @@ extension CodableMacro {
                     let container = parentContainer.childContainer(with: pathElement)
 
                     fieldsToInitOnError.append(
-                        contentsOf: fields.filter { 
+                        contentsOf: specs.filter { 
                             $0.defaultValueOnMisMatch != nil || $0.defaultValueOnMissing != nil 
                             || ($0.propertyInfo.initializer == nil && $0.propertyInfo.hasOptionalTypeDecl)  
                         }
@@ -114,7 +114,7 @@ extension CodableMacro {
                     defer { containerStack.removeLast() }
 
                     let expr = try generateSequenceLeafDecodeBlock(
-                        fields: fields, 
+                        specs: specs, 
                         parentContainer: parentContainer, 
                         pathElement: pathElement, 
                         childSequenceDecodeItems: generateSequenceDecodeItems(from: subTree, containerStack: &containerStack).items, 
@@ -151,7 +151,7 @@ extension CodableMacro {
         container: CodingContainerName,
         requirementStrategy: RequriementStrategy,
         childDecodingItems: [CodeBlockItemSyntax],
-        fieldsToInitOnError: [CodingFieldInfo]
+        fieldsToInitOnError: [PropertyCodingSpec]
     ) throws -> [CodeBlockItemSyntax] {
 
         return try generateStandardContainerDecodeItems(
@@ -169,7 +169,7 @@ extension CodableMacro {
         pathElement: String,
         requirementStrategy: RequriementStrategy,
         childDecodingItems: [CodeBlockItemSyntax],
-        fieldsToInitOnError: [CodingFieldInfo]
+        fieldsToInitOnError: [PropertyCodingSpec]
     ) throws -> [CodeBlockItemSyntax] {
 
         return try generateStandardContainerDecodeItems(
@@ -189,7 +189,7 @@ extension CodableMacro {
         decodeStmt: CodeBlockItemSyntax,
         requirementStrategy: RequriementStrategy,
         childDecodingItems: [CodeBlockItemSyntax],
-        fieldsToInitOnError: [CodingFieldInfo]
+        fieldsToInitOnError: [PropertyCodingSpec]
     ) throws -> [CodeBlockItemSyntax] {
         var codeBlockItems = [CodeBlockItemSyntax]()
         if requirementStrategy == .always {
@@ -207,38 +207,38 @@ extension CodableMacro {
     }
 
 
-    private func generateStandardDecodeBlock(field: CodingFieldInfo, container: CodingContainerName, pathElement: String) throws -> CodeBlockItemSyntax {
+    private func generateStandardDecodeBlock(spec: PropertyCodingSpec, container: CodingContainerName, pathElement: String) throws -> CodeBlockItemSyntax {
 
         var typeExpression: ExprSyntax {
             get throws {
-                if let typeExpr = field.decodeTransform?.decodeSourceType { return typeExpr }
-                if let typeExpr = field.propertyInfo.typeExpression { return typeExpr }
-                throw .diagnostic(node: field.propertyInfo.name, message: .codingMacro.general.cannotInferType)
+                if let typeExpr = spec.decodeTransform?.decodeSourceType { return typeExpr }
+                if let typeExpr = spec.propertyInfo.typeExpression { return typeExpr }
+                throw .diagnostic(node: spec.propertyInfo.name, message: .codingMacro.general.cannotInferType)
             }
         }
 
         var doStmt = try DoStmtSyntax("do") {
             "let rawValue = \(try GenerationItems.decodeExpr(container: container, pathElement: pathElement, type: typeExpression))"
-            try makeDecodeTransformExprs(field: field, sourceVarName: "rawValue", destVarName: "value")
-            try makeValidateionExprs(field: field, varName: "value")
-            "self.\(field.propertyInfo.name) = value"
+            try makeDecodeTransformExprs(spec: spec, sourceVarName: "rawValue", destVarName: "value")
+            try makeValidateionExprs(spec: spec, varName: "value")
+            "self.\(spec.propertyInfo.name) = value"
         }
 
-        if field.requirementStrategy.allowMismatch {
+        if spec.requirementStrategy.allowMismatch {
             try doStmt.addCatchClause(errors: [GenerationItems.typeMismatchErrorExpr]) {
-                if let defaultValue = field.defaultValueOnMisMatch {
-                    "self.\(field.propertyInfo.name) = \(defaultValue)"
-                } else if field.propertyInfo.initializer == nil, field.propertyInfo.hasOptionalTypeDecl {
-                    "self.\(field.propertyInfo.name) = nil"
+                if let defaultValue = spec.defaultValueOnMisMatch {
+                    "self.\(spec.propertyInfo.name) = \(defaultValue)"
+                } else if spec.propertyInfo.initializer == nil, spec.propertyInfo.hasOptionalTypeDecl {
+                    "self.\(spec.propertyInfo.name) = nil"
                 }
             }
         }
-        if field.requirementStrategy.allowMissing {
+        if spec.requirementStrategy.allowMissing {
             try doStmt.addCatchClause(errors: [GenerationItems.valueNotFoundErrorExpr, GenerationItems.keyNotFoundErrorExpr]) {
-                if let defaultValue = field.defaultValueOnMissing {
-                    "self.\(field.propertyInfo.name) = \(defaultValue)"
-                } else if field.propertyInfo.initializer == nil, field.propertyInfo.hasOptionalTypeDecl {
-                    "self.\(field.propertyInfo.name) = nil"
+                if let defaultValue = spec.defaultValueOnMissing {
+                    "self.\(spec.propertyInfo.name) = \(defaultValue)"
+                } else if spec.propertyInfo.initializer == nil, spec.propertyInfo.hasOptionalTypeDecl {
+                    "self.\(spec.propertyInfo.name) = nil"
                 }
             }
         }
@@ -249,22 +249,22 @@ extension CodableMacro {
 
 
     private func generateSequenceLeafDecodeBlock(
-        fields: [CodingFieldInfo],
+        specs: [PropertyCodingSpec],
         parentContainer: CodingContainerName,
         pathElement: String,
         childSequenceDecodeItems: [CodeBlockItemSyntax],
-        fieldsToInitOnError: [CodingFieldInfo]
+        fieldsToInitOnError: [PropertyCodingSpec]
     ) throws -> CodeBlockItemSyntax {
 
         let container = parentContainer.childContainer(with: pathElement)
 
         var expr = try DoStmtSyntax("do") {
             GenerationItems.decodeNestedUnkeyedContainerStmt(parentContainer: parentContainer, pathElement: pathElement)
-            for field in fields {
-                if let sequenceElementCodingInfo = field.sequenceCodingFieldInfo {
+            for spec in specs {
+                if let sequenceElementCodingInfo = spec.sequenceCodingFieldInfo {
                     let typeExpr = sequenceElementCodingInfo.elementEncodedType 
                     let makeEmptyArrExpr = "\(GenerationItems.makeEmptyArrayFunctionName)(ofType: \(typeExpr))" as ExprSyntax
-                    let sequenceDecodeTempVarName = GenerationItems.sequenceCodingTempVarName(of: field.propertyInfo.name)
+                    let sequenceDecodeTempVarName = GenerationItems.sequenceCodingTempVarName(of: spec.propertyInfo.name)
                     "var \(sequenceDecodeTempVarName) = \(makeEmptyArrExpr)"
                 } else {
                     throw InternalError(message: "Expected sequence element coding info")
@@ -273,14 +273,14 @@ extension CodableMacro {
             try WhileStmtSyntax("while !\(container.varName).isAtEnd") {
                 childSequenceDecodeItems
             }
-            for field in fields {
-                if let sequenceElementCodingInfo = field.sequenceCodingFieldInfo {
-                    let sequenceDecodeTempVarName = GenerationItems.sequenceCodingTempVarName(of: field.propertyInfo.name)
+            for spec in specs {
+                if let sequenceElementCodingInfo = spec.sequenceCodingFieldInfo {
+                    let sequenceDecodeTempVarName = GenerationItems.sequenceCodingTempVarName(of: spec.propertyInfo.name)
                     try DoStmtSyntax("do") {
                         GenerationItems.makeSingleTransformStmt(source: sequenceDecodeTempVarName, transform: sequenceElementCodingInfo.decodeTransformExpr, target: "rawValue")
-                        try makeDecodeTransformExprs(field: field, sourceVarName: "rawValue", destVarName: "value")
-                        try makeValidateionExprs(field: field, varName: "value")
-                        "self.\(field.propertyInfo.name) = value"
+                        try makeDecodeTransformExprs(spec: spec, sourceVarName: "rawValue", destVarName: "value")
+                        try makeValidateionExprs(spec: spec, varName: "value")
+                        "self.\(spec.propertyInfo.name) = value"
                     }
                 } else {
                     throw InternalError(message: "Expected sequence element coding info")
@@ -291,7 +291,7 @@ extension CodableMacro {
         try addStandardCatchClauses(
             to: &expr, 
             fieldsWithDefault: fieldsToInitOnError, 
-            requirementStrategy: fields.reduce(.allowAll) { $0 | $1.requirementStrategy }
+            requirementStrategy: specs.reduce(.allowAll) { $0 | $1.requirementStrategy }
         )
 
         return .init(item: .stmt(.init(expr)))
@@ -301,7 +301,7 @@ extension CodableMacro {
 
     private func addStandardCatchClauses(
         to doStmt: inout DoStmtSyntax, 
-        fieldsWithDefault: [CodingFieldInfo], 
+        fieldsWithDefault: [PropertyCodingSpec], 
         requirementStrategy: RequriementStrategy
     ) throws {
 
@@ -321,7 +321,7 @@ extension CodableMacro {
 
 
     private func initFieldsWithDefaultCodeBlockItems(
-        _ fieldsToInitOnError: [CodingFieldInfo], 
+        _ fieldsToInitOnError: [PropertyCodingSpec], 
         type: RequriementStrategy
     ) throws -> [CodeBlockItemSyntax] {
 
@@ -330,7 +330,7 @@ extension CodableMacro {
             case .allowMissing: \.defaultValueOnMissing
             case .allowAll: throw InternalError(message: "Unexpected `.allowAll` requirement strategy when generating default value assignment")
             case .always: throw InternalError(message: "Unexpected `.always` requirement strategy when generating default value assignment")
-        } as KeyPath<CodableMacro.CodingFieldInfo, ExprSyntax?>
+        } as KeyPath<CodableMacro.PropertyCodingSpec, ExprSyntax?>
 
         return try fieldsToInitOnError.map { 
             if let defaultValue = $0[keyPath: defaultValueKeyPath] {
@@ -412,17 +412,17 @@ extension CodableMacro {
 
             }
 
-            case let .leaf(pathElement, field): do {
+            case let .leaf(pathElement, spec): do {
 
                 guard let parentContainer = containerStack.last else {
                     throw InternalError(message: "unexpected empty container stack")
                 }
 
-                if field.requirementStrategy != .always {
-                    fieldsToInitOnError.append(field)
+                if spec.requirementStrategy != .always {
+                    fieldsToInitOnError.append(spec)
                 }
 
-                let expr = try generateSequenceElementDecodeBlock(field: field, container: parentContainer, pathElement: pathElement)
+                let expr = try generateSequenceElementDecodeBlock(spec: spec, container: parentContainer, pathElement: pathElement)
                 codeBlockItems.append(expr)
 
             } 
@@ -487,7 +487,7 @@ extension CodableMacro {
             }
             try addSequenceElementCatchBlock(
                 to: &expr, 
-                fields: fieldsToInitOnError, 
+                specs: fieldsToInitOnError, 
                 requirementStrategy: requirementStrategy, 
                 containerSkipElementExpr: containerSkipElementExpr
             )
@@ -498,26 +498,26 @@ extension CodableMacro {
 
 
     private func generateSequenceElementDecodeBlock(
-        field: SequenceCodingFieldInfo,
+        spec: SequenceCodingFieldInfo,
         container: CodingContainerName,
         pathElement: String?
     ) throws -> CodeBlockItemSyntax {
 
         let containerVarName = container.varName
-        let sequenceDecodeTempVarName = GenerationItems.sequenceCodingTempVarName(of: field.propertyName)
+        let sequenceDecodeTempVarName = GenerationItems.sequenceCodingTempVarName(of: spec.propertyName)
 
         var expr = try DoStmtSyntax("do") {
             if let pathElement {
-                "let rawValue = \(GenerationItems.decodeExpr(container: container, pathElement: pathElement, type: field.elementEncodedType))"
+                "let rawValue = \(GenerationItems.decodeExpr(container: container, pathElement: pathElement, type: spec.elementEncodedType))"
             } else {
-                "let rawValue = \(GenerationItems.decodeExpr(unkeyedContainer: container, type: field.elementEncodedType))"
+                "let rawValue = \(GenerationItems.decodeExpr(unkeyedContainer: container, type: spec.elementEncodedType))"
             }
             "\(sequenceDecodeTempVarName).append(rawValue)" as CodeBlockItemSyntax
         }
 
-        if field.requirementStrategy.allowMissing {
+        if spec.requirementStrategy.allowMissing {
             try expr.addCatchClause(errors: [GenerationItems.keyNotFoundErrorExpr, GenerationItems.valueNotFoundErrorExpr]) {
-                switch field.defaultValueOnMissing {
+                switch spec.defaultValueOnMissing {
                     case .value(let value): "\(sequenceDecodeTempVarName).append(\(value))"
                     default: ""
                 }
@@ -526,9 +526,9 @@ extension CodableMacro {
                 }
             }
         }
-        if field.requirementStrategy.allowMismatch {
+        if spec.requirementStrategy.allowMismatch {
             try expr.addCatchClause(errors: [GenerationItems.typeMismatchErrorExpr]) {
-                switch field.defaultValueOnMismatch {
+                switch spec.defaultValueOnMismatch {
                     case .value(let value): "\(sequenceDecodeTempVarName).append(\(value))"
                     default: ""
                 }
@@ -545,16 +545,16 @@ extension CodableMacro {
 
     private func addSequenceElementCatchBlock(
         to doStmt: inout DoStmtSyntax,
-        fields: [SequenceCodingFieldInfo],
+        specs: [SequenceCodingFieldInfo],
         requirementStrategy: RequriementStrategy,
         containerSkipElementExpr: CodeBlockItemSyntax? = nil 
     ) throws {
 
         if requirementStrategy.allowMissing {
             try doStmt.addCatchClause(errors: [GenerationItems.keyNotFoundErrorExpr]) {
-                fields.compactMap { field in 
-                    let sequenceDecodeTempVarName = GenerationItems.sequenceCodingTempVarName(of: field.propertyName)
-                    return switch field.defaultValueOnMissing {
+                specs.compactMap { spec in 
+                    let sequenceDecodeTempVarName = GenerationItems.sequenceCodingTempVarName(of: spec.propertyName)
+                    return switch spec.defaultValueOnMissing {
                         case .value(let value): "\(sequenceDecodeTempVarName).append(\(value))"
                         default: nil 
                     }
@@ -566,9 +566,9 @@ extension CodableMacro {
         }
         if requirementStrategy.allowMismatch {
             try doStmt.addCatchClause(errors: [GenerationItems.typeMismatchErrorExpr]) {
-                fields.compactMap { field in 
-                    let sequenceDecodeTempVarName = GenerationItems.sequenceCodingTempVarName(of: field.propertyName)
-                    return switch field.defaultValueOnMismatch {
+                specs.compactMap { spec in 
+                    let sequenceDecodeTempVarName = GenerationItems.sequenceCodingTempVarName(of: spec.propertyName)
+                    return switch spec.defaultValueOnMismatch {
                         case .value(let value): "\(sequenceDecodeTempVarName).append(\(value))"
                         default: nil 
                     }
@@ -588,8 +588,8 @@ extension CodableMacro {
 // MARK: Shared Helpers
 extension CodableMacro {
 
-    fileprivate func makeDecodeTransformExprs(field: CodingFieldInfo, sourceVarName: TokenSyntax, destVarName: TokenSyntax) throws -> [CodeBlockItemSyntax] {
-        if let transformSpec = field.decodeTransform {
+    fileprivate func makeDecodeTransformExprs(spec: PropertyCodingSpec, sourceVarName: TokenSyntax, destVarName: TokenSyntax) throws -> [CodeBlockItemSyntax] {
+        if let transformSpec = spec.decodeTransform {
             transformSpec.transformExprs.enumerated().map { i, transform in
                 let localSourceVarName = i == 0 ? sourceVarName : "value\(raw: i)" as TokenSyntax
                 let localDestVarName = i == transformSpec.transformExprs.count - 1 ? destVarName : "value\(raw: i + 1)" as TokenSyntax
@@ -601,10 +601,10 @@ extension CodableMacro {
     }
 
 
-    fileprivate func makeValidateionExprs(field: CodingFieldInfo, varName: TokenSyntax) throws -> [CodeBlockItemSyntax] {
-        field.validateExprs.map { expr in
+    fileprivate func makeValidateionExprs(spec: PropertyCodingSpec, varName: TokenSyntax) throws -> [CodeBlockItemSyntax] {
+        spec.validateExprs.map { expr in
             let exprString = StringLiteralExprSyntax(content: IndentRemover().visit(expr).formatted().description)
-            return #"try \#(GenerationItems.validateFunctionName)("\#(field.propertyInfo.name)", \#(exprString), \#(varName), \#(expr))"#
+            return #"try \#(GenerationItems.validateFunctionName)("\#(spec.propertyInfo.name)", \#(exprString), \#(varName), \#(expr))"#
         }
     }
 

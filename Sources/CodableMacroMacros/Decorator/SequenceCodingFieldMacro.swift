@@ -74,20 +74,13 @@ struct SequenceCodingFieldMacro: CodingDecoratorMacro {
         .labeled("encodeTransform", canIgnore: true),
     ]
 
-    static func processProperty(
-        _ propertyInfo: PropertyInfo, 
-        macroNodes: [AttributeSyntax],
-        context: some MacroExpansionContext
+    static func extractSetting(
+        from macroNodes: [AttributeSyntax],
+        in context: some MacroExpansionContext
     ) throws(DiagnosticsError) -> Spec? {
 
-        guard !macroNodes.isEmpty else { return nil }
-        
-        guard propertyInfo.type != .computed else {
-            throw .diagnostic(node: propertyInfo.name, message: .decorator.general.attachTypeError)
-        }
-
-        guard macroNodes.count == 1 else {
-            throw .diagnostic(node: propertyInfo.name, message: .decorator.general.duplicateMacro(name: "SequenceCodingField"))
+        guard macroNodes.count < 2 else {
+            throw .diagnostics(macroNodes.map { .init(node: $0, message: .decorator.general.duplicateMacro(name: "SequenceCodingField")) })
         }
 
         guard let macroNode = macroNodes.first else { return nil } 

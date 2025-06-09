@@ -18,18 +18,13 @@ struct SingleValueCodableDelegateMacro: CodingDecoratorMacro {
         .labeled("default", canIgnore: true)
     ]
     
-    static func processProperty(
-        _ propertyInfo: PropertyInfo,
-        macroNodes: [AttributeSyntax],
-        context: some MacroExpansionContext
+    static func extractSetting(
+        from macroNodes: [AttributeSyntax],
+        in context: some MacroExpansionContext
     ) throws(DiagnosticsError) -> ExprSyntax? {
         
-        guard propertyInfo.type != .computed || macroNodes.isEmpty else {
-            throw .diagnostic(node: propertyInfo.name, message: .decorator.general.attachTypeError)
-        }
-        
         guard macroNodes.count < 2 else {
-            throw .diagnostic(node: propertyInfo.name, message: .decorator.general.duplicateMacro(name: "SingleValueCodableDelegate"))
+            throw .diagnostics(macroNodes.map { .init(node: $0, message: .decorator.general.duplicateMacro(name: "CodingField")) })
         }
         
         guard let macroNode = macroNodes.first else {

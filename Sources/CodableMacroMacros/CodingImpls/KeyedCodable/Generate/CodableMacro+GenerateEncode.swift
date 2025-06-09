@@ -47,13 +47,13 @@ extension CodableMacro {
                         childDecodingItems: children.values.flatMap { try structureDfs($0) }
                     )
 
-                case let .leaf(pathElement, field):
+                case let .leaf(pathElement, spec):
                     guard let parentContainer = containerStack.last else {
                         throw InternalError(message: "unexpected empty container stack")
                     }
-                    try items.append(generateEncodeBlock(field: field, container: parentContainer, pathElement: pathElement))
+                    try items.append(generateEncodeBlock(spec: spec, container: parentContainer, pathElement: pathElement))
 
-                case let .sequenceLeaf(pathElement, fields, _): do {
+                case let .sequenceLeaf(pathElement, specs, _): do {
 
                     guard let parentContainer = containerStack.last else {
                         throw InternalError(message: "unexpected empty container stack")
@@ -63,16 +63,16 @@ extension CodableMacro {
                     containerStack.append(unkeyedContainer)
                     defer { containerStack.removeLast() }
 
-                    items = try fields.flatMap { field in
+                    items = try specs.flatMap { spec in
                         
-                        guard let sequenceCodingElementInfo = field.sequenceCodingFieldInfo else {
-                            throw InternalError(message: "Missing sequence coding info for field with name \(field.propertyInfo.name)")
+                        guard let sequenceCodingElementInfo = spec.sequenceCodingFieldInfo else {
+                            throw InternalError(message: "Missing sequence coding info for field with name \(spec.propertyInfo.name)")
                         }
 
                         return try generateSequenceLeafEncodeItems(
                             parentContainer: parentContainer, 
                             pathElement: pathElement, 
-                            field: field, 
+                            spec: spec, 
                             sequenceEncodeItems: generateSequenceEncodeItems(
                                 sequenceElementCodingInfo: sequenceCodingElementInfo, 
                                 parentUnkeyedContainer: unkeyedContainer
@@ -172,16 +172,16 @@ extension CodableMacro {
     }
 
 
-    fileprivate func generateEncodeBlock(field: CodingFieldInfo, container: CodingContainerName, pathElement: String) throws -> CodeBlockItemSyntax {
-        if field.propertyInfo.hasOptionalTypeDecl {
-            let expr = try IfExprSyntax("if let value = self.\(field.propertyInfo.name)") {
-                try makeEncodeTransformExprs(field: field, sourceVarName: "value", destVarName: "transformedValue")
+    fileprivate func generateEncodeBlock(spec: PropertyCodingSpec, container: CodingContainerName, pathElement: String) throws -> CodeBlockItemSyntax {
+        if spec.propertyInfo.hasOptionalTypeDecl {
+            let expr = try IfExprSyntax("if let value = self.\(spec.propertyInfo.name)") {
+                try makeEncodeTransformExprs(spec: spec, sourceVarName: "value", destVarName: "transformedValue")
                 GenerationItems.encodeExpr(container: container, pathElement: pathElement, value: "transformedValue")
             }
             return .init(item: .expr(.init(expr)))
         } else {
             let expr = try DoStmtSyntax("do") {
-                try self.makeEncodeTransformExprs(field: field, sourceVarName: "self.\(field.propertyInfo.name)", destVarName: "transformedValue")
+                try self.makeEncodeTransformExprs(spec: spec, sourceVarName: "self.\(spec.propertyInfo.name)", destVarName: "transformedValue")
                 GenerationItems.encodeExpr(container: container, pathElement: pathElement, value: "transformedValue")
             }
             return .init(item: .stmt(.init(expr)))
@@ -192,18 +192,18 @@ extension CodableMacro {
     fileprivate func generateSequenceLeafEncodeItems(
         parentContainer: CodingContainerName,
         pathElement: String,
-        field: CodingFieldInfo,
+        spec: PropertyCodingSpec,
         sequenceEncodeItems: [CodeBlockItemSyntax]
     ) throws -> [CodeBlockItemSyntax] {
 
         var items = [CodeBlockItemSyntax]()
 
-        guard let sequenceCodingElementInfo = field.sequenceCodingFieldInfo else {
-            throw InternalError(message: "Missing sequence coding info for field with name \(field.propertyInfo.name)")
+        guard let sequenceCodingElementInfo = spec.sequenceCodingFieldInfo else {
+            throw InternalError(message: "Missing sequence coding info for field with name \(spec.propertyInfo.name)")
         }
 
-        let sequenceCodingTempVarName = GenerationItems.sequenceCodingTempVarName(of: field.propertyInfo.name)
-        let elementToEncodeVarName = GenerationItems.sequenceCodingElementVarName(of: field.propertyInfo.name)
+        let sequenceCodingTempVarName = GenerationItems.sequenceCodingTempVarName(of: spec.propertyInfo.name)
+        let elementToEncodeVarName = GenerationItems.sequenceCodingElementVarName(of: spec.propertyInfo.name)
 
         let transformExpr = try {
             let closure = try ClosureExprSyntax(
@@ -213,7 +213,7 @@ extension CodableMacro {
                     trailingTrivia: "\n"
                 )
             ) {
-                try makeEncodeTransformExprs(field: field, sourceVarName: "self.\(field.propertyInfo.name)", destVarName: "transformedValue")
+                try makeEncodeTransformExprs(spec: spec, sourceVarName: "self.\(spec.propertyInfo.name)", destVarName: "transformedValue")
                 "\nreturn \(GenerationItems.makeSingleTransformExpr(source: "transformedValue", transform: sequenceCodingElementInfo.encodeTransformExpr))"
             }
             return "let \(sequenceCodingTempVarName) = try \(closure)()" as CodeBlockItemSyntax
@@ -238,8 +238,8 @@ extension CodableMacro {
 
 extension CodableMacro {
 
-    fileprivate func makeEncodeTransformExprs(field: CodingFieldInfo, sourceVarName: TokenSyntax, destVarName: TokenSyntax) throws -> [CodeBlockItemSyntax] {
-        guard let transformExprs = field.encodeTransform else { 
+    fileprivate func makeEncodeTransformExprs(spec: PropertyCodingSpec, sourceVarName: TokenSyntax, destVarName: TokenSyntax) throws -> [CodeBlockItemSyntax] {
+        guard let transformExprs = spec.encodeTransform else { 
             return ["let \(destVarName) = \(sourceVarName)"] 
         }
         return transformExprs.enumerated().map { i, transform in

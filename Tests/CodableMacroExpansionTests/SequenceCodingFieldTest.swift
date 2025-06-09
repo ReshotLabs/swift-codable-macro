@@ -598,7 +598,8 @@ extension CodingExpansionTest.SequenceCodingFieldTest {
             }
             """,
             diagnostics: [
-                .init(message: .decorator.general.duplicateMacro(name: "SequenceCodingField"), line: 5, column: 9)
+                .init(message: .decorator.general.duplicateMacro(name: "SequenceCodingField"), line: 3, column: 5),
+                .init(message: .decorator.general.duplicateMacro(name: "SequenceCodingField"), line: 4, column: 5)
             ]
         )
     }
@@ -632,7 +633,7 @@ extension CodingExpansionTest.SequenceCodingFieldTest {
             }
             """,
             diagnostics: [
-                .init(message: .decorator.general.attachTypeError, line: 4, column: 9)
+                .init(message: .codingMacro.codable.codingCustomizationOnNonStoredProperty, line: 3, column: 5)
             ]
         )
     }

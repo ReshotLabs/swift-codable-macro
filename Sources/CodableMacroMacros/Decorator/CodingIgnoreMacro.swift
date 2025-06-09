@@ -18,21 +18,10 @@ struct CodingIgnoreMacro: CodingDecoratorMacro {
     static let macroArgumentsParsingRule: [ArgumentsParsingRule] = []
     
     
-    static func processProperty(
-        _ propertyInfo: PropertyInfo,
-        macroNodes: [AttributeSyntax],
-        context: some MacroExpansionContext
+    static func extractSetting(
+        from macroNodes: [AttributeSyntax],
+        in context: some MacroExpansionContext
     ) throws(DiagnosticsError) -> Void {
-        
-        guard !macroNodes.isEmpty else { return }
-        
-        guard propertyInfo.type != .computed else {
-            throw .diagnostic(node: propertyInfo.name, message: .decorator.general.attachTypeError)
-        }
-
-        if propertyInfo.initializer == nil && !propertyInfo.hasOptionalTypeDecl {
-            throw .diagnostic(node: propertyInfo.name, message: .decorator.codingIgnore.cannotBeIgnored)
-        }
 
     }
     
