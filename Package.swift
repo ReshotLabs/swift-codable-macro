@@ -13,10 +13,6 @@ let package = Package(
             name: "CodableMacro",
             targets: ["CodableMacro"]
         ),
-        .executable(
-            name: "CodableMacroClient",
-            targets: ["CodableMacroClient"]
-        ),
     ],
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "600.0.0-latest"),
@@ -38,14 +34,8 @@ let package = Package(
         // Library that exposes a macro as part of its API, which is used in client programs.
         .target(
             name: "CodableMacro",
-            dependencies: [
-                "CodableMacroMacros",
-                .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
-            ]
+            dependencies: ["CodableMacroMacros"]
         ),
-
-        // A client of the library, which is able to use the macro in its own code.
-        .executableTarget(name: "CodableMacroClient", dependencies: ["CodableMacro"]),
 
         // A test target for testing macro expansion
         .testTarget(

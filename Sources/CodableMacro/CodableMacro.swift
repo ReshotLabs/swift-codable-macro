@@ -518,8 +518,8 @@ public macro EncodeTransform<Source, Target: Encodable>(
 /// - Attention: This macro can ONLY be applied to stored properties and will raise compilation
 /// error if applied to the wrong target
 @attached(peer)
-public macro CodingTransform<each Transformer: EvenCodingTransformProtocol>(
-    _ transformers: repeat each Transformer
+public macro CodingTransform(
+    _ transformers: any EvenCodingTransformProtocol...
 ) = #externalMacro(module: "CodableMacroMacros", type: "CodingTransformMacro")
 
 

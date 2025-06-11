@@ -9,7 +9,7 @@ extension EnumCodableMacro {
         _ enumCaseCodingSettings: DiagnosticResultSequence<EnumCaseRawCodingSetting>
     ) throws(DiagnosticsError) -> DiagnosticResultSequence<KeyedCaseCodingSpec> {
 
-        return enumCaseCodingSettings.mapResult { caseInfo, setting in
+        return enumCaseCodingSettings.flatMapResult { caseInfo, setting in
 
             var defaultPayload: Payload {
                 if caseInfo.associatedValues.isEmpty {
@@ -56,7 +56,7 @@ extension EnumCodableMacro {
         _ enumCaseCodingSettings: DiagnosticResultSequence<EnumCaseRawCodingSetting>
     ) -> DiagnosticResultSequence<KeyedCaseCodingSpec> {
         
-        return enumCaseCodingSettings.mapResult { caseInfo, setting in
+        return enumCaseCodingSettings.flatMapResult { caseInfo, setting in
 
             var defaultPayload: Payload {
                 if caseInfo.associatedValues.isEmpty {
@@ -98,7 +98,7 @@ extension EnumCodableMacro {
         typeKey: TokenSyntax
     ) -> DiagnosticResultSequence<KeyedCaseCodingSpec> {
         
-        return enumCaseCodingSettings.mapResult { caseInfo, setting in
+        return enumCaseCodingSettings.flatMapResult { caseInfo, setting in
 
             func requireNoConflictWithTypeKey(
                 in objectPayloadKeys: [ObjectPayloadKey]
@@ -225,7 +225,7 @@ extension EnumCodableMacro {
         _ enumCaseCodingSettings: DiagnosticResultSequence<EnumCaseRawCodingSetting>
     ) -> DiagnosticResultSequence<EnumCaseRawCodingSetting> {
 
-        return enumCaseCodingSettings.mapResult { caseInfo, setting in
+        return enumCaseCodingSettings.flatMapResult { caseInfo, setting in
             if setting != nil {
                 .failure(.diagnostic(node: caseInfo.name, message: .codingMacro.enumCodable.unexpectedCustomizationInRawValueEnumCoding()))
             } else {
@@ -261,7 +261,7 @@ extension EnumCodableMacro {
                 }
             }
 
-        return enumCaseCodingSpecs.mapResult { spec in
+        return enumCaseCodingSpecs.flatMapResult { spec in
             
             if let conflictedSpecCaseNames = keyDuplicationInfo[spec] {
                 return .failure(.diagnostic(
@@ -298,7 +298,7 @@ extension EnumCodableMacro {
                 }
             }
 
-        return enumCaseUnkeyedCodingSpecs.mapResult { spec in
+        return enumCaseUnkeyedCodingSpecs.flatMapResult { spec in
             guard case .rawValue(_, let value) = spec.payload else { return .success(spec) }
             if let conflictedSpecCaseNames = rawValueDuplicationInfo[spec] {
                 return .failure(.diagnostic(

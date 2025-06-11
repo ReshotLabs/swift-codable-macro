@@ -37,14 +37,15 @@ public func codingTransformPassThroughWithTypeInference<Transformer: EvenCodingT
 
 
 /// Error thrown during transformation process
-public struct CodingTransformError<T: EvenCodingTransformProtocol>: LocalizedError {
-    /// The type responsible for the transformation process
-    public let transformerType: T.Type
+public struct CodingTransformError<T: EvenCodingTransformProtocol>: LocalizedError, Sendable {
     /// Error message
     public let message: String
     public var errorDescription: String? { message }
+    /// The type responsible for the transformation process
+    public var transformerType: T.Type {
+        T.self
+    }
     public init(transformerType: T.Type, message: String) {
-        self.transformerType = transformerType
         self.message = message
     }
 }

@@ -1134,7 +1134,7 @@ extension CodingExpansionTest.EnumCodableUnkeyedTest {
             """,
             diagnostics: [
                 .init(
-                    message: .decorator.general.notLiteral(), 
+                    message: .syntaxInfo.literalValue.notLiteral(), 
                     line: 3, 
                     column: 45
                 )

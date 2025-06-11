@@ -151,10 +151,19 @@ func mapDiagnosticResults<each R, T>(_ results: repeat DiagnosticResult<each R>,
 }
 
 
+func captureDiagnostics<T>(_ operation: () throws(DiagnosticsError) -> T) -> DiagnosticResult<T> {
+    do throws(DiagnosticsError) {
+        return try .success(operation())
+    } catch {
+        return .failure(error)
+    }
+}
+
+
 
 extension DiagnosticResultSequence {
 
-    func collectDiagnostics<T>() -> [Diagnostic] where Element == DiagnosticResult<T> {
+    func filterDiagnostics<T>() -> [Diagnostic] where Element == DiagnosticResult<T> {
         var diagnostics: [Diagnostic] = []
         for result in self {
             if case .failure(let error) = result {
@@ -165,7 +174,7 @@ extension DiagnosticResultSequence {
     }
 
 
-    func collectResults<T>() -> [T] where Element == DiagnosticResult<T>  {
+    func filterResults<T>() -> [T] where Element == DiagnosticResult<T>  {
         var results: [T] = []
         for result in self {
             if case .success(let value) = result {
@@ -176,7 +185,7 @@ extension DiagnosticResultSequence {
     }
 
 
-    func mapResult<ResultIn, ResultOut>(
+    func flatMapResult<ResultIn, ResultOut>(
         _ operation: (ResultIn) -> DiagnosticResult<ResultOut>
     ) -> DiagnosticResultSequence<ResultOut> where Element == DiagnosticResult<ResultIn> {
         return self.map { result in
@@ -190,12 +199,26 @@ extension DiagnosticResultSequence {
     }
 
 
+    func mapResult<ResultIn, ResultOut>(
+        _ operation: (ResultIn) -> ResultOut
+    ) -> DiagnosticResultSequence<ResultOut> where Element == DiagnosticResult<ResultIn> {
+        return self.map { result in
+            switch result {
+            case .success(let value):
+                return .success(operation(value))
+            case .failure(let error):
+                return .failure(error)
+            }
+        }
+    }
+
+
     func apply<T>(_ operation: (Self) -> Self) -> Self where Element == DiagnosticResult<T> {
         return operation(self)
     }
 
 
-    func throwDiagnosticsAsError<T>() throws(DiagnosticsError) -> [T] where Element == DiagnosticResult<T> {
+    func getResults<T>() throws(DiagnosticsError) -> [T] where Element == DiagnosticResult<T> {
         var results: [T] = []
         var errors: [Diagnostic] = []
         for result in self {

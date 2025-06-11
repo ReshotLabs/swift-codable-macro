@@ -97,8 +97,8 @@ extension CodableMacro {
 
     func extractPropertyCodingSpecList() throws(DiagnosticsError) -> [PropertyCodingSpec] {
         try declGroup.properties
-            .map(extractCodingFieldInfo(from:))
-            .throwDiagnosticsAsError()
+            .map(extractPropertyCodingSpec(from:))
+            .getResults()
             .filter { $0.propertyInfo.type != .computed }
     }
 
@@ -107,28 +107,25 @@ extension CodableMacro {
         from codingFieldDecorators: [AttributeSyntax],
         onTarget property: PropertyInfo
     ) -> DiagnosticResult<(path: [String], defaultValueOnMissing: ExprSyntax?, defaultValueOnMismatch: ExprSyntax?)> {
-        do throws(DiagnosticsError) {
+        captureDiagnostics { () throws(DiagnosticsError) in
             if codingFieldDecorators.isNotEmpty, property.type == .computed {
                 throw .diagnostics(codingFieldDecorators.map { .init(node: $0, message: .codingMacro.codable.codingCustomizationOnNonStoredProperty) })
             }
-            let codingFieldSpec = try CodingFieldMacro.extractSetting(from: codingFieldDecorators, in: context)
+            let codingFieldSetting = try CodingFieldMacro.extractSetting(from: codingFieldDecorators, in: context)
             if 
-                let defaultValue = codingFieldSpec?.defaultValueOnMissing ?? codingFieldSpec?.defaultValueOnMismatch, 
+                let defaultValue = codingFieldSetting?.defaultValueOnMissing ?? codingFieldSetting?.defaultValueOnMismatch, 
                 property.initializer != nil,
                 property.type == .constant 
             {
                 throw .diagnostic(node: defaultValue, message: .codingMacro.codable.defaultValueOnConstantwithInitializer)
             }
-            return .success(
-                codingFieldSpec
-                    .map { path, onMissing, onMismatch in
-                        (path: path ?? [property.nameStr], defaultValueOnMissing: onMissing, defaultValueOnMismatch: onMismatch)
-                    }.orElse {
-                        (path: [property.nameStr], defaultValueOnMissing: nil, defaultValueOnMismatch: nil)
-                    }
-                )
-        } catch {
-            return .failure(error)
+            return codingFieldSetting
+                .map { path, onMissing, onMismatch in
+                    (path: path ?? [property.nameStr], defaultValueOnMissing: onMissing, defaultValueOnMismatch: onMismatch)
+                }
+                .orElse {
+                    (path: [property.nameStr], defaultValueOnMissing: nil, defaultValueOnMismatch: nil)
+                }
         }
     }
 
@@ -140,16 +137,28 @@ extension CodableMacro {
         onTarget property: PropertyInfo
     ) -> DiagnosticResult<(encodeTransforms: [ExprSyntax]?, decodeTransformSpec: DecodeTransformSpec?)> {
 
-        do throws(DiagnosticsError) {
+        captureDiagnostics { () throws(DiagnosticsError) in
+
+            var targetDiagnostics: [Diagnostic] = []
 
             if encodeTransformDecorators.isNotEmpty, property.type == .computed {
-                throw .diagnostics(encodeTransformDecorators.map { .init(node: $0, message: .codingMacro.codable.codingCustomizationOnNonStoredProperty) })
+                targetDiagnostics.append(contentsOf:
+                    encodeTransformDecorators.map { .init(node: $0, message: .codingMacro.codable.codingCustomizationOnNonStoredProperty) }
+                )
             }
             if decodeTransformDecorators.isNotEmpty, property.type == .computed {
-                throw .diagnostics(decodeTransformDecorators.map { .init(node: $0, message: .codingMacro.codable.codingCustomizationOnNonStoredProperty) })
+                targetDiagnostics.append(contentsOf: 
+                    decodeTransformDecorators.map { .init(node: $0, message: .codingMacro.codable.codingCustomizationOnNonStoredProperty) }
+                )
             }
             if codingTransformDecorators.isNotEmpty, property.type == .computed {
-                throw .diagnostics(codingTransformDecorators.map { .init(node: $0, message: .codingMacro.codable.codingCustomizationOnNonStoredProperty) })
+                targetDiagnostics.append(contentsOf: 
+                    codingTransformDecorators.map { .init(node: $0, message: .codingMacro.codable.codingCustomizationOnNonStoredProperty) }
+                )
+            }
+
+            guard targetDiagnostics.isEmpty else {
+                throw .diagnostics(targetDiagnostics)
             }
 
             if codingTransformDecorators.isNotEmpty {
@@ -179,39 +188,35 @@ extension CodableMacro {
             let encodeTransforms: [ExprSyntax]?
             let decodeTransformSpec: DecodeTransformSpec?
             
-            if let specs = try CodingTransformMacro.extractSetting(from: codingTransformDecorators, in: context) {
-                decodeTransformSpec = .init(decodeSourceType: specs.decodeSourceType, transformExprs: specs.decodeTransforms)
-                encodeTransforms = specs.encodeTransforms
+            if let settings = try CodingTransformMacro.extractSetting(from: codingTransformDecorators, in: context) {
+                decodeTransformSpec = .init(decodeSourceType: settings.decodeSourceType, transformExprs: settings.decodeTransforms)
+                encodeTransforms = settings.encodeTransforms
             } else {
-                if let decodeSpec = try DecodeTransformMacro.extractSetting(from: decodeTransformDecorators, in: context) {
-                    decodeTransformSpec = .init(decodeSourceType: decodeSpec.decodeSourceType, transformExprs: [decodeSpec.transforms])
+                if let decodeSetting = try DecodeTransformMacro.extractSetting(from: decodeTransformDecorators, in: context) {
+                    decodeTransformSpec = .init(decodeSourceType: decodeSetting.decodeSourceType, transformExprs: [decodeSetting.transforms])
                 } else {
                     decodeTransformSpec = nil
                 }
-                if let encodeTransform = try EncodeTransformMacro.extractSetting(from: encodeTransformDecorators, in: context) {
-                    encodeTransforms = [encodeTransform]
+                if let encodeTransformSetting = try EncodeTransformMacro.extractSetting(from: encodeTransformDecorators, in: context) {
+                    encodeTransforms = [encodeTransformSetting]
                 } else {
                     encodeTransforms = nil
                 }
             }
 
-            return .success((encodeTransforms: encodeTransforms, decodeTransformSpec: decodeTransformSpec))
+            return (encodeTransforms, decodeTransformSpec)
 
-        } catch {
-            return .failure(error)
         }
 
     }
 
 
     private func extractCodingValidationSpec(from codingValidateDecorators: [AttributeSyntax]) -> DiagnosticResult<[ExprSyntax]> {
-        do throws(DiagnosticsError) {
+        captureDiagnostics { () throws(DiagnosticsError) in
             if codingValidateDecorators.isNotEmpty, declGroup.properties.contains(where: { $0.type == .computed }) {
                 throw .diagnostics(codingValidateDecorators.map { .init(node: $0, message: .codingMacro.codable.codingCustomizationOnNonStoredProperty) })
             }
-            return try .success(CodingValidateMacro.extractSetting(from: codingValidateDecorators, in: context))
-        } catch {
-            return .failure(error)
+            return try CodingValidateMacro.extractSetting(from: codingValidateDecorators, in: context)
         }
     }
 
@@ -220,33 +225,29 @@ extension CodableMacro {
         from sequenceCodingFieldDecorators: [AttributeSyntax],
         onTarget property: PropertyInfo
     ) -> DiagnosticResult<SequenceCodingFieldInfo?> {
-        do throws(DiagnosticsError) {
+        captureDiagnostics { () throws(DiagnosticsError) in
             if sequenceCodingFieldDecorators.isNotEmpty, declGroup.properties.contains(where: { $0.type == .computed }) {
                 throw .diagnostics(sequenceCodingFieldDecorators.map { 
                     .init(node: $0, message: .codingMacro.codable.codingCustomizationOnNonStoredProperty) 
                 })
             }
-            return try .success(
-                SequenceCodingFieldMacro.extractSetting(from: sequenceCodingFieldDecorators, in: context)
-                    .map {
-                        .init(
-                            propertyName: property.name,
-                            path: $0.path, 
-                            elementEncodedType: $0.elementEncodedType, 
-                            defaultValueOnMissing: $0.defaultValueOnMissing, 
-                            defaultValueOnMismatch: $0.defaultValueOnMismatch, 
-                            decodeTransformExpr: $0.decodeTransformExpr,
-                            encodeTransformExpr: $0.encodeTransformExpr
-                        )
-                    }
-            )
-        } catch {
-            return .failure(error)
+            return try SequenceCodingFieldMacro.extractSetting(from: sequenceCodingFieldDecorators, in: context)
+                .map {
+                    .init(
+                        propertyName: property.name,
+                        path: $0.path,
+                        elementEncodedType: $0.elementEncodedType,
+                        defaultValueOnMissing: $0.defaultValueOnMissing,
+                        defaultValueOnMismatch: $0.defaultValueOnMismatch,
+                        decodeTransformExpr: $0.decodeTransformExpr,
+                        encodeTransformExpr: $0.encodeTransformExpr
+                    )
+                }
         }
     }
     
     
-    private func extractCodingFieldInfo(from property: PropertyInfo) -> DiagnosticResult<PropertyCodingSpec> {
+    private func extractPropertyCodingSpec(from property: PropertyInfo) -> DiagnosticResult<PropertyCodingSpec> {
         
         // Find and group all the decorator macros supported
         let attributes = gatherSupportedDecorators(in: property.attributes)

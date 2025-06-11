@@ -115,12 +115,6 @@ extension DiagnosticMessage where Self == CodingDecoratorMacroDiagnosticMessage 
 
 enum GeneralCodingDecoratorMacroDiagnosticMessage {
     
-    static let attachTypeError: CodingDecoratorMacroDiagnosticMessage = .init(
-        id: "attach_type_error",
-        message: "The Decorator macro for custom Coding can only be applied to stored properties",
-        severity: .error
-    )
-    
     static func missingArgument(_ argumentName: String, isInternal: Bool = true) -> CodingDecoratorMacroDiagnosticMessage {
         .init(
             id: "missing_argument_\(argumentName)",
@@ -146,35 +140,6 @@ enum GeneralCodingDecoratorMacroDiagnosticMessage {
             message: "A stored property should have at most one \(name) macro",
             severity: .error
         )
-    }
-    
-    
-    static func conflictDecorators(_ decorators: [String]) -> CodingDecoratorMacroDiagnosticMessage {
-        .init(
-            id: "conflicting_decorators",
-            message: "\(decorators.joined(separator: ", ")) cannot be used together",
-            severity: .error
-        )
-    }
-
-    static func notLiteral() -> CodingDecoratorMacroDiagnosticMessage {
-        .init(
-            id: "not_literal",
-            message: "Expect a literal value",
-            severity: .error
-        )
-    }
-
-    static func notStaticStringLiteral() -> CodingDecoratorMacroDiagnosticMessage {
-        .init(
-            id: "not_static_string_literal",
-            message: "Expect a static string literal without interpolation",
-            severity: .error
-        )
-    }
-
-    static func notRawTypeExpr() -> CodingDecoratorMacroDiagnosticMessage {
-        .init(id: "not_raw_type_expr", message: "Expect <Type>.self format", severity: .error)
     }
     
 }

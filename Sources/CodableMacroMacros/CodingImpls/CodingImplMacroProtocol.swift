@@ -24,7 +24,7 @@ protocol CodingMacroImplProtocol: ExtensionMacro, MemberMacro {
         context: MacroExpansionContext
     ) throws
     
-    func makeExtensionHeader() throws -> SyntaxNodeString
+    func makeConformingProtocols() throws -> [TypeSyntax]
     
     func makeDecls() throws -> [DeclSyntax]
     
@@ -59,12 +59,14 @@ extension CodingMacroImplProtocol {
         conformingTo protocols: [TypeSyntax],
         in context: some MacroExpansionContext
     ) throws -> [ExtensionDeclSyntax] {
+        
         guard let attachType = CodingMacroImplBase.AttachedType(from: declaration) else {
             throw .diagnostic(node: declaration, message: .codingMacro.general.attachType(of: self))
         }
         guard supportedAttachedTypes.contains(attachType) else {
             throw .diagnostic(node: declaration, message: .codingMacro.general.attachType(of: self))
         }
+        
         let expander: Self
         do {
             expander = try Self.init(macroNode: node, declGroup: declaration, context: context)
@@ -76,7 +78,14 @@ extension CodingMacroImplProtocol {
                 default: throw error
             }
         }
-        let extensionHeader = try expander.makeExtensionHeader()
+        
+        let conformingTypes = try expander.makeConformingProtocols()
+        let extensionHeader = if conformingTypes.isEmpty {
+            "extension \(type)"
+        } else {
+            "extension \(type): \(raw: conformingTypes.map(\.trimmedDescription).joined(separator: ", "))"
+        } as SyntaxNodeString
+        
         return switch attachType {
             case .actor, .class: [
                 try .init(extensionHeader, membersBuilder: {})
@@ -87,6 +96,7 @@ extension CodingMacroImplProtocol {
                 }
             ]
         }
+        
     }
 
 

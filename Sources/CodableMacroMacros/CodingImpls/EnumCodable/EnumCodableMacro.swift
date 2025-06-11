@@ -40,8 +40,8 @@ final class EnumCodableMacro: CodingMacroImplBase, CodingMacroImplProtocol {
     }
 
 
-    func makeExtensionHeader() throws -> SyntaxNodeString {
-        return "extension \(declGroup.name.trimmed): EnumCodableProtocol"
+    func makeConformingProtocols() throws -> [TypeSyntax] {
+        return ["EnumCodableProtocol"]
     }
 
 
@@ -53,14 +53,10 @@ final class EnumCodableMacro: CodingMacroImplBase, CodingMacroImplProtocol {
 
         // extract user-defined custom coding setting for each enum case
         let enumCaseCodingSettings = declGroup.enumCases
-            .map { enumCase in 
-                let enumCaseCodingMacroNodes = enumCase.attributes.filter { 
-                    ($0.attributeName.as(IdentifierTypeSyntax.self)?.name.trimmed.text).flatMap(DecoratorMacros.init(rawValue:)) == .enumCaseCoding 
-                }
-                do throws(DiagnosticsError) {
-                    return try .success((enumCase, EnumCaseCodingMacro.extractSetting(from: enumCaseCodingMacroNodes, in: context)))
-                } catch {
-                    return .failure(error)
+            .map { enumCase in
+                let enumCaseCodingMacroNodes = gatherSupportedDecorators(in: enumCase.attributes)[.enumCaseCoding, default: []]
+                return captureDiagnostics { () throws(DiagnosticsError) in
+                    try (enumCase, EnumCaseCodingMacro.extractSetting(from: enumCaseCodingMacroNodes, in: context))
                 }
             }.apply(validateSettings) as DiagnosticResultSequence<EnumCaseRawCodingSetting>
 
@@ -71,22 +67,22 @@ final class EnumCodableMacro: CodingMacroImplBase, CodingMacroImplProtocol {
 
             switch enumCodableOption {
                 case .externalKeyed:
-                    let caseCodingSpecList = try extractCodingSpecForExternalKeyed(enumCaseCodingSettings).throwDiagnosticsAsError()
+                    let caseCodingSpecList = try extractCodingSpecForExternalKeyed(enumCaseCodingSettings).getResults()
                     generator = ExternalKeyedGenerator(caseCodingSpecList: caseCodingSpecList)
                 case .adjucentKeyed(let typeKey, let payloadKey):
                     guard typeKey.text != payloadKey.text else {
                         throw .diagnostic(node: macroNode.rawSyntax, message: .codingMacro.enumCodable.conflictedTypeAndPayloadKeys())
                     }
-                    let caseCodingSpecList = try extractCodingSpecForAdjucentKeyed(enumCaseCodingSettings).throwDiagnosticsAsError()
+                    let caseCodingSpecList = try extractCodingSpecForAdjucentKeyed(enumCaseCodingSettings).getResults()
                     generator = AdjucentKeyedGenerator(caseCodingSpecList: caseCodingSpecList, typeKey: typeKey, payloadKey: payloadKey)
                 case .internalKeyed(let typeKey):
-                    let caseCodingSpecList = try extractCodingSpecForInternalKeyed(enumCaseCodingSettings, typeKey: typeKey).throwDiagnosticsAsError()
+                    let caseCodingSpecList = try extractCodingSpecForInternalKeyed(enumCaseCodingSettings, typeKey: typeKey).getResults()
                     generator = InternalKeyedGenerator(caseCodingSpecList: caseCodingSpecList, typeKey: typeKey)
                 case .unkeyed:
-                    let caseCodingSpecList = try extractCodingSpecForUnKeyed(enumCaseCodingSettings).throwDiagnosticsAsError()
+                    let caseCodingSpecList = try extractCodingSpecForUnKeyed(enumCaseCodingSettings).getResults()
                     generator = UnkeyedGenerator(caseCodingSpecList: caseCodingSpecList)
                 case .rawValueCoded:
-                    _ = try validateSettingsForRawValueCoded(enumCaseCodingSettings).throwDiagnosticsAsError()
+                    _ = try validateSettingsForRawValueCoded(enumCaseCodingSettings).getResults()
                     generator = RawValueCodedGenerator()
             }
 
@@ -109,7 +105,7 @@ extension EnumCodableMacro {
     fileprivate func validateSettings(
         _ rawSettings: DiagnosticResultSequence<EnumCaseRawCodingSetting>
     ) -> DiagnosticResultSequence<EnumCaseRawCodingSetting> {
-        return rawSettings.mapResult { caseInfo, setting in
+        return rawSettings.flatMapResult { caseInfo, setting in
             if let diagnostic = validateSetting(setting, onTarget: caseInfo) {
                 return .failure(.diagnostics([diagnostic]))
             } else {

@@ -48,11 +48,11 @@ final class SingleValueCodableMacro: CodingMacroImplBase, CodingMacroImplProtoco
     }
     
     
-    func makeExtensionHeader() throws -> SyntaxNodeString {
+    func makeConformingProtocols() throws -> [TypeSyntax] {
         if inherit {
-            "extension \(declGroup.name.trimmed): InheritedSingleValueCodableProtocol"
+            ["InheritedSingleValueCodableProtocol"]
         } else {
-            "extension \(declGroup.name.trimmed): SingleValueCodableProtocol"
+            ["SingleValueCodableProtocol"]
         }
     }
     
@@ -63,13 +63,15 @@ final class SingleValueCodableMacro: CodingMacroImplBase, CodingMacroImplProtoco
             .compactMap { propertyInfo in
                 let delegateAttributes = gatherSupportedDecorators(in: propertyInfo.attributes)[.singleValueCodableDelegate, default: []]
                 guard !delegateAttributes.isEmpty else { return nil as DiagnosticResult<(PropertyInfo, ExprSyntax?)>? }
-                guard propertyInfo.type != .computed else {
-                    return .failure(.diagnostic(node: propertyInfo.name, message: .decorator.general.attachTypeError))
+                return captureDiagnostics { () throws(DiagnosticsError) in
+                    guard propertyInfo.type != .computed else {
+                        throw .diagnostic(node: propertyInfo.name, message: .codingMacro.singleValueCodable.delegateDecoratorOnNonStoredProperty)
+                    }
+                    let defaultValue = try SingleValueCodableDelegateMacro.extractSetting(from: delegateAttributes, in: context)
+                    return (propertyInfo, defaultValue)
                 }
-                let defaultValue = try SingleValueCodableDelegateMacro.extractSetting(from: delegateAttributes, in: context)
-                return .success((propertyInfo, defaultValue))
             }
-            .throwDiagnosticsAsError() as [(PropertyInfo, ExprSyntax?)]
+            .getResults() as [(PropertyInfo, ExprSyntax?)]
         
         guard delegateProperties.count < 2 else {
             throw .diagnostic(node: declGroup.name, message: .codingMacro.singleValueCodable.multipleDelegates)
@@ -90,6 +92,11 @@ final class SingleValueCodableMacro: CodingMacroImplBase, CodingMacroImplProtoco
         static let multipleDelegates: CodingMacroImplBase.Error = .init(
             id: "multiple_delegates",
             message: "A Type for SingleValueCodable should has no more than one stored property with SingleValueCodableDelegate"
+        )
+
+        static let delegateDecoratorOnNonStoredProperty: CodingMacroImplBase.Error = .init(
+            id: "delegate_decorator_on_non_stored_property",
+            message: "SingleValueCodableDelegate can only be attached to stored properties"
         )
         
         static let unhandledRequiredProperties: CodingMacroImplBase.Error = .init(

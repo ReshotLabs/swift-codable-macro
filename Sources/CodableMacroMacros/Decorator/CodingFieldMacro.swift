@@ -44,12 +44,6 @@ struct CodingFieldMacro: CodingDecoratorMacro {
         
         let (pathElements, defaultValueOnMissing, defaultValueOnMismatch) = try extractPathAndDefault(from: macroRawArguments)
         
-        // if let defaultValue = defaultValueOnMissing ?? defaultValueOnMismatch, 
-        //    property.initializer != nil, property.type == .constant 
-        // {
-        //     throw .diagnostic(node: defaultValue, message: .decorator.codingField.defaultValueOnConstantwithInitializer)
-        // }
-        
         return (pathElements, defaultValueOnMissing, defaultValueOnMismatch)
         
     }
@@ -62,21 +56,21 @@ struct CodingFieldMacro: CodingDecoratorMacro {
         let arguments = try macroArguments.grouped(with: macroArgumentsParsingRule)
         
         let pathElements = if arguments[0].isEmpty {
-            nil as [String]?
+            nil
         } else {
-            arguments[0].compactMap {
-                $0.expression.as(StringLiteralExprSyntax.self)?.segments.description
-            }
-        }
+            arguments[0].map { arg in
+                (arg.expression.as(StringLiteralExprSyntax.self))
+                    .map { .success($0.segments.description) }
+                    .orElse {
+                        .failure(.diagnostic(node: arg.expression, message: .decorator.codingField.pathElementNotStringLiteral))
+                    }
+            } 
+        } as DiagnosticResultSequence<String>?
         let defaultValue = arguments[1].first?.expression
         let onMissing = arguments[2].first?.expression ?? defaultValue
         let onMismatch = arguments[3].first?.expression ?? defaultValue
         
-        guard (pathElements?.count ?? 0) == arguments[0].count else {
-            throw .diagnostic(node: macroArguments, message: .decorator.codingField.notStringLiteral)
-        }
-        
-        return (pathElements, onMissing, onMismatch)
+        return (try pathElements?.getResults(), onMissing, onMismatch)
         
     }
     
@@ -86,15 +80,9 @@ struct CodingFieldMacro: CodingDecoratorMacro {
 extension CodingFieldMacro {
     
     enum CodingFieldMacroError {
-        static let notStringLiteral: CodingDecoratorMacroDiagnosticMessage = .init(
-            id: "no_string_literal",
-            message: "The path can be specified using string literal",
-            severity: .error
-        )
-        static let defaultValueOnConstantwithInitializer: CodingDecoratorMacroDiagnosticMessage = .init(
-            id: "default_value_on_constant_with_initializer",
-            message: "Default value cannot be specified on a constant with an initializer",
-            severity: .error
+        static let pathElementNotStringLiteral: CodingDecoratorMacroDiagnosticMessage = .init(
+            id: "path_element_not_string_literal",
+            message: "The path can only be specified using string literal"
         )
     }
     

@@ -50,11 +50,9 @@ final class CodableMacro: CodingMacroImplBase, CodingMacroImplProtocol {
         }
         try super.init(macroNode: macroNode, declGroup: declGroup, context: context)
     }
-    
-    
-    func makeExtensionHeader() throws -> SyntaxNodeString {
-        let comformanceClaude = (inherit ? "" : ": Codable") as SyntaxNodeString
-        return "extension \(declGroup.name.trimmed)\(comformanceClaude)"
+
+    func makeConformingProtocols() throws -> [TypeSyntax] {
+        return inherit ? [] : ["Codable"]
     }
     
     

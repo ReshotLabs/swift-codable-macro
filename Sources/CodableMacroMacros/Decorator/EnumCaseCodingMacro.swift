@@ -80,6 +80,8 @@ struct EnumCaseCodingMacro: CodingDecoratorMacro {
         if let rawValueArg = macroArguments[3].first {
             // @EnumCaseCoding(unKeyedRawValuePayload:type:)
 
+            let rawValueLiteral = try LiteralValue(from: rawValueArg.expression)
+
             let type = try (macroArguments[4].first?.expression)
                 .flatMap { typeExpr throws(DiagnosticsError) in 
                     if let memberAccessExpr = typeExpr.as(MemberAccessExprSyntax.self), memberAccessExpr.declName.baseName.trimmed.text == "self" {
@@ -87,25 +89,14 @@ struct EnumCaseCodingMacro: CodingDecoratorMacro {
                     } else {
                         throw .diagnostic(
                             node: typeExpr, 
-                            message: .decorator.general.notRawTypeExpr()
+                            message: .codingMacro.enumCodable.unkeyedRawValueTypeNotTypeIdentifierSyntax()
                         )
                     }
-                }.orElse { () throws(DiagnosticsError) in 
-                    if rawValueArg.expression.is(StringLiteralExprSyntax.self) {
-                        "String"
-                    } else if rawValueArg.expression.is(IntegerLiteralExprSyntax.self) {
-                        "Int"
-                    } else if rawValueArg.expression.is(FloatLiteralExprSyntax.self) {
-                        "Double"
-                    } else {
-                        throw .diagnostic(
-                            node: rawValueArg.expression, 
-                            message: .decorator.general.notLiteral()
-                        )
-                    }
+                }.orElse {
+                    .init(TypeExprSyntax(type: rawValueLiteral.type))
                 }
 
-            return try .unkeyed(.rawValue(type: type, value: .init(from: rawValueArg.expression)), rawSyntax: macroRawArguments)
+            return .unkeyed(.rawValue(type: type, value: rawValueLiteral), rawSyntax: macroRawArguments)
 
         }
 

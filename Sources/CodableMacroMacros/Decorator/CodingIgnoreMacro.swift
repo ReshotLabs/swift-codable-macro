@@ -25,18 +25,4 @@ struct CodingIgnoreMacro: CodingDecoratorMacro {
 
     }
     
-    
-    enum Error {
-        static let cannotBeIgnored: CodingDecoratorMacroDiagnosticMessage = .init(
-            id: "can_not_be_ignored",
-            message: "The property can only be ignored when it has a default value or is optional",
-            severity: .error
-        )
-    }
-    
-}
-
-
-extension CodingDecoratorMacroDiagnosticMessageGroup {
-    static var codingIgnore: CodingIgnoreMacro.Error.Type { CodingIgnoreMacro.Error.self }
 }

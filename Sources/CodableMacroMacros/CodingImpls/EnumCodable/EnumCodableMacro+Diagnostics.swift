@@ -81,6 +81,10 @@ extension EnumCodableMacro {
             .init(id: "empty_payload_setting_on_case_with_associated_values", message: "Empty payload setting is not supported on cases with associated values")
         }
 
+        static func unkeyedRawValueTypeNotTypeIdentifierSyntax() -> CodingMacroImplBase.Error {
+            .init(id: "unkeyed_raw_value_type_not_type_identifier_syntax", message: "Unkeyed raw value type must be specified with SomeType.self format")
+        }
+
     }
 
 }
