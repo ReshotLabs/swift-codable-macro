@@ -117,7 +117,7 @@ extension EnumCodableMacro {
                             }
                             provider = Syntax(caseInfo.associatedValues[index].type)
                     }
-                    return .diagnostic(node: provider,message: .codingMacro.enumCodable.objectKeyConflictedWithTypeKey())
+                    return .diagnostic(node: provider,message: .codingMacro.enumCodable.objectKeyConflictedWithCaseFieldName())
                 }
                 return nil 
             }

@@ -151,8 +151,8 @@ extension EnumCodableMacro {
     enum EnumCodableOption: Sendable, CustomStringConvertible {
 
         case externalKeyed
-        case adjucentKeyed(typeKey: TokenSyntax = "type", payloadKey: TokenSyntax = "payload")
-        case internalKeyed(typeKey: TokenSyntax = "type")
+        case adjucentKeyed(caseField: TokenSyntax = "type", payloadField: TokenSyntax = "payload")
+        case internalKeyed(caseField: TokenSyntax = "type")
         case unkeyed
         case rawValueCoded
 
@@ -172,8 +172,8 @@ extension EnumCodableMacro {
 
                 switch memberAccessExpr.declName.baseName.trimmed.text {
                     case "externalKeyed": self = .externalKeyed
-                    case "adjucentKeyed": self = .adjucentKeyed(typeKey: "type", payloadKey: "payload")
-                    case "internalKeyed": self = .internalKeyed(typeKey: "type")
+                    case "adjucentKeyed": self = .adjucentKeyed(caseField: "case", payloadField: "payload")
+                    case "internalKeyed": self = .internalKeyed(caseField: "case")
                     case "unkeyed": self = .unkeyed
                     case "rawValueCoded": self = .rawValueCoded
                     default: throw .diagnostic(
@@ -187,16 +187,16 @@ extension EnumCodableMacro {
                 switch functionCallExpr.calledExpression.as(MemberAccessExprSyntax.self)?.declName.baseName.trimmed.text {
                     case "adjucentKeyed": do {
                         let arguments = try functionCallExpr.arguments.grouped(
-                            with: [.labeled("typeKey", canIgnore: true), .labeled("payloadKey", canIgnore: true)]
+                            with: [.labeled("caseField", canIgnore: true), .labeled("payloadField", canIgnore: true)]
                         )
                         let typeKey = (arguments[0].first?.expression.as(StringLiteralExprSyntax.self)?.segments).map { "\($0)" as TokenSyntax }
                         let payloadKey = (arguments[1].first?.expression.as(StringLiteralExprSyntax.self)?.segments).map { "\($0)" as TokenSyntax }
-                        self = .adjucentKeyed(typeKey: typeKey ?? "type", payloadKey: payloadKey ?? "payload")
+                        self = .adjucentKeyed(caseField: typeKey ?? "case", payloadField: payloadKey ?? "payload")
                     }
                     case "internalKeyed": do {
-                        let arguments = try functionCallExpr.arguments.grouped(with: [.labeled("typeKey", canIgnore: true)])
+                        let arguments = try functionCallExpr.arguments.grouped(with: [.labeled("caseField", canIgnore: true)])
                         let typeKey = (arguments[0].first?.expression.as(StringLiteralExprSyntax.self)?.segments).map { "\($0)" as TokenSyntax }
-                        self = .internalKeyed(typeKey: typeKey ?? "type")
+                        self = .internalKeyed(caseField: typeKey ?? "case")
                     }
                     default: throw .diagnostic(
                         node: expr, 

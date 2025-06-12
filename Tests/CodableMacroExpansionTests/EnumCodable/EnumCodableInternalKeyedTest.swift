@@ -45,11 +45,11 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
 
             extension Test: EnumCodableProtocol {
                 enum $__coding_keys_root: String, CodingKey {
-                    case ktype = "type"
+                    case kcase = "case"
                 }
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(String.self, forKey: .ktype) {
+                    if let type = try? container.decode(String.self, forKey: .kcase) {
                         switch type {
                         case "a":
                             self = .a
@@ -62,7 +62,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -73,9 +73,9 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
                     var container = encoder.container(keyedBy: $__coding_keys_root.self)
                     switch self {
                     case .a:
-                        try container.encode("a", forKey: .ktype)
+                        try container.encode("a", forKey: .kcase)
                     case .b:
-                        try container.encode("b", forKey: .ktype)
+                        try container.encode("b", forKey: .kcase)
                     }
                 }
             }
@@ -86,7 +86,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
 
     @EnumCodable(option: .internalKeyed())
     enum Test2 {
-        @EnumCaseCoding(key: "key_a")
+        @EnumCaseCoding(caseKey: "key_a")
         case a
     }
 
@@ -97,7 +97,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
             source: """
             @EnumCodable(option: .internalKeyed())
             enum Test {
-                @EnumCaseCoding(key: "key_a")
+                @EnumCaseCoding(caseKey: "key_a")
                 case a
             }
             """, 
@@ -108,11 +108,11 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
 
             extension Test: EnumCodableProtocol {
                 enum $__coding_keys_root: String, CodingKey {
-                    case ktype = "type"
+                    case kcase = "case"
                 }
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(String.self, forKey: .ktype) {
+                    if let type = try? container.decode(String.self, forKey: .kcase) {
                         switch type {
                         case "key_a":
                             self = .a
@@ -122,7 +122,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -133,7 +133,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
                     var container = encoder.container(keyedBy: $__coding_keys_root.self)
                     switch self {
                     case .a:
-                        try container.encode("key_a", forKey: .ktype)
+                        try container.encode("key_a", forKey: .kcase)
                     }
                 }
             }
@@ -144,7 +144,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
 
     @EnumCodable(option: .internalKeyed())
     enum Test3 {
-        @EnumCaseCoding(key: 1)
+        @EnumCaseCoding(caseKey: 1)
         case a
     }
 
@@ -155,7 +155,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
             source: """
             @EnumCodable(option: .internalKeyed())
             enum Test {
-                @EnumCaseCoding(key: 1)
+                @EnumCaseCoding(caseKey: 1)
                 case a
             }
             """, 
@@ -166,11 +166,11 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
 
             extension Test: EnumCodableProtocol {
                 enum $__coding_keys_root: String, CodingKey {
-                    case ktype = "type"
+                    case kcase = "case"
                 }
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(Double.self, forKey: .ktype) {
+                    if let type = try? container.decode(Double.self, forKey: .kcase) {
                         switch type {
                         case 1:
                             self = .a
@@ -180,7 +180,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -191,7 +191,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
                     var container = encoder.container(keyedBy: $__coding_keys_root.self)
                     switch self {
                     case .a:
-                        try container.encode(1, forKey: .ktype)
+                        try container.encode(1, forKey: .kcase)
                     }
                 }
             }
@@ -202,7 +202,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
 
     @EnumCodable(option: .internalKeyed())
     enum Test4 {
-        @EnumCaseCoding(key: 1.1)
+        @EnumCaseCoding(caseKey: 1.1)
         case a
     }
 
@@ -213,7 +213,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
             source: """
             @EnumCodable(option: .internalKeyed())
             enum Test {
-                @EnumCaseCoding(key: 1.1)
+                @EnumCaseCoding(caseKey: 1.1)
                 case a
             }
             """, 
@@ -224,11 +224,11 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
 
             extension Test: EnumCodableProtocol {
                 enum $__coding_keys_root: String, CodingKey {
-                    case ktype = "type"
+                    case kcase = "case"
                 }
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(Double.self, forKey: .ktype) {
+                    if let type = try? container.decode(Double.self, forKey: .kcase) {
                         switch type {
                         case 1.1:
                             self = .a
@@ -238,7 +238,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -249,7 +249,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
                     var container = encoder.container(keyedBy: $__coding_keys_root.self)
                     switch self {
                     case .a:
-                        try container.encode(1.1, forKey: .ktype)
+                        try container.encode(1.1, forKey: .kcase)
                     }
                 }
             }
@@ -282,11 +282,11 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
 
             extension Test: EnumCodableProtocol {
                 enum $__coding_keys_root: String, CodingKey {
-                    case ktype = "type"
+                    case kcase = "case"
                 }
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(String.self, forKey: .ktype) {
+                    if let type = try? container.decode(String.self, forKey: .kcase) {
                         switch type {
                         case "a":
                             self = .a
@@ -296,7 +296,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -307,7 +307,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
                     var container = encoder.container(keyedBy: $__coding_keys_root.self)
                     switch self {
                     case .a:
-                        try container.encode("a", forKey: .ktype)
+                        try container.encode("a", forKey: .kcase)
                     }
                 }
             }
@@ -338,12 +338,12 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
 
             extension Test: EnumCodableProtocol {
                 enum $__coding_keys_root: String, CodingKey {
-                    case ktype = "type"
+                    case kcase = "case"
                     case kvalue = "value"
                 }
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(String.self, forKey: .ktype) {
+                    if let type = try? container.decode(String.self, forKey: .kcase) {
                         switch type {
                         case "a":
                             let value0 = try container.decode(Int.self, forKey: .kvalue)
@@ -354,7 +354,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -365,7 +365,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
                     var container = encoder.container(keyedBy: $__coding_keys_root.self)
                     switch self {
                     case let .a(value0):
-                        try container.encode("a", forKey: .ktype)
+                        try container.encode("a", forKey: .kcase)
                         try container.encode(value0, forKey: .kvalue)
                     }
                 }
@@ -397,12 +397,12 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
 
             extension Test: EnumCodableProtocol {
                 enum $__coding_keys_root: String, CodingKey {
-                    case ktype = "type"
+                    case kcase = "case"
                     case k_1 = "_1", kvalue = "value"
                 }
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(String.self, forKey: .ktype) {
+                    if let type = try? container.decode(String.self, forKey: .kcase) {
                         switch type {
                         case "a":
                             let value0 = try container.decode(Int.self, forKey: .kvalue)
@@ -414,7 +414,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -425,7 +425,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
                     var container = encoder.container(keyedBy: $__coding_keys_root.self)
                     switch self {
                     case let .a(value0, value1):
-                        try container.encode("a", forKey: .ktype)
+                        try container.encode("a", forKey: .kcase)
                         try container.encode(value0, forKey: .kvalue)
                         try container.encode(value1, forKey: .k_1)
                     }
@@ -460,12 +460,12 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
 
             extension Test: EnumCodableProtocol {
                 enum $__coding_keys_root: String, CodingKey {
-                    case ktype = "type"
+                    case kcase = "case"
                     case k_1 = "_1", kvalue = "value"
                 }
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(String.self, forKey: .ktype) {
+                    if let type = try? container.decode(String.self, forKey: .kcase) {
                         switch type {
                         case "a":
                             let value0 = try container.decode(Int.self, forKey: .kvalue)
@@ -477,7 +477,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -488,7 +488,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
                     var container = encoder.container(keyedBy: $__coding_keys_root.self)
                     switch self {
                     case let .a(value0, value1):
-                        try container.encode("a", forKey: .ktype)
+                        try container.encode("a", forKey: .kcase)
                         try container.encode(value0, forKey: .kvalue)
                         try container.encode(value1, forKey: .k_1)
                     }
@@ -523,12 +523,12 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
 
             extension Test: EnumCodableProtocol {
                 enum $__coding_keys_root: String, CodingKey {
-                    case ktype = "type"
+                    case kcase = "case"
                     case kkey1 = "key1", kkey2 = "key2"
                 }
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(String.self, forKey: .ktype) {
+                    if let type = try? container.decode(String.self, forKey: .kcase) {
                         switch type {
                         case "a":
                             let value0 = try container.decode(Int.self, forKey: .kkey1)
@@ -540,69 +540,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
-                        self = defaultValue
-                        return
-                    case .none:
-                        throw DecodingError.typeMismatch(Self.self, .init(codingPath: [], debugDescription: "No matched case found"))
-                    }
-                }
-                public func encode(to encoder: Encoder) throws {
-                    var container = encoder.container(keyedBy: $__coding_keys_root.self)
-                    switch self {
-                    case let .a(value0, value1):
-                        try container.encode("a", forKey: .ktype)
-                        try container.encode(value0, forKey: .kkey1)
-                        try container.encode(value1, forKey: .kkey2)
-                    }
-                }
-            }
-            """
-        )
-    }
-
-
-    @EnumCodable(option: .internalKeyed(typeKey: "case"))
-    enum Test10 {
-        @EnumCaseCoding(payload: .object)
-        case a(value: Int, _: String)
-    }
-
-
-    @Test("Custom Type Key | Multi Associated Values | Auto Case Key | Object Payload")
-    func test10() async throws {
-        assertMacroExpansion(
-            source: """
-            @EnumCodable(option: .internalKeyed(typeKey: "case"))
-            enum Test {
-                case a(value: Int, _: String)
-            }
-            """, 
-            expandedSource: """
-            enum Test {
-                case a(value: Int, _: String)
-            }
-
-            extension Test: EnumCodableProtocol {
-                enum $__coding_keys_root: String, CodingKey {
-                    case kcase = "case"
-                    case k_1 = "_1", kvalue = "value"
-                }
-                public init(from decoder: Decoder) throws {
-                    let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(String.self, forKey: .kcase) {
-                        switch type {
-                        case "a":
-                            let value0 = try container.decode(Int.self, forKey: .kvalue)
-                            let value1 = try container.decode(String.self, forKey: .k_1)
-                            self = .a(value: value0, value1)
-                            return
-                        default:
-                            break
-                        }
-                    }
-                    switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -614,6 +552,68 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
                     switch self {
                     case let .a(value0, value1):
                         try container.encode("a", forKey: .kcase)
+                        try container.encode(value0, forKey: .kkey1)
+                        try container.encode(value1, forKey: .kkey2)
+                    }
+                }
+            }
+            """
+        )
+    }
+
+
+    @EnumCodable(option: .internalKeyed(caseField: "type"))
+    enum Test10 {
+        @EnumCaseCoding(payload: .object)
+        case a(value: Int, _: String)
+    }
+
+
+    @Test("Custom Type Key | Multi Associated Values | Auto Case Key | Object Payload")
+    func test10() async throws {
+        assertMacroExpansion(
+            source: """
+            @EnumCodable(option: .internalKeyed(caseField: "type"))
+            enum Test {
+                case a(value: Int, _: String)
+            }
+            """, 
+            expandedSource: """
+            enum Test {
+                case a(value: Int, _: String)
+            }
+
+            extension Test: EnumCodableProtocol {
+                enum $__coding_keys_root: String, CodingKey {
+                    case ktype = "type"
+                    case k_1 = "_1", kvalue = "value"
+                }
+                public init(from decoder: Decoder) throws {
+                    let container = try decoder.container(keyedBy: $__coding_keys_root.self)
+                    if let type = try? container.decode(String.self, forKey: .ktype) {
+                        switch type {
+                        case "a":
+                            let value0 = try container.decode(Int.self, forKey: .kvalue)
+                            let value1 = try container.decode(String.self, forKey: .k_1)
+                            self = .a(value: value0, value1)
+                            return
+                        default:
+                            break
+                        }
+                    }
+                    switch Self.codingDefaultValue {
+                    case .some(let defaultValue):
+                        self = defaultValue
+                        return
+                    case .none:
+                        throw DecodingError.typeMismatch(Self.self, .init(codingPath: [], debugDescription: "No matched case found"))
+                    }
+                }
+                public func encode(to encoder: Encoder) throws {
+                    var container = encoder.container(keyedBy: $__coding_keys_root.self)
+                    switch self {
+                    case let .a(value0, value1):
+                        try container.encode("a", forKey: .ktype)
                         try container.encode(value0, forKey: .kvalue)
                         try container.encode(value1, forKey: .k_1)
                     }
@@ -794,7 +794,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
     }
 
 
-    // @EnumCodable(option: .internalKeyed(typeKey: "_0"))
+    // @EnumCodable(option: .internalKeyed(caseField: "_0"))
     // enum TestE6 {
     //     case a(Int, Int)
     // }
@@ -804,7 +804,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
     func testE6() async throws {
         assertMacroExpansion(
             source: """
-            @EnumCodable(option: .internalKeyed(typeKey: "_0"))
+            @EnumCodable(option: .internalKeyed(caseField: "_0"))
             enum Test {
                 case a(Int, Int)
             }
@@ -816,7 +816,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
             """,
             diagnostics: [
                 .init(
-                    message: .codingMacro.enumCodable.objectKeyConflictedWithTypeKey(), 
+                    message: .codingMacro.enumCodable.objectKeyConflictedWithCaseFieldName(), 
                     line: 3, 
                     column: 12
                 )
@@ -825,10 +825,10 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
     }
 
 
-    // @EnumCodable(option: .internalKeyed())
-    // enum TestE7 {
-    //     case a(Int, type: Int)
-    // }
+//     @EnumCodable(option: .internalKeyed())
+//     enum TestE7 {
+//         case a(Int, case: Int)
+//     }
 
 
     @Test("Conflict Type Key and Object Payload Keys 2")
@@ -837,17 +837,17 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
             source: """
             @EnumCodable(option: .internalKeyed())
             enum Test {
-                case a(Int, type: Int)
+                case a(Int, case: Int)
             }
             """, 
             expandedSource: """
             enum Test {
-                case a(Int, type: Int)
+                case a(Int, case: Int)
             }
             """,
             diagnostics: [
                 .init(
-                    message: .codingMacro.enumCodable.objectKeyConflictedWithTypeKey(), 
+                    message: .codingMacro.enumCodable.objectKeyConflictedWithCaseFieldName(), 
                     line: 3, 
                     column: 17
                 )
@@ -858,7 +858,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
 
     // @EnumCodable(option: .internalKeyed())
     // enum TestE8 {
-    //     @EnumCaseCoding(payload: .object(keys: "type", "key"))
+    //     @EnumCaseCoding(payload: .object(keys: "case", "key"))
     //     case a(Int, Int)
     // }
 
@@ -869,7 +869,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
             source: """
             @EnumCodable(option: .internalKeyed())
             enum Test {
-                @EnumCaseCoding(payload: .object(keys: "type", "key"))
+                @EnumCaseCoding(payload: .object(keys: "case", "key"))
                 case a(Int, Int)
             }
             """, 
@@ -880,7 +880,7 @@ extension CodingExpansionTest.EnumCodableInternalKeyedTest {
             """,
             diagnostics: [
                 .init(
-                    message: .codingMacro.enumCodable.objectKeyConflictedWithTypeKey(), 
+                    message: .codingMacro.enumCodable.objectKeyConflictedWithCaseFieldName(), 
                     line: 3, 
                     column: 45
                 )

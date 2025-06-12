@@ -46,11 +46,11 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
 
             extension Test: EnumCodableProtocol {
                 enum $__coding_keys_root: String, CodingKey {
-                    case ktype = "type", kpayload = "payload"
+                    case kcase = "case", kpayload = "payload"
                 }
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(String.self, forKey: .ktype) {
+                    if let type = try? container.decode(String.self, forKey: .kcase) {
                         switch type {
                         case "a":
                             self = .a
@@ -63,7 +63,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -74,9 +74,9 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                     var container = encoder.container(keyedBy: $__coding_keys_root.self)
                     switch self {
                     case .a:
-                        try container.encode("a", forKey: .ktype)
+                        try container.encode("a", forKey: .kcase)
                     case .b:
-                        try container.encode("b", forKey: .ktype)
+                        try container.encode("b", forKey: .kcase)
                     }
                 }
             }
@@ -87,7 +87,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
 
     @EnumCodable(option: .adjucentKeyed())
     enum Test2 {
-        @EnumCaseCoding(key: "key_a")
+        @EnumCaseCoding(caseKey: "key_a")
         case a
     }
 
@@ -98,7 +98,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
             source: """
             @EnumCodable(option: .adjucentKeyed())
             enum Test {
-                @EnumCaseCoding(key: "key_a")
+                @EnumCaseCoding(caseKey: "key_a")
                 case a
             }
             """, 
@@ -109,11 +109,11 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
 
             extension Test: EnumCodableProtocol {
                 enum $__coding_keys_root: String, CodingKey {
-                    case ktype = "type", kpayload = "payload"
+                    case kcase = "case", kpayload = "payload"
                 }
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(String.self, forKey: .ktype) {
+                    if let type = try? container.decode(String.self, forKey: .kcase) {
                         switch type {
                         case "key_a":
                             self = .a
@@ -123,7 +123,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -134,7 +134,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                     var container = encoder.container(keyedBy: $__coding_keys_root.self)
                     switch self {
                     case .a:
-                        try container.encode("key_a", forKey: .ktype)
+                        try container.encode("key_a", forKey: .kcase)
                     }
                 }
             }
@@ -145,7 +145,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
 
     @EnumCodable(option: .adjucentKeyed())
     enum Test3 {
-        @EnumCaseCoding(key: 1)
+        @EnumCaseCoding(caseKey: 1)
         case a
     }
 
@@ -156,7 +156,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
             source: """
             @EnumCodable(option: .adjucentKeyed())
             enum Test {
-                @EnumCaseCoding(key: 1)
+                @EnumCaseCoding(caseKey: 1)
                 case a
             }
             """, 
@@ -167,11 +167,11 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
 
             extension Test: EnumCodableProtocol {
                 enum $__coding_keys_root: String, CodingKey {
-                    case ktype = "type", kpayload = "payload"
+                    case kcase = "case", kpayload = "payload"
                 }
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(Double.self, forKey: .ktype) {
+                    if let type = try? container.decode(Double.self, forKey: .kcase) {
                         switch type {
                         case 1:
                             self = .a
@@ -181,7 +181,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -192,7 +192,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                     var container = encoder.container(keyedBy: $__coding_keys_root.self)
                     switch self {
                     case .a:
-                        try container.encode(1, forKey: .ktype)
+                        try container.encode(1, forKey: .kcase)
                     }
                 }
             }
@@ -203,7 +203,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
 
     @EnumCodable(option: .adjucentKeyed())
     enum Test4 {
-        @EnumCaseCoding(key: 1.1)
+        @EnumCaseCoding(caseKey: 1.1)
         case a
     }
 
@@ -214,7 +214,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
             source: """
             @EnumCodable(option: .adjucentKeyed())
             enum Test {
-                @EnumCaseCoding(key: 1.1)
+                @EnumCaseCoding(caseKey: 1.1)
                 case a
             }
             """, 
@@ -225,11 +225,11 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
 
             extension Test: EnumCodableProtocol {
                 enum $__coding_keys_root: String, CodingKey {
-                    case ktype = "type", kpayload = "payload"
+                    case kcase = "case", kpayload = "payload"
                 }
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(Double.self, forKey: .ktype) {
+                    if let type = try? container.decode(Double.self, forKey: .kcase) {
                         switch type {
                         case 1.1:
                             self = .a
@@ -239,7 +239,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -250,7 +250,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                     var container = encoder.container(keyedBy: $__coding_keys_root.self)
                     switch self {
                     case .a:
-                        try container.encode(1.1, forKey: .ktype)
+                        try container.encode(1.1, forKey: .kcase)
                     }
                 }
             }
@@ -283,11 +283,11 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
 
             extension Test: EnumCodableProtocol {
                 enum $__coding_keys_root: String, CodingKey {
-                    case ktype = "type", kpayload = "payload"
+                    case kcase = "case", kpayload = "payload"
                 }
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(String.self, forKey: .ktype) {
+                    if let type = try? container.decode(String.self, forKey: .kcase) {
                         switch type {
                         case "a":
                             self = .a
@@ -297,7 +297,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -308,7 +308,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                     var container = encoder.container(keyedBy: $__coding_keys_root.self)
                     switch self {
                     case .a:
-                        try container.encode("a", forKey: .ktype)
+                        try container.encode("a", forKey: .kcase)
                     }
                 }
             }
@@ -341,11 +341,11 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
 
             extension Test: EnumCodableProtocol {
                 enum $__coding_keys_root: String, CodingKey {
-                    case ktype = "type", kpayload = "payload"
+                    case kcase = "case", kpayload = "payload"
                 }
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(String.self, forKey: .ktype) {
+                    if let type = try? container.decode(String.self, forKey: .kcase) {
                         switch type {
                         case "a":
                             if try container.decodeNil(forKey: .kpayload) {
@@ -357,7 +357,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -368,7 +368,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                     var container = encoder.container(keyedBy: $__coding_keys_root.self)
                     switch self {
                     case .a:
-                        try container.encode("a", forKey: .ktype)
+                        try container.encode("a", forKey: .kcase)
                         try container.encodeNil(forKey: .kpayload)
                     }
                 }
@@ -402,11 +402,11 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
 
             extension Test: EnumCodableProtocol {
                 enum $__coding_keys_root: String, CodingKey {
-                    case ktype = "type", kpayload = "payload"
+                    case kcase = "case", kpayload = "payload"
                 }
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(String.self, forKey: .ktype) {
+                    if let type = try? container.decode(String.self, forKey: .kcase) {
                         switch type {
                         case "a":
                             let nestedContainer = try container.nestedUnkeyedContainer(forKey: .kpayload)
@@ -419,7 +419,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -430,7 +430,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                     var container = encoder.container(keyedBy: $__coding_keys_root.self)
                     switch self {
                     case .a:
-                        try container.encode("a", forKey: .ktype)
+                        try container.encode("a", forKey: .kcase)
                         try container.encode([DummyDecodableType](), forKey: .kpayload)
                     }
                 }
@@ -475,11 +475,11 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                     var stringValue: String
                 }
                 enum $__coding_keys_root: String, CodingKey {
-                    case ktype = "type", kpayload = "payload"
+                    case kcase = "case", kpayload = "payload"
                 }
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(String.self, forKey: .ktype) {
+                    if let type = try? container.decode(String.self, forKey: .kcase) {
                         switch type {
                         case "a":
                             let nestedContainer = try container.nestedContainer(keyedBy: $__unconditional_coding_keys.self, forKey: .kpayload)
@@ -492,7 +492,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -503,7 +503,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                     var container = encoder.container(keyedBy: $__coding_keys_root.self)
                     switch self {
                     case .a:
-                        try container.encode("a", forKey: .ktype)
+                        try container.encode("a", forKey: .kcase)
                         try container.encode(DummyDecodableType(), forKey: .kpayload)
                     }
                 }
@@ -535,11 +535,11 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
 
             extension Test: EnumCodableProtocol {
                 enum $__coding_keys_root: String, CodingKey {
-                    case ktype = "type", kpayload = "payload"
+                    case kcase = "case", kpayload = "payload"
                 }
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(String.self, forKey: .ktype) {
+                    if let type = try? container.decode(String.self, forKey: .kcase) {
                         switch type {
                         case "a":
                             let value = try container.decode(Int.self, forKey: .kpayload)
@@ -550,7 +550,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -561,7 +561,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                     var container = encoder.container(keyedBy: $__coding_keys_root.self)
                     switch self {
                     case let .a(value0):
-                        try container.encode("a", forKey: .ktype)
+                        try container.encode("a", forKey: .kcase)
                         try container.encode(value0, forKey: .kpayload)
                     }
                 }
@@ -593,7 +593,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
 
             extension Test: EnumCodableProtocol {
                 enum $__coding_keys_root: String, CodingKey {
-                    case ktype = "type", kpayload = "payload"
+                    case kcase = "case", kpayload = "payload"
                 }
                 enum $__coding_keys_root_a: String, CodingKey {
                     case kvalue = "value"
@@ -601,7 +601,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                 }
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(String.self, forKey: .ktype) {
+                    if let type = try? container.decode(String.self, forKey: .kcase) {
                         switch type {
                         case "a":
                             let nestedContainer = try container.nestedContainer(keyedBy: $__coding_keys_root_a.self, forKey: .kpayload)
@@ -614,7 +614,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -625,7 +625,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                     var container = encoder.container(keyedBy: $__coding_keys_root.self)
                     switch self {
                     case let .a(value0, value1):
-                        try container.encode("a", forKey: .ktype)
+                        try container.encode("a", forKey: .kcase)
                         var nestedContainer = container.nestedContainer(keyedBy: $__coding_keys_root_a.self, forKey: .kpayload)
                         try nestedContainer.encode(value0, forKey: .kvalue)
                         try nestedContainer.encode(value1, forKey: .k_1)
@@ -661,11 +661,11 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
 
             extension Test: EnumCodableProtocol {
                 enum $__coding_keys_root: String, CodingKey {
-                    case ktype = "type", kpayload = "payload"
+                    case kcase = "case", kpayload = "payload"
                 }
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(String.self, forKey: .ktype) {
+                    if let type = try? container.decode(String.self, forKey: .kcase) {
                         switch type {
                         case "a":
                             let value = try container.decode(Int.self, forKey: .kpayload)
@@ -676,7 +676,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -687,7 +687,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                     var container = encoder.container(keyedBy: $__coding_keys_root.self)
                     switch self {
                     case let .a(value0):
-                        try container.encode("a", forKey: .ktype)
+                        try container.encode("a", forKey: .kcase)
                         try container.encode(value0, forKey: .kpayload)
                     }
                 }
@@ -721,11 +721,11 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
 
             extension Test: EnumCodableProtocol {
                 enum $__coding_keys_root: String, CodingKey {
-                    case ktype = "type", kpayload = "payload"
+                    case kcase = "case", kpayload = "payload"
                 }
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(String.self, forKey: .ktype) {
+                    if let type = try? container.decode(String.self, forKey: .kcase) {
                         switch type {
                         case "a":
                             var nestedContainer = try container.nestedUnkeyedContainer(forKey: .kpayload)
@@ -738,7 +738,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -749,7 +749,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                     var container = encoder.container(keyedBy: $__coding_keys_root.self)
                     switch self {
                     case let .a(value0, value1):
-                        try container.encode("a", forKey: .ktype)
+                        try container.encode("a", forKey: .kcase)
                         var nestedContainer = container.nestedUnkeyedContainer(forKey: .kpayload)
                         try nestedContainer.encode(value0)
                         try nestedContainer.encode(value1)
@@ -785,7 +785,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
 
             extension Test: EnumCodableProtocol {
                 enum $__coding_keys_root: String, CodingKey {
-                    case ktype = "type", kpayload = "payload"
+                    case kcase = "case", kpayload = "payload"
                 }
                 enum $__coding_keys_root_a: String, CodingKey {
                     case kvalue = "value"
@@ -793,7 +793,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                 }
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(String.self, forKey: .ktype) {
+                    if let type = try? container.decode(String.self, forKey: .kcase) {
                         switch type {
                         case "a":
                             let nestedContainer = try container.nestedContainer(keyedBy: $__coding_keys_root_a.self, forKey: .kpayload)
@@ -806,7 +806,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -817,7 +817,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                     var container = encoder.container(keyedBy: $__coding_keys_root.self)
                     switch self {
                     case let .a(value0, value1):
-                        try container.encode("a", forKey: .ktype)
+                        try container.encode("a", forKey: .kcase)
                         var nestedContainer = container.nestedContainer(keyedBy: $__coding_keys_root_a.self, forKey: .kpayload)
                         try nestedContainer.encode(value0, forKey: .kvalue)
                         try nestedContainer.encode(value1, forKey: .k_1)
@@ -853,7 +853,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
 
             extension Test: EnumCodableProtocol {
                 enum $__coding_keys_root: String, CodingKey {
-                    case ktype = "type", kpayload = "payload"
+                    case kcase = "case", kpayload = "payload"
                 }
                 enum $__coding_keys_root_a: String, CodingKey {
                     case kkey1 = "key1"
@@ -861,7 +861,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                 }
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(String.self, forKey: .ktype) {
+                    if let type = try? container.decode(String.self, forKey: .kcase) {
                         switch type {
                         case "a":
                             let nestedContainer = try container.nestedContainer(keyedBy: $__coding_keys_root_a.self, forKey: .kpayload)
@@ -874,7 +874,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -885,7 +885,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                     var container = encoder.container(keyedBy: $__coding_keys_root.self)
                     switch self {
                     case let .a(value0, value1):
-                        try container.encode("a", forKey: .ktype)
+                        try container.encode("a", forKey: .kcase)
                         var nestedContainer = container.nestedContainer(keyedBy: $__coding_keys_root_a.self, forKey: .kpayload)
                         try nestedContainer.encode(value0, forKey: .kkey1)
                         try nestedContainer.encode(value1, forKey: .kkey2)
@@ -897,7 +897,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
     }
 
 
-    @EnumCodable(option: .adjucentKeyed(typeKey: "case", payloadKey: "content"))
+    @EnumCodable(option: .adjucentKeyed(caseField: "type", payloadField: "content"))
     enum Test15 {
         @EnumCaseCoding(payload: .object)
         case a(value: Int, _: String)
@@ -908,7 +908,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
     func test15() async throws {
         assertMacroExpansion(
             source: """
-            @EnumCodable(option: .adjucentKeyed(typeKey: "case", payloadKey: "content"))
+            @EnumCodable(option: .adjucentKeyed(caseField: "type", payloadField: "content"))
             enum Test {
                 @EnumCaseCoding(payload: .object)
                 case a(value: Int, _: String)
@@ -921,7 +921,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
 
             extension Test: EnumCodableProtocol {
                 enum $__coding_keys_root: String, CodingKey {
-                    case kcase = "case", kcontent = "content"
+                    case ktype = "type", kcontent = "content"
                 }
                 enum $__coding_keys_root_a: String, CodingKey {
                     case kvalue = "value"
@@ -929,7 +929,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                 }
                 public init(from decoder: Decoder) throws {
                     let container = try decoder.container(keyedBy: $__coding_keys_root.self)
-                    if let type = try? container.decode(String.self, forKey: .kcase) {
+                    if let type = try? container.decode(String.self, forKey: .ktype) {
                         switch type {
                         case "a":
                             let nestedContainer = try container.nestedContainer(keyedBy: $__coding_keys_root_a.self, forKey: .kcontent)
@@ -942,7 +942,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -953,7 +953,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
                     var container = encoder.container(keyedBy: $__coding_keys_root.self)
                     switch self {
                     case let .a(value0, value1):
-                        try container.encode("a", forKey: .kcase)
+                        try container.encode("a", forKey: .ktype)
                         var nestedContainer = container.nestedContainer(keyedBy: $__coding_keys_root_a.self, forKey: .kcontent)
                         try nestedContainer.encode(value0, forKey: .kvalue)
                         try nestedContainer.encode(value1, forKey: .k_1)
@@ -970,7 +970,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
 // MARK: - Error Cases
 extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
 
-    // @EnumCodable(option: .adjucentKeyed(typeKey: "payload"))
+    // @EnumCodable(option: .adjucentKeyed(caseField: "payload"))
     // enum TestE1 {
     //     case a
     // }
@@ -980,7 +980,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
     func testE1() async throws {
         assertMacroExpansion(
             source: """
-            @EnumCodable(option: .adjucentKeyed(typeKey: "payload"))
+            @EnumCodable(option: .adjucentKeyed(caseField: "payload"))
             enum TestE1 {
                 case a
             }
@@ -992,7 +992,7 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
             """,
             diagnostics: [
                 .init(
-                    message: .codingMacro.enumCodable.conflictedTypeAndPayloadKeys(), 
+                    message: .codingMacro.enumCodable.conflictedCaseAndPayloadFieldName(), 
                     line: 1, 
                     column: 1
                 )
@@ -1003,11 +1003,11 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
 
     // @EnumCodable(option: .adjucentKeyed())
     // enum TestE2 {
-    //     @EnumCaseCoding(key: 10.0)
+    //     @EnumCaseCoding(caseKey: 10.0)
     //     case a
-    //     @EnumCaseCoding(key: 10)
+    //     @EnumCaseCoding(caseKey: 10)
     //     case b
-    //     @EnumCaseCoding(key: 0x0A)
+    //     @EnumCaseCoding(caseKey: 0x0A)
     //     case c
     // }
 
@@ -1018,11 +1018,11 @@ extension CodingExpansionTest.EnumCodableAdjacentKeyedTest {
             source: """
             @EnumCodable(option: .adjucentKeyed())
             enum Test {
-                @EnumCaseCoding(key: 10.0)
+                @EnumCaseCoding(caseKey: 10.0)
                 case a
-                @EnumCaseCoding(key: 10)
+                @EnumCaseCoding(caseKey: 10)
                 case b
-                @EnumCaseCoding(key: 0x0A)
+                @EnumCaseCoding(caseKey: 0x0A)
                 case c
             }
             """, 

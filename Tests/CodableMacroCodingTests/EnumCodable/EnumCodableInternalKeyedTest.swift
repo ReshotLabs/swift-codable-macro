@@ -14,28 +14,28 @@ extension CodingTest {
 
 extension CodingTest.EnumCodableInternalKeyedTest {
 
-    @EnumCodable(option: .internalKeyed(typeKey: "case"))
+    @EnumCodable(option: .internalKeyed(caseField: "case"))
     enum Test: Equatable {
 
         case a
 
-        @EnumCaseCoding(key: "key_b", emptyPayloadOption: .nothing)
+        @EnumCaseCoding(caseKey: "key_b", emptyPayloadOption: .nothing)
         case b
 
-        @EnumCaseCoding(key: 0x3)
+        @EnumCaseCoding(caseKey: 0x3)
         case c
 
-        @EnumCaseCoding(key: 4.1)
+        @EnumCaseCoding(caseKey: 4.1)
         case d
 
         case e(value: Int)
 
         case f(value: Int, _: String)
 
-        @EnumCaseCoding(key: "key_g", payload: .object)
+        @EnumCaseCoding(caseKey: "key_g", payload: .object)
         case g(value: Int)
 
-        @EnumCaseCoding(key: 8, payload: .object(keys: "key1", "key2"))
+        @EnumCaseCoding(caseKey: 8, payload: .object(keys: "key1", "key2"))
         case h(value: Int, _: String)
 
     }

@@ -51,7 +51,7 @@ extension CodingExpansionTest.EnumCodableRawValueCodedTest {
                     let rawValue = try Self.RawValue(from: decoder)
                     guard let value = Self(rawValue: rawValue) as Self? else {
                         switch Self.codingDefaultValue {
-                        case .value(let defaultValue):
+                        case .some(let defaultValue):
                             self = defaultValue
                             return
                         case .none:
@@ -97,7 +97,7 @@ extension CodingExpansionTest.EnumCodableRawValueCodedTest {
                     let rawValue = try Self.RawValue(from: decoder)
                     guard let value = Self(rawValue: rawValue) as Self? else {
                         switch Self.codingDefaultValue {
-                        case .value(let defaultValue):
+                        case .some(let defaultValue):
                             self = defaultValue
                             return
                         case .none:
@@ -143,7 +143,7 @@ extension CodingExpansionTest.EnumCodableRawValueCodedTest {
                     let rawValue = try Self.RawValue(from: decoder)
                     guard let value = Self(rawValue: rawValue) as Self? else {
                         switch Self.codingDefaultValue {
-                        case .value(let defaultValue):
+                        case .some(let defaultValue):
                             self = defaultValue
                             return
                         case .none:
@@ -225,7 +225,7 @@ extension CodingExpansionTest.EnumCodableRawValueCodedTest {
                     let rawValue = try Self.RawValue(from: decoder)
                     guard let value = Self(rawValue: rawValue) as Self? else {
                         switch Self.codingDefaultValue {
-                        case .value(let defaultValue):
+                        case .some(let defaultValue):
                             self = defaultValue
                             return
                         case .none:
@@ -250,7 +250,7 @@ extension CodingExpansionTest.EnumCodableRawValueCodedTest {
 
     // @EnumCodable(option: .rawValueCoded)
     // enum TestE1 {
-    //     @EnumCaseCoding(key: "key")
+    //     @EnumCaseCoding(caseKey: "key")
     //     case a
     // }
 
@@ -261,7 +261,7 @@ extension CodingExpansionTest.EnumCodableRawValueCodedTest {
             source: """
             @EnumCodable(option: .rawValueCoded)
             enum Test {
-                @EnumCaseCoding(key: "key")
+                @EnumCaseCoding(caseKey: "key")
                 case a
             }
             """, 

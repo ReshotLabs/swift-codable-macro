@@ -43,7 +43,7 @@ extension EnumCodableMacro.Generator {
     var noMatchCaseFoundFallbackStatements: CodeBlockItemListSyntax {
         .init {
             try! SwitchExprSyntax("switch Self.codingDefaultValue") {
-                SwitchCaseSyntax("case .value(let defaultValue):") {
+                SwitchCaseSyntax("case .some(let defaultValue):") {
                     "self = defaultValue"
                     "return"
                 }

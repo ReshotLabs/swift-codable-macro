@@ -19,7 +19,7 @@ extension CodingTest.EnumCodableExternalKeyedTest {
 
         case a
 
-        @EnumCaseCoding(key: "key_b", emptyPayloadOption: .nothing)
+        @EnumCaseCoding(caseKey: "key_b", emptyPayloadOption: .nothing)
         case b
 
         @EnumCaseCoding(emptyPayloadOption: .emptyArray)
@@ -30,12 +30,12 @@ extension CodingTest.EnumCodableExternalKeyedTest {
 
         case e(value: Int)
 
-        @EnumCaseCoding(key: "key_f", payload: .array)
+        @EnumCaseCoding(caseKey: "key_f", payload: .array)
         case f(value: Int, _: String)
 
         case g(value: Int, _: String)
         
-        @EnumCaseCoding(key: "key_h", payload: .object(keys: "key1", "key2"))
+        @EnumCaseCoding(caseKey: "key_h", payload: .object(keys: "key1", "key2"))
         case h(value: Int, _: String)
 
     }

@@ -50,7 +50,7 @@ struct EnumCaseCodingMacro: CodingDecoratorMacro {
 
 
     static let macroArgumentsParsingRule: [ArgumentsParsingRule] = [
-        .labeled("key", canIgnore: true),
+        .labeled("caseKey", canIgnore: true),
         .labeled("emptyPayloadOption", canIgnore: true),
         .labeled("payload", canIgnore: true),
         .labeled("unkeyedRawValuePayload", canIgnore: true),
@@ -118,7 +118,7 @@ struct EnumCaseCodingMacro: CodingDecoratorMacro {
         } as LiteralValue?
 
         if let emptyPayloadOptionArg = macroArguments[1].first {
-            // @EnumCaseCoding(key:emptyPayloadOption:)
+            // @EnumCaseCoding(caseKey:emptyPayloadOption:)
 
             guard let emptyPayloadOption = emptyPayloadOptionArg.expression.as(MemberAccessExprSyntax.self) else {
                 throw .diagnostic(
@@ -139,7 +139,7 @@ struct EnumCaseCodingMacro: CodingDecoratorMacro {
             }
 
         } else if let payloadArg = macroArguments[2].first {
-            // @EnumCaseCoding(key:payload:)
+            // @EnumCaseCoding(caseKey:payload:)
 
             return try .keyed(key: key, payload: .content(extractPayloadContentSetting(from: payloadArg)), rawSyntax: macroRawArguments)
 

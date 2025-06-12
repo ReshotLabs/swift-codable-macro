@@ -66,7 +66,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -91,7 +91,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
 
     @EnumCodable
     enum Test2 {
-        @EnumCaseCoding(key: "key_a")
+        @EnumCaseCoding(caseKey: "key_a")
         case a
     }
 
@@ -102,7 +102,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
             source: """
             @EnumCodable
             enum Test {
-                @EnumCaseCoding(key: "key_a")
+                @EnumCaseCoding(caseKey: "key_a")
                 case a
             }
             """, 
@@ -129,7 +129,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -189,7 +189,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -243,7 +243,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -304,7 +304,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -376,7 +376,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -433,7 +433,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -496,7 +496,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -557,7 +557,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -618,7 +618,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -685,7 +685,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -752,7 +752,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -776,9 +776,9 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
 
     @EnumCodable
     enum Test13 {
-        @EnumCaseCoding(key: .auto, emptyPayloadOption: .emptyObject)
+        @EnumCaseCoding(caseKey: .auto, emptyPayloadOption: .emptyObject)
         case a
-        @EnumCaseCoding(key: "key_b", payload: .object(keys: "key1", "key2", "key3"))
+        @EnumCaseCoding(caseKey: "key_b", payload: .object(keys: "key1", "key2", "key3"))
         case b(value: Int, Int, _: String)
     }
 
@@ -789,9 +789,9 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
             source: """
             @EnumCodable
             enum Test {
-                @EnumCaseCoding(key: .auto, emptyPayloadOption: .emptyObject)
+                @EnumCaseCoding(caseKey: .auto, emptyPayloadOption: .emptyObject)
                 case a
-                @EnumCaseCoding(key: "key_b", payload: .object(keys: "key1", "key2", "key3"))
+                @EnumCaseCoding(caseKey: "key_b", payload: .object(keys: "key1", "key2", "key3"))
                 case b(value: Int, Int, _: String)
             }
             """, 
@@ -844,7 +844,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -897,7 +897,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
 
     // @EnumCodable
     // enum TestE2 {
-    //     @EnumCaseCoding(key: 1)
+    //     @EnumCaseCoding(caseKey: 1)
     //     case a
     // }
 
@@ -908,7 +908,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
             source: """
             @EnumCodable
             enum Test {
-                @EnumCaseCoding(key: 1)
+                @EnumCaseCoding(caseKey: 1)
                 case a
             }
             """, 
@@ -921,7 +921,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
                 .init(
                     message: .codingMacro.enumCodable.nonStringCaseKeyInExternalKeyedEnumCoding("1" as TokenSyntax), 
                     line: 3, 
-                    column: 26
+                    column: 30
                 )
             ]
         )
@@ -930,7 +930,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
 
     // @EnumCodable
     // enum TestE3 {
-    //     @EnumCaseCoding(key: 1.1)
+    //     @EnumCaseCoding(caseKey: 1.1)
     //     case a
     // }
 
@@ -941,7 +941,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
             source: """
             @EnumCodable
             enum Test {
-                @EnumCaseCoding(key: 1.1)
+                @EnumCaseCoding(caseKey: 1.1)
                 case a
             }
             """, 
@@ -954,7 +954,7 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
                 .init(
                     message: .codingMacro.enumCodable.nonStringCaseKeyInExternalKeyedEnumCoding("1.1" as TokenSyntax), 
                     line: 3, 
-                    column: 26
+                    column: 30
                 )
             ]
         )
@@ -963,9 +963,9 @@ extension CodingExpansionTest.EnumCodableExternalKeyedTest {
 
     // @EnumCodable
     // enum TestE4 {
-    //     @EnumCaseCoding(key: "key")
+    //     @EnumCaseCoding(caseKey: "key")
     //     case a
-    //     @EnumCaseCoding(key: "key")
+    //     @EnumCaseCoding(caseKey: "key")
     //     case b
     //     case key
     // }

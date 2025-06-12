@@ -30,8 +30,8 @@ extension EnumCodableMacro {
             .init(id: "non_string_case_key_in_external_keyed_enum_coding", message: "External keyed enum coding expects enum case key to be string, but got \(key.trimmed)")
         }
 
-        static func objectKeyConflictedWithTypeKey() -> CodingMacroImplBase.Error {
-            .init(id: "object_key_conflicted_with_type_key", message: "Keys in object payload must not conflicted with the enum case key")
+        static func objectKeyConflictedWithCaseFieldName() -> CodingMacroImplBase.Error {
+            .init(id: "object_key_conflicted_with_case_field_name", message: "Keys in object payload must not conflicted with the name of Case Field")
         }
 
         static func nonObjectPayloadInInternalKeyedEnumCoding() -> CodingMacroImplBase.Error {
@@ -61,8 +61,8 @@ extension EnumCodableMacro {
             .init(id: "empty_enum", message: "Enum with no cases is not supported")
         }
 
-        static func conflictedTypeAndPayloadKeys() -> CodingMacroImplBase.Error {
-            .init(id: "conflicted_type_and_payload_keys", message: "Type key and payload key must not be the same")
+        static func conflictedCaseAndPayloadFieldName() -> CodingMacroImplBase.Error {
+            .init(id: "conflicted_case_and_payload_field_name", message: "Name of case field and payload field must not be the same")
         }
 
         static func payloadContentSettingOnCaseWithoutAssociatedValue() -> CodingMacroImplBase.Error {

@@ -58,7 +58,7 @@ extension CodingExpansionTest.EnumCodableUnkeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -115,7 +115,7 @@ extension CodingExpansionTest.EnumCodableUnkeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -169,7 +169,7 @@ extension CodingExpansionTest.EnumCodableUnkeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -223,7 +223,7 @@ extension CodingExpansionTest.EnumCodableUnkeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -277,7 +277,7 @@ extension CodingExpansionTest.EnumCodableUnkeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -331,7 +331,7 @@ extension CodingExpansionTest.EnumCodableUnkeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -385,7 +385,7 @@ extension CodingExpansionTest.EnumCodableUnkeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -434,7 +434,7 @@ extension CodingExpansionTest.EnumCodableUnkeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -489,7 +489,7 @@ extension CodingExpansionTest.EnumCodableUnkeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -541,7 +541,7 @@ extension CodingExpansionTest.EnumCodableUnkeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -595,7 +595,7 @@ extension CodingExpansionTest.EnumCodableUnkeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -653,7 +653,7 @@ extension CodingExpansionTest.EnumCodableUnkeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -711,7 +711,7 @@ extension CodingExpansionTest.EnumCodableUnkeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -776,7 +776,7 @@ extension CodingExpansionTest.EnumCodableUnkeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -864,7 +864,7 @@ extension CodingExpansionTest.EnumCodableUnkeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -963,7 +963,7 @@ extension CodingExpansionTest.EnumCodableUnkeyedTest {
                         }
                     }
                     switch Self.codingDefaultValue {
-                    case .value(let defaultValue):
+                    case .some(let defaultValue):
                         self = defaultValue
                         return
                     case .none:
@@ -1013,7 +1013,7 @@ extension CodingExpansionTest.EnumCodableUnkeyedTest {
 
     // @EnumCodable(option: .unkeyed)
     // enum TestE1 {
-    //     @EnumCaseCoding(key: "test")
+    //     @EnumCaseCoding(caseKey: "test")
     //     case a
     // }
 
@@ -1024,7 +1024,7 @@ extension CodingExpansionTest.EnumCodableUnkeyedTest {
             source: """
             @EnumCodable(option: .unkeyed)
             enum Test {
-                @EnumCaseCoding(key: "test")
+                @EnumCaseCoding(caseKey: "test")
                 case a
             }
             """, 

@@ -14,18 +14,18 @@ extension CodingTest {
 
 extension CodingTest.EnumCodableAdjacentKeyedTest {
 
-    @EnumCodable(option: .adjucentKeyed(payloadKey: "content"))
+    @EnumCodable(option: .adjucentKeyed(payloadField: "content"))
     enum Test: Equatable {
 
         case a
 
-        @EnumCaseCoding(key: "key_b", emptyPayloadOption: .null)
+        @EnumCaseCoding(caseKey: "key_b", emptyPayloadOption: .null)
         case b
 
-        @EnumCaseCoding(key: 0x3, emptyPayloadOption: .emptyArray)
+        @EnumCaseCoding(caseKey: 0x3, emptyPayloadOption: .emptyArray)
         case c
 
-        @EnumCaseCoding(key: 4.1, emptyPayloadOption: .emptyObject)
+        @EnumCaseCoding(caseKey: 4.1, emptyPayloadOption: .emptyObject)
         case d
 
         case e(value: Int)
@@ -35,10 +35,10 @@ extension CodingTest.EnumCodableAdjacentKeyedTest {
         @EnumCaseCoding(payload: .singleValue)
         case g(value: Int)
 
-        @EnumCaseCoding(key: 8, payload: .array)
+        @EnumCaseCoding(caseKey: 8, payload: .array)
         case h(value: Int, _: String)
 
-        @EnumCaseCoding(key: "key_i", payload: .object)
+        @EnumCaseCoding(caseKey: "key_i", payload: .object)
         case i(value: Int, String)
 
         @EnumCaseCoding(payload: .object(keys: "key1", "key2"))
@@ -53,41 +53,41 @@ extension CodingTest.EnumCodableAdjacentKeyedTest {
             (
                 .success(.a),
                 [
-                    "type": "a"
+                    "case": "a"
                 ]
             ),
             (
                 .success(.b),
                 [
-                    "type": "key_b",
+                    "case": "key_b",
                     "content": nil
                 ]
             ),
             (
                 .success(.c),
                 [
-                    "type": 3,
+                    "case": 3,
                     "content": []
                 ]
             ),
             (
                 .success(.d),
                 [
-                    "type": 4.1,
+                    "case": 4.1,
                     "content": [:]
                 ]
             ),
             (
                 .success(.e(value: 1)),
                 [
-                    "type": "e",
+                    "case": "e",
                     "content": 1
                 ]
             ),
             (
                 .success(.f(value: 2, "test")),
                 [
-                    "type": "f",
+                    "case": "f",
                     "content": [
                         "value": 2,
                         "_1": "test"
@@ -97,21 +97,21 @@ extension CodingTest.EnumCodableAdjacentKeyedTest {
             (
                 .success(.g(value: 3)),
                 [
-                    "type": "g",
+                    "case": "g",
                     "content": 3
                 ]
             ),
             (
                 .success(.h(value: 4, "test2")),
                 [
-                    "type": 8,
+                    "case": 8,
                     "content": [4, "test2"]
                 ]
             ),
             (
                 .success(.i(value: 5, "test3")),
                 [
-                    "type": "key_i",
+                    "case": "key_i",
                     "content": [
                         "value": 5,
                         "_1": "test3"
@@ -121,7 +121,7 @@ extension CodingTest.EnumCodableAdjacentKeyedTest {
             (
                 .success(.j(value: 6, "test4")),
                 [
-                    "type": "j",
+                    "case": "j",
                     "content": [
                         "key1": 6,
                         "key2": "test4"
@@ -139,48 +139,48 @@ extension CodingTest.EnumCodableAdjacentKeyedTest {
         "Test Decoding (failure)",
         arguments: [
             [
-                "case": "a"
+                "type": "a"
             ],
             [
-                "type": 1
+                "case": 1
             ],
             [
-                "type": "key_b",
+                "case": "key_b",
                 "content": 1
             ],
             [
-                "type": 3,
+                "case": 3,
                 "content": [1]
             ],
             [
-                "type": 4,
+                "case": 4,
                 "content": []
             ],
             [
-                "type": "e",
+                "case": "e",
                 "content": "1"
             ],
             [
-                "type": "f",
+                "case": "f",
                 "content": [
                     "value1": 1,
                     "_1": "2"
                 ]
             ],
             [
-                "type": "g",
+                "case": "g",
                 "content": [ "value": 1 ]
             ],
             [
-                "type": "h",
+                "case": "h",
                 "content": [ "test", 1 ]
             ],
             [
-                "type": "key_i",
+                "case": "key_i",
                 "content": [ "value": 1 ]
             ],
             [
-                "type": "j",
+                "case": "j",
                 "content": [ "key1": 1, "key": "2" ]
             ]
         ] as [JsonComponent]
@@ -201,41 +201,41 @@ extension CodingTest.EnumCodableAdjacentKeyedTest {
             (
                 .a,
                 [
-                    "type": "a"
+                    "case": "a"
                 ]
             ),
             (
                 .b,
                 [
-                    "type": "key_b",
+                    "case": "key_b",
                     "content": nil
                 ]
             ),
             (
                 .c,
                 [
-                    "type": 3,
+                    "case": 3,
                     "content": []
                 ]
             ),
             (
                 .d,
                 [
-                    "type": 4.1,
+                    "case": 4.1,
                     "content": [:]
                 ]
             ),
             (
                 .e(value: 1),
                 [
-                    "type": "e",
+                    "case": "e",
                     "content": 1
                 ]
             ),
             (
                 .f(value: 2, "test"),
                 [
-                    "type": "f",
+                    "case": "f",
                     "content": [
                         "value": 2,
                         "_1": "test"
@@ -245,21 +245,21 @@ extension CodingTest.EnumCodableAdjacentKeyedTest {
             (
                 .g(value: 3),
                 [
-                    "type": "g",
+                    "case": "g",
                     "content": 3
                 ]
             ),
             (
                 .h(value: 4, "test2"),
                 [
-                    "type": 8,
+                    "case": 8,
                     "content": [4, "test2"]
                 ]
             ),
             (
                 .i(value: 5, "test3"),
                 [
-                    "type": "key_i",
+                    "case": "key_i",
                     "content": [
                         "value": 5,
                         "_1": "test3"
@@ -269,7 +269,7 @@ extension CodingTest.EnumCodableAdjacentKeyedTest {
             (
                 .j(value: 6, "test4"),
                 [
-                    "type": "j",
+                    "case": "j",
                     "content": [
                         "key1": 6,
                         "key2": "test4"

@@ -71,7 +71,7 @@ final class EnumCodableMacro: CodingMacroImplBase, CodingMacroImplProtocol {
                     generator = ExternalKeyedGenerator(caseCodingSpecList: caseCodingSpecList)
                 case .adjucentKeyed(let typeKey, let payloadKey):
                     guard typeKey.text != payloadKey.text else {
-                        throw .diagnostic(node: macroNode.rawSyntax, message: .codingMacro.enumCodable.conflictedTypeAndPayloadKeys())
+                        throw .diagnostic(node: macroNode.rawSyntax, message: .codingMacro.enumCodable.conflictedCaseAndPayloadFieldName())
                     }
                     let caseCodingSpecList = try extractCodingSpecForAdjucentKeyed(enumCaseCodingSettings).getResults()
                     generator = AdjucentKeyedGenerator(caseCodingSpecList: caseCodingSpecList, typeKey: typeKey, payloadKey: payloadKey)
