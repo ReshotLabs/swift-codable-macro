@@ -69,10 +69,10 @@ struct Person {
     @CodingField("data", "meta", "gender", onMissing: .male, onMismatch: .female)
     let gender: Gender
     
-    @CodingField("data", "meta", "birth", default: .distancePast)
+    @CodingField("data", "meta", "birth", default: Date.distancePast)
     @CodingTransform(
-        .doubleDateTransform, 
-        .doubleTypeTransform(option: .string)
+        .date.timeIntervalTransform(), 
+        .double.multiRepresentationTransform(encodeTo: .string)
     )
     var birthday: Date
     
@@ -89,7 +89,9 @@ struct Person {
 	var habit: String = "writing Swift Macro"
     
 }
+```
 
+```swift
 @SingleValueCodable
 struct FilePath {
     @SingleValueCodableDelegate
@@ -98,66 +100,61 @@ struct FilePath {
 }
 ```
 
+```swift
+@EnumCodable(option: .adjacentKeyed())
+enum Example {
+    @EnumCaseCoding(caseKey: "a_key", emptyPayloadOption: .emptyObject)
+    case a
+    @EnumCaseCoding(caseKey: "a_key", payload: .singleValue)
+    case b(Int)
+    @EnumCaseCoding(payload: .object(keys: "key1", "key2", "key3"))
+    case c(Int, label: String, _: Int)
+}
+```
+
 ## Provided Macros
 
-**Codable(inherit:)**
+For more detailed guidance, see [documentation](https://swiftpackageindex.com/Star-Lord-PHB/swift-codable-macro/documentation/codablemacro) 
 
-Annotate a class or a struct for auto conforming to `Codable` protocol. It will look up all the stored properties in the type definition and generate the implementation base on any customization found. 
+### Keyed Coding
 
-**CodingField(_:default:)**
+| Macro                                  | Description                                                  |
+| -------------------------------------- | ------------------------------------------------------------ |
+| `Codable(inherit:)`                    | Annotate a class or a struct for auto conforming to `Codable` |
+| `CodingField(_:default:)`              | Provide custom coding path and default value for a property  |
+| `CodingField(_:onMissing:onMismatch:)` | Provide custom coding path and default value in different error cases for a property |
+| `CodingIgnore`                         | Ignore a property                                            |
+| `DecodeTransform(source:with:)`        | Specify a transformation when decoding                       |
+| `EncodeTransform(source:with:)`        | Specify a transformation when encoding                       |
+| `CodingTransform(_:)`                  | Specify Coding Transformations for both Encoding and Decoding |
+| `CodingValidate(source:with:)`         | Validation performed when the value for the property is decoded |
+| `SequenceCodingField`                  | Provide settings for properties that are `Sequence`          |
 
-Specify a custom coding path and a default value for a stored property. If the coding path is not provided, the name of the property will be used. The default value is not required to be set using the `default` parameter, you can also provide a standard initializer for the property or use an optional type. The macro is able to take that into account. 
+### Single Value Coding 
 
-**CodingField(_:onMissing:onMismatch:)**
+| Macro                          | Description                                                  |
+| ------------------------------ | ------------------------------------------------------------ |
+| `SingleValueCodable(inherit:)` | Annotate a class or a struct for auto conforming to `Codable` by encoding the instance into a single value |
+| `SingleValueCodableDelegate`   | Mark a member property as the required "single value" for encoding and decoding |
 
-Similar to `CodingField(_:default:)`, but it allow specifying separate default values for value missing and type mismatch. 
+### Enum Coding
 
-**CodingIgnore**
+| Macro                                        | Description                                                  |
+| -------------------------------------------- | ------------------------------------------------------------ |
+| `EnumCodable(option:)`                       | Annotate an enum for auto conforming to `Codable`            |
+| `EnumCaseCoding(caseKey:payload)`            | Provide settings of case key and payload for an enum case with associated values |
+| `EnumCaseCoding(caseKey:emptyPayloadOption)` | Provide settings of case key and emptyPayload representation for an enum case without associated values |
+| `EnumCaseCoding(unkeyedRawValuePayload:)`    | Provide a rawValue as the payload for an enum case without associated values |
+| `EnumCaseCoding(unkeyedPayload:)`            | Provide settings of payload for an enum case with associated values |
 
-Make a stored property to be ignored when doing encoding / decoding. It requires that property to be optional or has a standard initializer. 
-
-**DecodeTransform(source:with:)**
-
-Specify a custom transformation when decoding for a property.  It will first try to decode the value to the provided `sourceType`, then convert it using the provided transformation. 
-
-**EncodeTransform(source:with:)**
-
-Specify a custom transformation when encoding a property. It will first convert the value using the provided transformation, then encoded the converted value. 
-
-**CodingTransform(_\:)**
-
-Specify a sequence of transformations when encoding / decoding a property. The transformations here should be instances of types that conform to `EvenCodingTransformProtocol`. 
-
-* When encoding the property, the transformations will be used in order
-* When decoding the property, the transformations will be used in reversed-order 
-
-**CodingValidate(source:with:)**
-
-Specify a validation rules when decoding for a property. 
-
-**SequenceCodingField(subPath:elementEncodedType:onMissing:onMismatch:decodeTransform:encodeTransform)**
-
-Specify a custom behavior when decoding an encoded sequence (e.g.: JSON Array). Can specify sub path when decoding each element in the sequence and default behavior (ignore it or apply a default value) when an element cannot be decoded correctly.
-
-**SingleValueCodable(inherit:)**
-
-Annotate a Class or a struct for auto conforming to `Codable` protocol by a provided rule to convert an instance from/to an instance of another type that conforms to `Codable`. 
-
-The rule can be provided by: 
-
-* Implement `singleValueEncode()` and `init(from:)`
-* Annotate one of the stored property with `SingleValueCodableDelegate` macro 
-
-**SingleValueCodableDelegate**
-
-Used together with `SingleValueCodable`, mark a property as the only target for encoding and decoding. 
+_The design of the APIs for Enum Coding is inspired by the [Serde](https://serde.rs) framework from Rust_
 
 ## Installation 
 
 In `Package.swift`, add the following line into your dependencies: 
 
 ```swift
-.package(url: "https://github.com/Star-Lord-PHB/swift-codable-macro.git", from: "2.0.0")
+.package(url: "https://github.com/Star-Lord-PHB/swift-codable-macro.git", from: "3.0.0")
 ```
 
 Add `CodableMacro` as a dependency of your target:

@@ -15,8 +15,9 @@
 /// # Coding Format
 ///
 /// The format for encoding enum is not standardized, so ``EnumCodable(option:)`` provide several
-/// common format options controlled by the `option` argument. There are two big types of formats,
-/// Keyed Format and Unkeyed Format
+/// common format options controlled by the `option` argument, which is inspired by the
+/// [Serde](https://serde.rs) framework from Rust. There are two big types of formats,
+/// Keyed Format and Unkeyed Format.
 ///
 /// ### Keyed Format
 /// Considere each enum case to have 2 parts:
@@ -147,6 +148,8 @@
 ///     static let codingDefaultValue: Self? = .a
 /// }
 /// ```
+///
+/// - Seealso: [The Serde framework from Rust](https://serde.rs)
 ///
 /// [`Codable`]: https://developer.apple.com/documentation/swift/codable
 /// [`RawRepresentable`]: https://developer.apple.com/documentation/swift/rawrepresentable
