@@ -9,30 +9,30 @@ import Foundation
 
 
 
-/// Transformation that encode Numeric number as string or number
+/// Coding Transformation that transform Numeric number to string or number
 ///
 /// It always support decoding the value from number or string, but for encoding, it needs
-/// to be specified using `transformOption`
-public struct NumberTypeTransform<Number>: EvenCodingTransformProtocol
+/// to be specified using `encodeTargetRepresentation`
+public struct NumberMultiRepresentationTransform<Number>: EvenCodingTransformProtocol, Sendable
 where Number: Numeric & LosslessStringConvertible {
     
     /// Specify the actual type for storing the number
     ///
     /// The type can be:
-    /// * `number`: store directly as number primitive
-    /// * `string`: store as string
+    /// * ``Representation/number``: store directly as number primitive
+    /// * ``Representation/string``: store as string
     ///
     /// - Note: This option only affect encoding, decoding will always support both
     /// int primitive and string primitive
-    public let transformOption: TransformOption
+    public let encodeTargetRepresentation: Representation
     
-    public init(transformOption: TransformOption = .number) {
-        self.transformOption = transformOption
+    public init(encodeTargetRepresentation: Representation = .number) {
+        self.encodeTargetRepresentation = encodeTargetRepresentation
     }
     
     
     public func encodeTransform(_ value: Number) throws -> TransformedValue {
-        switch transformOption {
+        switch encodeTargetRepresentation {
             case .string: return .string(value.description)
             case .number: return .number(value)
         }
@@ -56,13 +56,15 @@ where Number: Numeric & LosslessStringConvertible {
     
     
     
+    /// The type for the encode transform output
     public enum TransformedValue {
         case number(Number)
         case string(String)
     }
     
     
-    public enum TransformOption {
+    /// Representations that can be transformed from a Number
+    public enum Representation: Sendable {
         // always try to encode as number
         case number
         // always try to encode as string
@@ -72,7 +74,12 @@ where Number: Numeric & LosslessStringConvertible {
 }
 
 
-extension NumberTypeTransform.TransformedValue: Codable where Number: Codable {
+
+extension NumberMultiRepresentationTransform.TransformedValue: Sendable where Number: Sendable {}
+
+
+
+extension NumberMultiRepresentationTransform.TransformedValue: Codable where Number: Codable {
     
     public func encode(to encoder: any Encoder) throws {
         switch self {
@@ -103,110 +110,110 @@ extension NumberTypeTransform.TransformedValue: Codable where Number: Codable {
 
 
 
-extension EvenCodingTransformProtocol where Self == NumberTypeTransform<Int> {
-    /// Transformation that encode `Int` as string or number
-    public static func intTypeTransform(option: Self.TransformOption = .number) -> Self {
-        return .init(transformOption: option)
+extension AnyCodingTransform where Self.PropertyType: Numeric {
+    
+    public enum NumberCodingTransform {
+        
+        /// Create a Coding Transform that transform Number to string or number
+        public static func multiRepresentationTransform(
+            encodeTo targetRepresentation: NumberMultiRepresentationTransform<PropertyType>.Representation
+        ) -> NumberMultiRepresentationTransform<PropertyType>
+        where PropertyType: LosslessStringConvertible {
+            return .init(encodeTargetRepresentation: targetRepresentation)
+        }
+        
     }
+    
 }
 
-extension EvenCodingTransformProtocol where Self == NumberTypeTransform<UInt> {
-    /// Transformation that encode `UInt` as string or number
-    public static func uIntTypeTransform(option: Self.TransformOption = .number) -> Self {
-        .init(transformOption: option)
-    }
-}
 
-extension EvenCodingTransformProtocol where Self == NumberTypeTransform<Int8> {
-    /// Transformation that encode `Int8` as string or number
-    public static func int8TypeTransform(option: Self.TransformOption = .number) -> Self {
-        .init(transformOption: option)
-    }
-}
 
-extension EvenCodingTransformProtocol where Self == NumberTypeTransform<UInt8> {
-    /// Transformation that encode `UInt8` as string or number
-    public static func uInt8TypeTransform(option: Self.TransformOption = .number) -> Self {
-        .init(transformOption: option)
+extension EvenCodingTransformProtocol
+where Self == AnyCodingTransform<(any Numeric), Any> {
+    
+    /// Access a group of Coding Transformation for Number
+    public static func number<Number: Numeric>(
+        _ numberType: Number.Type
+    ) -> AnyCodingTransform<Number, Any>.NumberCodingTransform.Type {
+        AnyCodingTransform.NumberCodingTransform.self
     }
-}
-
-extension EvenCodingTransformProtocol where Self == NumberTypeTransform<Int16> {
-    /// Transformation that encode `Int16` as string or number
-    public static func int16TypeTransform(option: Self.TransformOption = .number) -> Self {
-        .init(transformOption: option)
+    
+    /// Access a group of Coding Transformation for `Int` type
+    public static var int: AnyCodingTransform<Int, Any>.NumberCodingTransform.Type {
+        AnyCodingTransform<Int, Any>.NumberCodingTransform.self
     }
-}
-
-extension EvenCodingTransformProtocol where Self == NumberTypeTransform<UInt16> {
-    /// Transformation that encode `UInt16` as string or number
-    public static func uInt16TypeTransform(option: Self.TransformOption = .number) -> Self {
-        .init(transformOption: option)
+    
+    /// Access a group of Coding Transformation for `UInt` type
+    public static var uInt: AnyCodingTransform<UInt, Any>.NumberCodingTransform.Type {
+        AnyCodingTransform<UInt, Any>.NumberCodingTransform.self
     }
-}
-
-extension EvenCodingTransformProtocol where Self == NumberTypeTransform<Int32> {
-    /// Transformation that encode `Int32` as string or number
-    public static func int32TypeTransform(option: Self.TransformOption = .number) -> Self {
-        .init(transformOption: option)
+    
+    /// Access a group of Coding Transformation for `Int8` type
+    public static var int8: AnyCodingTransform<Int8, Any>.NumberCodingTransform.Type {
+        AnyCodingTransform<Int8, Any>.NumberCodingTransform.self
     }
-}
-
-extension EvenCodingTransformProtocol where Self == NumberTypeTransform<UInt32> {
-    /// Transformation that encode `UInt32` as string or number
-    public static func uInt32TypeTransform(option: Self.TransformOption = .number) -> Self {
-        .init(transformOption: option)
+    
+    /// Access a group of Coding Transformation for `UInt8` type
+    public static var uInt8: AnyCodingTransform<UInt8, Any>.NumberCodingTransform.Type {
+        AnyCodingTransform<UInt8, Any>.NumberCodingTransform.self
     }
-}
-
-extension EvenCodingTransformProtocol where Self == NumberTypeTransform<Int64> {
-    /// Transformation that encode `Int64` as string or number
-    public static func int64TypeTransform(option: Self.TransformOption = .number) -> Self {
-        .init(transformOption: option)
+    
+    /// Access a group of Coding Transformation for `Int16` type
+    public static var int16: AnyCodingTransform<Int16, Any>.NumberCodingTransform.Type {
+        AnyCodingTransform<Int16, Any>.NumberCodingTransform.self
     }
-}
-
-extension EvenCodingTransformProtocol where Self == NumberTypeTransform<UInt64> {
-    /// Transformation that encode `UInt64` as string or number
-    public static func uInt64TypeTransform(option: Self.TransformOption = .number) -> Self {
-        .init(transformOption: option)
+    
+    /// Access a group of Coding Transformation for `UInt16` type
+    public static var uInt16: AnyCodingTransform<UInt16, Any>.NumberCodingTransform.Type {
+        AnyCodingTransform<UInt16, Any>.NumberCodingTransform.self
     }
-}
-
-@available(macOS 15, iOS 18.0, tvOS 18.0, watchOS 11.0, visionOS 2, *)
-extension EvenCodingTransformProtocol where Self == NumberTypeTransform<Int128> {
-    /// Transformation that encode `Int128` as string or number
-    public static func int128TypeTransform(option: Self.TransformOption = .number) -> Self {
-        .init(transformOption: option)
+    
+    /// Access a group of Coding Transformation for `Int32` type
+    public static var int32: AnyCodingTransform<Int32, Any>.NumberCodingTransform.Type {
+        AnyCodingTransform<Int32, Any>.NumberCodingTransform.self
     }
-}
-
-@available(macOS 15, iOS 18.0, tvOS 18.0, watchOS 11.0, visionOS 2, *)
-extension EvenCodingTransformProtocol where Self == NumberTypeTransform<UInt128> {
-    /// Transformation that encode `UInt128` as string or number
-    public static func uInt128TypeTransform(option: Self.TransformOption = .number) -> Self {
-        .init(transformOption: option)
+    
+    /// Access a group of Coding Transformation for `UInt32` type
+    public static var uInt32: AnyCodingTransform<UInt32, Any>.NumberCodingTransform.Type {
+        AnyCodingTransform<UInt32, Any>.NumberCodingTransform.self
     }
-}
-
-extension EvenCodingTransformProtocol where Self == NumberTypeTransform<Float> {
-    /// Transformation that encode `Float` as string or number
-    public static func floatTypeTransform(option: Self.TransformOption = .number) -> Self {
-        .init(transformOption: option)
+    
+    /// Access a group of Coding Transformation for `Int64` type
+    public static var int64: AnyCodingTransform<Int64, Any>.NumberCodingTransform.Type {
+        AnyCodingTransform<Int64, Any>.NumberCodingTransform.self
     }
-}
-
-extension EvenCodingTransformProtocol where Self == NumberTypeTransform<Double> {
-    /// Transformation that encode `Float` as string or number
-    public static func doubleTypeTransform(option: Self.TransformOption = .number) -> Self {
-        .init(transformOption: option)
+    
+    /// Access a group of Coding Transformation for `UInt64` type
+    public static var uInt64: AnyCodingTransform<UInt64, Any>.NumberCodingTransform.Type {
+        AnyCodingTransform<UInt64, Any>.NumberCodingTransform.self
     }
-}
-
-@available(macOS 11, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
-extension EvenCodingTransformProtocol where Self == NumberTypeTransform<Float16> {
-    /// Transformation that encode `Float16` as string or number
-    public static func float16TypeTransform(option: Self.TransformOption = .number) -> Self {
-        .init(transformOption: option)
+    
+    /// Access a group of Coding Transformation for `Int128` type
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+    public static var int128: AnyCodingTransform<Int128, Any>.NumberCodingTransform.Type {
+        AnyCodingTransform<Int128, Any>.NumberCodingTransform.self
     }
+    
+    /// Access a group of Coding Transformation for `UInt128` type
+    @available(macOS 15.0, iOS 18.0, watchOS 11.0, tvOS 18.0, visionOS 2.0, *)
+    public static var uInt128: AnyCodingTransform<UInt128, Any>.NumberCodingTransform.Type {
+        AnyCodingTransform<UInt128, Any>.NumberCodingTransform.self
+    }
+    
+    /// Access a group of Coding Transformation for `Double` type
+    public static var double: AnyCodingTransform<Double, Any>.NumberCodingTransform.Type {
+        AnyCodingTransform<Double, Any>.NumberCodingTransform.self
+    }
+    
+    /// Access a group of Coding Transformation for `Float` type
+    public static var float: AnyCodingTransform<Float, Any>.NumberCodingTransform.Type {
+        AnyCodingTransform<Float, Any>.NumberCodingTransform.self
+    }
+    
+    /// Access a group of Coding Transformation for `Float16` type 
+    @available(macOS 11, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
+    public static var float16: AnyCodingTransform<Float16, Any>.NumberCodingTransform.Type {
+        AnyCodingTransform<Float16, Any>.NumberCodingTransform.self
+    }
+    
 }

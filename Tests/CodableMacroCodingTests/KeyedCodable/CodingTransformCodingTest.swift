@@ -23,13 +23,13 @@ extension CodingTest.CodingTransformCodingTest {
     
     @Codable
     struct SomeType1: Equatable {
-        @CodingTransform(.iso8601DateTransform)
+        @CodingTransform(.date.iso8601FormatTransform)
         var a: Date
-        @CodingTransform(.doubleDateTransform(), .doubleTypeTransform(option: .string))
+        @CodingTransform(.date.timeIntervalTransform(), .double.multiRepresentationTransform(encodeTo: .string))
         var b: Date
-        @CodingTransform(.boolTransform(option: .customString(true: "T", false: "F")))
+        @CodingTransform(.bool.multiRepresentationTransform(encodeTo: .customString(true: "T", false: "F")))
         var c: Bool
-        @CodingTransform(.dataBase64Transform())
+        @CodingTransform(.data.base64Transform())
         var d: Data
         @CodingTransform(
             CustomCodingTransform<Int, String>(

@@ -54,3 +54,6 @@ extension CodingPrimitive: Codable {
     }
     
 }
+
+
+extension CodingPrimitive: Sendable where Number: Sendable {}

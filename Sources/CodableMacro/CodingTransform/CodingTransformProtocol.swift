@@ -25,6 +25,31 @@ public protocol EvenCodingTransformProtocol {
 
 
 
+public struct AnyCodingTransform<PropertyType, TransformedType>: EvenCodingTransformProtocol, Sendable {
+    
+    public let encode: @Sendable (PropertyType) throws -> TransformedType
+    public let decode: @Sendable (TransformedType) throws -> PropertyType
+    
+    public init(
+        encode: @escaping @Sendable (PropertyType) throws -> TransformedType,
+        decode: @escaping @Sendable (TransformedType) throws -> PropertyType
+    ) {
+        self.encode = encode
+        self.decode = decode
+    }
+    
+    public func encodeTransform(_ value: PropertyType) throws -> TransformedType {
+        try encode(value)
+    }
+    
+    public func decodeTransform(_ value: TransformedType) throws -> PropertyType {
+        try decode(value)
+    }
+    
+}
+
+
+
 /// A function that does nothing and return the parameter immediately,
 /// just used to help with type inference
 @inlinable @inline(__always)

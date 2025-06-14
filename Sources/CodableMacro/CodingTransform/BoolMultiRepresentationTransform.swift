@@ -1,5 +1,5 @@
 //
-//  BoolTransform.swift
+//  BoolMultiRepresentationTransform.swift
 //  swift-codable-macro
 //
 //  Created by SerikaPHB  on 2025/2/19.
@@ -8,32 +8,32 @@
 import Foundation
 
 
-/// Transformation that encode Boolean as bool, string or int
+/// Transformation that transform Boolean as bool, string or int
 ///
 /// It alwasy support decoding bool from bool, string and int, but for encoding, it needs to
-/// be specified using `transformOption`
-public struct BoolTransform: EvenCodingTransformProtocol {
+/// be specified using ``BoolMultiRepresentationTransform/encodeTargetRepresentation``
+public struct BoolMultiRepresentationTransform: EvenCodingTransformProtocol, Sendable {
     
     /// Specify the actual type for storing the boolean
     ///
     /// The type can be:
-    /// * `bool`: store directly as bool primitive
-    /// * `int`: store as integer primitive (1 for true and 0 for false)
-    /// * `string`: store as string primitive ("true" for true and "false" for false
-    /// * `customString(true:false:)`: store as custom string primitive
+    /// * ``Representation/bool``: transform to a bool value
+    /// * ``Representation/number``: transform to a integer value (1 for true and 0 for false)
+    /// * ``Representation/string``: trasnform to a string value ("true" for true and "false" for false)
+    /// * ``Representation/customString(true:false:)``: transform to a custom string value
     ///
     /// - Note: This option only affect encoding, decoding will always support both
     /// int primitive and string primitive
-    public let transformOption: TransformOption
+    public let encodeTargetRepresentation: Representation
     
     
-    public init(transformOption: TransformOption = .bool) {
-        self.transformOption = transformOption
+    public init(encodeTargetRepresentation: Representation = .bool) {
+        self.encodeTargetRepresentation = encodeTargetRepresentation
     }
     
     
     public func encodeTransform(_ value: Bool) throws -> TransformedValue {
-        return switch transformOption {
+        return switch encodeTargetRepresentation {
             case .bool: .bool(value)
             case .number: .int(value ? 1 : 0)
             case .string: .string(value ? "true" : "false")
@@ -55,7 +55,7 @@ public struct BoolTransform: EvenCodingTransformProtocol {
                     )
                 }
             case .string(let value):
-                let (trueStr, falseStr) = switch transformOption {
+                let (trueStr, falseStr) = switch encodeTargetRepresentation {
                     case let .customString(trueStr, falseStr): (trueStr, falseStr)
                     default: ("true", "false")
                 }
@@ -71,22 +71,31 @@ public struct BoolTransform: EvenCodingTransformProtocol {
     }
     
     
-    public enum TransformedValue {
+    /// The type for the encode transform output
+    public enum TransformedValue: Sendable {
         case string(String)
         case bool(Bool)
         case int(Int)
     }
     
     
-    public enum TransformOption {
-        case bool, number, string, customString(true: String, false: String)
+    /// Representations that can be transformed from a `Bool` value
+    public enum Representation: Sendable {
+        /// transform to a bool value
+        case bool
+        /// transform to a integer value (1 for true and 0 for false)
+        case number
+        /// trasnform to a string value ("true" for true and "false" for false)
+        case string
+        /// transform to a custom string value
+        case customString(true: String, false: String)
     }
     
 }
 
 
 
-extension BoolTransform.TransformedValue: Codable {
+extension BoolMultiRepresentationTransform.TransformedValue: Codable {
     
     public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
@@ -98,12 +107,11 @@ extension BoolTransform.TransformedValue: Codable {
     }
     
     public init(from decoder: any Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        if let boolValue = try? container.decode(Bool.self) {
+        if let boolValue = try? Bool(from: decoder) {
             self = .bool(boolValue)
-        } else if let intValue = try? container.decode(Int.self) {
+        } else if let intValue = try? Int(from: decoder) {
             self = .int(intValue)
-        } else if let stringValue = try? container.decode(String.self) {
+        } else if let stringValue = try? String(from: decoder) {
             self = .string(stringValue)
         } else {
             throw DecodingError.typeMismatch(
@@ -120,12 +128,27 @@ extension BoolTransform.TransformedValue: Codable {
 
 
 
-extension EvenCodingTransformProtocol where Self == BoolTransform {
-    /// Transformation that encode Boolean as bool, string or int
-    ///
-    /// It alwasy support decoding bool from bool, string and int, but for encoding, it needs to
-    /// be specified using `option`
-    public static func boolTransform(option: Self.TransformOption = .bool) -> Self {
-        .init(transformOption: option)
+extension AnyCodingTransform where Self.PropertyType == Bool {
+    
+    public enum BoolCodingTransform {
+        /// Create a Coding Transformation that transform Boolean to bool, string or int
+        ///
+        /// It alwasy support decoding bool from bool, string and int, but for encoding, it needs to
+        /// be specified using `option`
+        public static func multiRepresentationTransform(
+            encodeTo targetRepresentation: BoolMultiRepresentationTransform.Representation = .bool
+        ) -> BoolMultiRepresentationTransform {
+            .init(encodeTargetRepresentation: targetRepresentation)
+        }
+    }
+    
+}
+
+
+
+extension EvenCodingTransformProtocol where Self == AnyCodingTransform<Bool, Any> {
+    /// Access a group of Coding Transformation for `Bool` type
+    public static var bool: AnyCodingTransform<Bool, Any>.BoolCodingTransform.Type {
+        return AnyCodingTransform<Bool, Any>.BoolCodingTransform.self
     }
 }

@@ -8,8 +8,8 @@
 import Foundation
 
 
-/// Transformation that encode Data as Base64 string
-public struct DataBase64Transform: EvenCodingTransformProtocol {
+/// Coding Transformation that transform Data to Base64 string
+public struct DataBase64Transform: EvenCodingTransformProtocol, Sendable {
     
     /// Options when encoding the Data to Base64
     public let options: Data.Base64EncodingOptions
@@ -36,9 +36,26 @@ public struct DataBase64Transform: EvenCodingTransformProtocol {
 
 
 
-extension EvenCodingTransformProtocol where Self == DataBase64Transform {
-    /// Transformation that encode Data as Base64 string
-    public static func dataBase64Transform(options: Data.Base64EncodingOptions = []) -> Self {
-        .init(options: options)
+extension AnyCodingTransform where Self.PropertyType == Data {
+    
+    public enum DataCodingTransform {
+        
+        /// Create a Coding Transformation that transform Data to Base64 string
+        public static func base64Transform(options: Data.Base64EncodingOptions = []) -> DataBase64Transform {
+            .init(options: options)
+        }
+        
     }
+    
+}
+
+
+
+extension EvenCodingTransformProtocol where Self == AnyCodingTransform<Data, Any> {
+    
+    /// Access a group of Coding Transformation for `Data` type 
+    public static var data: AnyCodingTransform<Data, Any>.DataCodingTransform.Type {
+        AnyCodingTransform<Data, Any>.DataCodingTransform.self
+    }
+    
 }

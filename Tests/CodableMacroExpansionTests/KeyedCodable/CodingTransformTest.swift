@@ -34,9 +34,9 @@ extension CodingExpansionTest.CodingTransformTest {
     @Codable
     struct Test1 {
         @CodingTransform(
-            .doubleDateTransform(),
+            .date.timeIntervalTransform(),
             IdenticalCodingTransform<Double>(),
-            .doubleTypeTransform(option: .string)
+            .double.multiRepresentationTransform(encodeTo: .string)
         )
         var a: Date
     }
@@ -96,9 +96,9 @@ extension CodingExpansionTest.CodingTransformTest {
     @Codable
     struct Test2 {
         @CodingTransform(
-            .doubleDateTransform(),
+            .date.timeIntervalTransform(),
             IdenticalCodingTransform<Double>(),
-            .doubleTypeTransform(option: .string)
+            .double.multiRepresentationTransform(encodeTo: .string)
         )
         var a: Date? = .init()
     }
