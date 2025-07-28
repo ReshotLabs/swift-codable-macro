@@ -90,4 +90,4 @@ public enum KeyDecodingStrategy {
 /// [`init(from:)`]: https://developer.apple.com/documentation/swift/decodable/init(from:)-8ezpn
 @attached(extension, conformances: Codable, names: arbitrary)
 @attached(member, names: arbitrary)
-public macro Codable(inherit: Bool = false, keyDecodingStrategy: KeyDecodingStrategy = .useDefaultKeys) = #externalMacro(module: "CodableMacroMacros", type: "CodableMacro")
+public macro Codable(inherit: Bool = false, keyDecodingStrategy: KeyDecodingStrategy = .useDefaultKeys, verbose: Bool = false) = #externalMacro(module: "CodableMacroMacros", type: "CodableMacro")
