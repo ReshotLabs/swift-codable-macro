@@ -52,3 +52,21 @@ extension RangeReplaceableCollection {
     }
 
 }
+
+
+extension String {
+    
+    /// Convert camelCase string to snake_case
+    func convertToSnakeCase() -> String {
+        let acronymPattern = "([A-Z]+)([A-Z][a-z]|[0-9])"
+        let normalPattern = "([a-z0-9])([A-Z])"
+        
+        let result = self
+            .replacingOccurrences(of: acronymPattern, with: "$1_$2", options: .regularExpression)
+            .replacingOccurrences(of: normalPattern, with: "$1_$2", options: .regularExpression)
+            .lowercased()
+        
+        return result
+    }
+    
+}

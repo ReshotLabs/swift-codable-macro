@@ -7,8 +7,19 @@
 
 
 
+/// Key decoding strategies that can be applied to automatically transform property names
+public enum KeyDecodingStrategy {
+    /// Use the keys specified by the property names as written in Swift
+    case useDefaultKeys
+    /// Convert camelCase Swift property names to snake_case keys
+    case convertFromSnakeCase
+    /// Use a custom function to transform keys
+    case custom((String) -> String)
+}
+
 /// Automatically make the marked `class` or `struct` to conform to [`Codable`]
 /// - Parameter inherit: Whether this class has an super class that has already conformed to [`Codable`]
+/// - Parameter keyDecodingStrategy: Strategy for transforming Swift property names to coding keys
 ///
 /// When being expanded, it will look up all the stored properties and automatically generate
 /// the implementation of [`encode(to:)`] and [`init(from:)`]
@@ -17,7 +28,7 @@
 /// implementation
 /// * Optional and default value will be considered when decoding
 ///
-/// You can specifi a custom coding path and a default value using ``CodingField(_:)``
+/// You can specify a custom coding path and a default value using ``CodingField(_:)``
 /// or ``CodingField(_:default:)`` macros.
 ///
 /// A coding path is a sequence of coding keys for finding
@@ -34,7 +45,7 @@
 ///
 /// The coding path of `"name"` is `["meta", "name"]`
 ///
-/// An example usable is as follow:
+/// An example usage is as follow:
 ///
 /// ```swift
 /// @Codable
@@ -50,6 +61,16 @@
 ///     var field6: String = "default"
 ///     @CodingField("path1", "field7", default: "default")
 ///     var field7: String
+/// }
+/// ```
+///
+/// To support APIs that use snake_case, use:
+///
+/// ```swift
+/// @Codable(keyDecodingStrategy: .convertFromSnakeCase)
+/// struct GameConfig {
+///     @CodingField(onMissing: true)
+///     var hidePartyGames: Bool  // Will map to "hide_party_games" in JSON
 /// }
 /// ```
 ///
@@ -69,4 +90,4 @@
 /// [`init(from:)`]: https://developer.apple.com/documentation/swift/decodable/init(from:)-8ezpn
 @attached(extension, conformances: Codable, names: arbitrary)
 @attached(member, names: arbitrary)
-public macro Codable(inherit: Bool = false) = #externalMacro(module: "CodableMacroMacros", type: "CodableMacro")
+public macro Codable(inherit: Bool = false, keyDecodingStrategy: KeyDecodingStrategy = .useDefaultKeys) = #externalMacro(module: "CodableMacroMacros", type: "CodableMacro")

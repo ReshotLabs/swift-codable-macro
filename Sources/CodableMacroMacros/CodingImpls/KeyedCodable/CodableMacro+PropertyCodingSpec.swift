@@ -121,10 +121,11 @@ extension CodableMacro {
             }
             return codingFieldSetting
                 .map { path, onMissing, onMismatch in
-                    (path: path ?? [property.nameStr], defaultValueOnMissing: onMissing, defaultValueOnMismatch: onMismatch)
+                    let finalPath = path ?? [self.transformPropertyName(property.nameStr)]
+                    return (path: finalPath, defaultValueOnMissing: onMissing, defaultValueOnMismatch: onMismatch)
                 }
                 .orElse {
-                    (path: [property.nameStr], defaultValueOnMissing: nil, defaultValueOnMismatch: nil)
+                    (path: [self.transformPropertyName(property.nameStr)], defaultValueOnMissing: nil, defaultValueOnMismatch: nil)
                 }
         }
     }

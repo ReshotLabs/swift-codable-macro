@@ -21,11 +21,31 @@ final class CodableMacro: CodingMacroImplBase, CodingMacroImplProtocol {
     ]
     
     static let macroArgumentsParsingRule: [ArgumentsParsingRule] = [
-        .labeled("inherit", canIgnore: true)
+        .labeled("inherit", canIgnore: true),
+        .labeled("keyDecodingStrategy", canIgnore: true)
     ]
 
+    enum KeyDecodingStrategy {
+        case useDefaultKeys
+        case convertFromSnakeCase
+        
+        static func parse(from expr: ExprSyntax) -> KeyDecodingStrategy? {
+            if let memberAccess = expr.as(MemberAccessExprSyntax.self) {
+                switch memberAccess.declName.baseName.text {
+                case "useDefaultKeys":
+                    return .useDefaultKeys
+                case "convertFromSnakeCase":
+                    return .convertFromSnakeCase
+                default:
+                    return nil
+                }
+            }
+            return nil
+        }
+    }
 
     let inherit: Bool
+    let keyDecodingStrategy: KeyDecodingStrategy
 
     /// Whether an empty initializer should be created, only for class
     var shouldAutoInit: Bool {
@@ -48,6 +68,17 @@ final class CodableMacro: CodingMacroImplBase, CodingMacroImplProtocol {
         } else {
             inherit = false
         }
+        
+        if let keyDecodingStrategyExpr = macroNode.arguments[1].first?.expression {
+            if let strategy = KeyDecodingStrategy.parse(from: keyDecodingStrategyExpr) {
+                keyDecodingStrategy = strategy
+            } else {
+                throw .diagnostic(node: keyDecodingStrategyExpr, message: .codingMacro.codable.invalidKeyDecodingStrategy)
+            }
+        } else {
+            keyDecodingStrategy = .useDefaultKeys
+        }
+        
         try super.init(macroNode: macroNode, declGroup: declGroup, context: context)
     }
 
@@ -106,11 +137,26 @@ final class CodableMacro: CodingMacroImplBase, CodingMacroImplProtocol {
     }
 
 
+    /// Transform property name according to the keyDecodingStrategy
+    func transformPropertyName(_ propertyName: String) -> String {
+        switch keyDecodingStrategy {
+        case .useDefaultKeys:
+            return propertyName
+        case .convertFromSnakeCase:
+            return propertyName.convertToSnakeCase()
+        }
+    }
+    
     private func canAutoCodable(_ codingFieldInfoList: [PropertyCodingSpec]) -> Bool {
 
         guard !codingFieldInfoList.isEmpty else {
             // an empty list means no customization, can auto-implement
             return true 
+        }
+        
+        // If we're using a key decoding strategy other than default, we need custom implementation
+        if keyDecodingStrategy != .useDefaultKeys {
+            return false
         }
 
         return !codingFieldInfoList.contains {
@@ -170,6 +216,11 @@ extension CodableMacro {
         static let defaultValueOnConstantwithInitializer: CodingMacroImplBase.Error = .init(
             id: "default_value_on_constant_with_initializer",
             message: "Default value on constant property with initializer is not allowed."
+        )
+        
+        static let invalidKeyDecodingStrategy: CodingMacroImplBase.Error = .init(
+            id: "invalid_key_decoding_strategy",
+            message: "Invalid keyDecodingStrategy. Supported values are .useDefaultKeys and .convertFromSnakeCase"
         )
         
     }
